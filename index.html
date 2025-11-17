@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Project Estimator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Header with Auth */
+        .app-header {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo-section h1 {
+            font-size: 1.5em;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .auth-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Card System */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        /* Responsive Grid System */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Input Styling */
+        .input-group {
+            margin-bottom: 0;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .input-field, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Line Items */
+        .line-item {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .line-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .line-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .line-number {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .item-totals-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-weight: 600;
+        }
+
+        .total-line.grand {
+            border-top: 2px solid #dee2e6;
+            margin-top: 10px;
+            padding-top: 10px;
+            font-size: 1.15em;
+            color: #667eea;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 16px;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2980b9;
+        }
+
+        .btn-full {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        /* Summary Card */
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            font-size: 1.1em;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-total {
+            font-size: 1.8em;
+            font-weight: 700;
+            padding-top: 20px;
+            border-top: 3px solid rgba(255,255,255,0.3);
+            margin-top: 10px;
+        }
+
+        /* Projects List */
+        .projects-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .project-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .project-item:hover {
+            border-color: #667eea;
+            background: #e9ecef;
+        }
+
+        .project-info-item {
+            flex: 1;
+        }
+
+        .project-name {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .project-meta {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        /* Loading & Auth States */
+        .loading-screen, .auth-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .auth-card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .logo-section h1 {
+                font-size: 1.2em;
+            }
+
+            .auth-section {
+                justify-content: space-between;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .line-item {
+                padding: 15px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .summary-card {
+                padding: 20px;
+            }
+
+            .summary-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+
+        /* Tablet Optimizations */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .main-content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <h2>Loading Construction Estimator...</h2>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="authScreen" class="auth-screen hidden">
+        <div class="auth-card">
+            <h2>🏗️ Construction Estimator</h2>
+            <p style="margin-bottom: 30px; color: #6c757d;">Sign in to access your estimates from any device</p>
+            <button class="btn btn-primary btn-full" onclick="signInWithGoogle()">
+                <span>🔐</span> Sign in with Google
+            </button>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #6c757d;">Your data is securely stored in the cloud</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1>🏗️ Construction Estimator</h1>
+                </div>
+                <div class="auth-section">
+                    <div class="user-info" id="userInfo">
+                        <img id="userAvatar" class="user-avatar" src="" alt="User">
+                        <span class="user-name" id="userName"></span>
+                    </div>
+                    <button class="btn btn-danger" onclick="signOut()">Sign Out</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- My Projects Section -->
+            <div class="card">
+                <div class="card-header">📁 My Projects</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="createNewProject()">+ New Project</button>
+                    <button class="btn btn-secondary" onclick="saveCurrentProject()">💾 Save Project</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Import CSV</button>
+                    <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
+                </div>
+                <div class="projects-list" id="projectsList">
+                    <p style="text-align: center; color: #6c757d; padding: 20px;">No saved projects yet. Create your first project!</p>
+                </div>
+                <input type="file" id="fileInput" accept=".csv" onchange="importFromCSV(event)">
+            </div>
+
+            <!-- Project Information -->
+            <div class="card">
+                <div class="card-header">📋 Project Information</div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Project Name *</label>
+                        <input type="text" class="input-field" id="projectName" placeholder="Enter project name">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Project Type</label>
+                        <select class="input-field" id="projectType">
+                            <option value="">Select type</option>
+                            <option value="residential">Residential</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="industrial">Industrial</option>
+                            <option value="renovation">Renovation</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-4">
+                    <div class="input-group">
+                        <label class="input-label">Contingency (%)</label>
+                        <input type="number" class="input-field" id="contingency" value="10" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Overhead (%)</label>
+                        <input type="number" class="input-field" id="overhead" value="10" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Profit (%)</label>
+                        <input type="number" class="input-field" id="profit" value="10" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Bond Cost (%)</label>
+                        <input type="number" class="input-field" id="bond" value="2" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="card">
+                <div class="card-header">📝 Line Items</div>
+                <div id="lineItemsContainer"></div>
+                <button class="btn btn-primary btn-full" onclick="addLineItem()">+ Add Line Item</button>
+            </div>
+
+            <!-- Calculate Button -->
+            <button class="btn btn-success btn-full" onclick="calculateEstimate()" style="font-size: 1.2em; padding: 18px;">
+                🧮 Calculate Estimate
+            </button>
+
+            <!-- Summary -->
+            <div id="summarySection" class="hidden">
+                <div class="summary-card">
+                    <h2 style="margin-bottom: 20px;">💰 Project Summary</h2>
+                    <div class="summary-row">
+                        <span>Materials Subtotal:</span>
+                        <span id="materialsTotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Labor Subtotal:</span>
+                        <span id="laborTotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Equipment Subtotal:</span>
+                        <span id="equipmentTotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Project Subtotal:</span>
+                        <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Contingency (<span id="contingencyPercent">10</span>%):</span>
+                        <span id="contingencyAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Overhead (<span id="overheadPercent">10</span>%):</span>
+                        <span id="overheadAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Profit (<span id="profitPercent">10</span>%):</span>
+                        <span id="profitAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Bond Cost (<span id="bondPercent">2</span>%):</span>
+                        <span id="bondAmount">$0.00</span>
+                    </div>
+                    <div class="summary-row summary-total">
+                        <span>Total Estimate:</span>
+                        <span id="totalEstimate">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyD3_zQVowO0Sg5rFSGkcSU0NoI852PuPAA",
+  authDomain: "construction-estimator-d2633.firebaseapp.com",
+  projectId: "construction-estimator-d2633",
+  storageBucket: "construction-estimator-d2633.firebasestorage.app",
+  messagingSenderId: "252394591641",
+  appId: "1:252394591641:web:3e8e9ceb6da9052c7daf08"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        let currentUser = null;
+        let currentProjectId = null;
+        let lineItemCounter = 0;
+
+        // Auth State Observer
+        auth.onAuthStateChanged((user) => {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            
+            if (user) {
+                currentUser = user;
+                showMainApp();
+                loadUserProjects();
+            } else {
+                showAuthScreen();
+            }
+        });
+
+        function showAuthScreen() {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            document.getElementById('userName').textContent = currentUser.displayName || 'User';
+            document.getElementById('userAvatar').src = currentUser.photoURL || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23667eea"/></svg>';
+            
+            if (lineItemCounter === 0) {
+                addLineItem();
+            }
+        }
+
+        async function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                alert('Sign in failed: ' + error.message);
+            }
+        }
+
+        async function signOut() {
+            if (confirm('Are you sure you want to sign out?')) {
+                await auth.signOut();
+                location.reload();
+            }
+        }
+
+        function addLineItem() {
+            lineItemCounter++;
+            const container = document.getElementById('lineItemsContainer');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'line-item';
+            itemDiv.innerHTML = `
+                <div class="line-item-header">
+                    <span class="line-number">Line Item #${lineItemCounter}</span>
+                    <button class="btn btn-danger" onclick="removeLineItem(this)">✕ Remove</button>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Description</label>
+                        <input type="text" class="input-field item-description" placeholder="Item description">
+                    </div>
+                    <div class="grid-2" style="gap: 10px;">
+                        <div class="input-group">
+                            <label class="input-label">Quantity</label>
+                            <input type="number" class="input-field item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Unit</label>
+                            <select class="input-field item-unit">
+                                <option value="ea">Each</option>
+                                <option value="sqft">Sq Ft</option>
+                                <option value="sqm">Sq M</option>
+                                <option value="lf">Lin Ft</option>
+                                <option value="cy">Cu Yd</option>
+                                <option value="hr">Hours</option>
+                                <option value="day">Days</option>
+                                <option value="ls">Lump Sum</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-4">
+                    <div class="input-group">
+                        <label class="input-label">Material ($)</label>
+                        <input type="number" class="input-field item-material" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Labor ($)</label>
+                        <input type="number" class="input-field item-labor" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Labor Surcharge (%)</label>
+                        <input type="number" class="input-field item-surcharge" placeholder="0" min="0" max="100" step="1" oninput="calculateLineTotal(this)">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Equipment ($)</label>
+                        <input type="number" class="input-field item-equipment" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Notes</label>
+                    <input type="text" class="input-field item-notes" placeholder="Additional notes">
+                </div>
+
+                <div class="item-totals-box">
+                    <div class="total-line">
+                        <span>Material Total:</span>
+                        <span class="material-total">$0.00</span>
+                    </div>
+                    <div class="total-line">
+                        <span>Labor Total:</span>
+                        <span class="labor-total">$0.00</span>
+                    </div>
+                    <div class="total-line">
+                        <span>Equipment Total:</span>
+                        <span class="equipment-total">$0.00</span>
+                    </div>
+                    <div class="total-line grand">
+                        <span>Line Total:</span>
+                        <span class="line-total">$0.00</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(itemDiv);
+        }
+
+        function removeLineItem(btn) {
+            const container = document.getElementById('lineItemsContainer');
+            if (container.children.length > 1) {
+                btn.closest('.line-item').remove();
+                renumberLineItems();
+            } else {
+                alert('At least one line item is required');
+            }
+        }
+
+        function renumberLineItems() {
+            const items = document.querySelectorAll('.line-item');
+            items.forEach((item, index) => {
+                item.querySelector('.line-number').textContent = `Line Item #${index + 1}`;
+            });
+            lineItemCounter = items.length;
+        }
+
+        function calculateLineTotal(input) {
+            const item = input.closest('.line-item');
+            const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
+            const mat = parseFloat(item.querySelector('.item-material').value) || 0;
+            const lab = parseFloat(item.querySelector('.item-labor').value) || 0;
+            const sur = parseFloat(item.querySelector('.item-surcharge').value) || 0;
+            const equip = parseFloat(item.querySelector('.item-equipment').value) || 0;
+
+            const matTotal = qty * mat;
+            const labTotal = qty * (lab * (1 + sur / 100));
+            const equipTotal = qty * equip;
+            const lineTotal = matTotal + labTotal + equipTotal;
+
+            item.querySelector('.material-total').textContent = '$' + matTotal.toFixed(2);
+            item.querySelector('.labor-total').textContent = '$' + labTotal.toFixed(2);
+            item.querySelector('.equipment-total').textContent = '$' + equipTotal.toFixed(2);
+            item.querySelector('.line-total').textContent = '$' + lineTotal.toFixed(2);
+        }
+
+        function calculateEstimate() {
+            const items = document.querySelectorAll('.line-item');
+            let matSubtotal = 0, labSubtotal = 0, equipSubtotal = 0;
+
+            items.forEach(item => {
+                const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
+                const mat = parseFloat(item.querySelector('.item-material').value) || 0;
+                const lab = parseFloat(item.querySelector('.item-labor').value) || 0;
+                const sur = parseFloat(item.querySelector('.item-surcharge').value) || 0;
+                const equip = parseFloat(item.querySelector('.item-equipment').value) || 0;
+
+                matSubtotal += qty * mat;
+                labSubtotal += qty * (lab * (1 + sur / 100));
+                equipSubtotal += qty * equip;
+            });
+
+            const subtotal = matSubtotal + labSubtotal + equipSubtotal;
+            const contPct = parseFloat(document.getElementById('contingency').value) || 0;
+            const contAmt = subtotal * (contPct / 100);
+            
+            const withCont = subtotal + contAmt;
+            const ohPct = parseFloat(document.getElementById('overhead').value) || 0;
+            const ohAmt = withCont * (ohPct / 100);
+            
+            const withOH = withCont + ohAmt;
+            const profPct = parseFloat(document.getElementById('profit').value) || 0;
+            const profAmt = withOH * (profPct / 100);
+            
+            const withProf = withOH + profAmt;
+            const bondPct = parseFloat(document.getElementById('bond').value) || 0;
+            const bondAmt = withProf * (bondPct / 100);
+            
+            const total = withProf + bondAmt;
+
+            document.getElementById('materialsTotal').textContent = '$' + matSubtotal.toFixed(2);
+            document.getElementById('laborTotal').textContent = '$' + labSubtotal.toFixed(2);
+            document.getElementById('equipmentTotal').textContent = '$' + equipSubtotal.toFixed(2);
+            document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+            
+            document.getElementById('contingencyPercent').textContent = contPct.toFixed(1);
+            document.getElementById('contingencyAmount').textContent = '$' + contAmt.toFixed(2);
+            document.getElementById('overheadPercent').textContent = ohPct.toFixed(1);
+            document.getElementById('overheadAmount').textContent = '$' + ohAmt.toFixed(2);
+            document.getElementById('profitPercent').textContent = profPct.toFixed(1);
+            document.getElementById('profitAmount').textContent = '$' + profAmt.toFixed(2);
+            document.getElementById('bondPercent').textContent = bondPct.toFixed(1);
+            document.getElementById('bondAmount').textContent = '$' + bondAmt.toFixed(2);
+            document.getElementById('totalEstimate').textContent = '$' + total.toFixed(2);
+
+            document.getElementById('summarySection').classList.remove('hidden');
+            document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function saveCurrentProject() {
+            if (!currentUser) {
+                alert('Please sign in to save projects');
+                return;
+            }
+
+            const projectName = document.getElementById('projectName').value.trim();
+            if (!projectName) {
+                alert('Please enter a project name');
+                return;
+            }
+
+            const projectData = {
+                name: projectName,
+                type: document.getElementById('projectType').value,
+                contingency: parseFloat(document.getElementById('contingency').value) || 0,
+                overhead: parseFloat(document.getElementById('overhead').value) || 0,
+                profit: parseFloat(document.getElementById('profit').value) || 0,
+                bond: parseFloat(document.getElementById('bond').value) || 0,
+                lineItems: [],
+                userId: currentUser.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const items = document.querySelectorAll('.line-item');
+            items.forEach(item => {
+                projectData.lineItems.push({
+                    description: item.querySelector('.item-description').value,
+                    quantity: parseFloat(item.querySelector('.item-quantity').value) || 0,
+                    unit: item.querySelector('.item-unit').value,
+                    material: parseFloat(item.querySelector('.item-material').value) || 0,
+                    labor: parseFloat(item.querySelector('.item-labor').value) || 0,
+                    surcharge: parseFloat(item.querySelector('.item-surcharge').value) || 0,
+                    equipment: parseFloat(item.querySelector('.item-equipment').value) || 0,
+                    notes: item.querySelector('.item-notes').value
+                });
+            });
+
+            try {
+                if (currentProjectId) {
+                    await db.collection('projects').doc(currentProjectId).update(projectData);
+                    alert('Project updated successfully!');
+                } else {
+                    projectData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    const docRef = await db.collection('projects').add(projectData);
+                    currentProjectId = docRef.id;
+                    alert('Project saved successfully!');
+                }
+                loadUserProjects();
+            } catch (error) {
+                alert('Error saving project: ' + error.message);
+            }
+        }
+
+        async function loadUserProjects() {
+            if (!currentUser) return;
+
+            try {
+                const snapshot = await db.collection('projects')
+                    .where('userId', '==', currentUser.uid)
+                    .orderBy('updatedAt', 'desc')
+                    .get();
+
+                const container = document.getElementById('projectsList');
+                container.innerHTML = '';
+
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No saved projects yet. Create your first project!</p>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const project = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'project-item';
+                    div.onclick = () => loadProject(doc.id);
+                    
+                    const date = project.updatedAt ? project.updatedAt.toDate().toLocaleDateString() : 'N/A';
+                    
+                    div.innerHTML = `
+                        <div class="project-info-item">
+                            <div class="project-name">${project.name}</div>
+                            <div class="project-meta">${project.type || 'No type'} • ${project.lineItems?.length || 0} items • Updated: ${date}</div>
+                        </div>
+                        <button class="btn btn-danger" onclick="event.stopPropagation(); deleteProject('${doc.id}')">Delete</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        }
+
+        async function loadProject(projectId) {
+            try {
+                const doc = await db.collection('projects').doc(projectId).get();
+                if (!doc.exists) {
+                    alert('Project not found');
+                    return;
+                }
+
+                const project = doc.data();
+                currentProjectId = projectId;
+
+                document.getElementById('projectName').value = project.name;
+                document.getElementById('projectType').value = project.type || '';
+                document.getElementById('contingency').value = project.contingency || 10;
+                document.getElementById('overhead').value = project.overhead || 10;
+                document.getElementById('profit').value = project.profit || 10;
+                document.getElementById('bond').value = project.bond || 2;
+
+                const container = document.getElementById('lineItemsContainer');
+                container.innerHTML = '';
+                lineItemCounter = 0;
+
+                if (project.lineItems && project.lineItems.length > 0) {
+                    project.lineItems.forEach(itemData => {
+                        addLineItem();
+                        const item = container.lastElementChild;
+                        item.querySelector('.item-description').value = itemData.description || '';
+                        item.querySelector('.item-quantity').value = itemData.quantity || 0;
+                        item.querySelector('.item-unit').value = itemData.unit || 'ea';
+                        item.querySelector('.item-material').value = itemData.material || 0;
+                        item.querySelector('.item-labor').value = itemData.labor || 0;
+                        item.querySelector('.item-surcharge').value = itemData.surcharge || 0;
+                        item.querySelector('.item-equipment').value = itemData.equipment || 0;
+                        item.querySelector('.item-notes').value = itemData.notes || '';
+                        calculateLineTotal(item.querySelector('.item-quantity'));
+                    });
+                } else {
+                    addLineItem();
+                }
+
+                alert('Project loaded successfully!');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                alert('Error loading project: ' + error.message);
+            }
+        }
+
+        async function deleteProject(projectId) {
+            if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                await db.collection('projects').doc(projectId).delete();
+                if (currentProjectId === projectId) {
+                    currentProjectId = null;
+                    createNewProject();
+                }
+                loadUserProjects();
+                alert('Project deleted successfully');
+            } catch (error) {
+                alert('Error deleting project: ' + error.message);
+            }
+        }
+
+        function createNewProject() {
+            currentProjectId = null;
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectType').value = '';
+            document.getElementById('contingency').value = 10;
+            document.getElementById('overhead').value = 10;
+            document.getElementById('profit').value = 10;
+            document.getElementById('bond').value = 2;
+
+            const container = document.getElementById('lineItemsContainer');
+            container.innerHTML = '';
+            lineItemCounter = 0;
+            addLineItem();
+
+            document.getElementById('summarySection').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function exportToCSV() {
+            const projectName = document.getElementById('projectName').value || 'Untitled_Project';
+            const projectType = document.getElementById('projectType').value;
+            const contingency = document.getElementById('contingency').value;
+            const overhead = document.getElementById('overhead').value;
+            const profit = document.getElementById('profit').value;
+            const bond = document.getElementById('bond').value;
+
+            let csv = 'Construction Project Estimate\n\n';
+            csv += 'Project Information\n';
+            csv += `Project Name,${projectName}\n`;
+            csv += `Project Type,${projectType}\n`;
+            csv += `Contingency %,${contingency}\n`;
+            csv += `Overhead %,${overhead}\n`;
+            csv += `Profit %,${profit}\n`;
+            csv += `Bond %,${bond}\n\n`;
+
+            csv += 'Line Items\n';
+            csv += 'Line #,Description,Quantity,Unit,Material Cost,Labor Cost,Labor Surcharge %,Equipment Cost,Material Total,Labor Total,Equipment Total,Line Total,Notes\n';
+
+            const items = document.querySelectorAll('.line-item');
+            items.forEach((item, index) => {
+                const desc = item.querySelector('.item-description').value;
+                const qty = item.querySelector('.item-quantity').value || 0;
+                const unit = item.querySelector('.item-unit').value;
+                const mat = item.querySelector('.item-material').value || 0;
+                const lab = item.querySelector('.item-labor').value || 0;
+                const sur = item.querySelector('.item-surcharge').value || 0;
+                const equip = item.querySelector('.item-equipment').value || 0;
+                const notes = item.querySelector('.item-notes').value;
+
+                const matTotal = qty * mat;
+                const labTotal = qty * (lab * (1 + sur / 100));
+                const equipTotal = qty * equip;
+                const lineTotal = matTotal + labTotal + equipTotal;
+
+                csv += `${index + 1},"${desc}",${qty},${unit},${mat},${lab},${sur},${equip},${matTotal.toFixed(2)},${labTotal.toFixed(2)},${equipTotal.toFixed(2)},${lineTotal.toFixed(2)},"${notes}"\n`;
+            });
+
+            csv += '\nProject Summary\n';
+            csv += `Materials Subtotal,${document.getElementById('materialsTotal').textContent}\n`;
+            csv += `Labor Subtotal,${document.getElementById('laborTotal').textContent}\n`;
+            csv += `Equipment Subtotal,${document.getElementById('equipmentTotal').textContent}\n`;
+            csv += `Project Subtotal,${document.getElementById('subtotal').textContent}\n`;
+            csv += `Contingency,${document.getElementById('contingencyAmount').textContent}\n`;
+            csv += `Overhead,${document.getElementById('overheadAmount').textContent}\n`;
+            csv += `Profit,${document.getElementById('profitAmount').textContent}\n`;
+            csv += `Bond Cost,${document.getElementById('bondAmount').textContent}\n`;
+            csv += `Total Estimate,${document.getElementById('totalEstimate').textContent}\n`;
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${projectName.replace(/[^a-z0-9]/gi, '_')}_estimate.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function importFromCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                
+                let inProjectInfo = false;
+                let inLineItems = false;
+                
+                const container = document.getElementById('lineItemsContainer');
+                container.innerHTML = '';
+                lineItemCounter = 0;
+                
+                let currentItemIndex = 0;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    if (line === 'Project Information') {
+                        inProjectInfo = true;
+                        continue;
+                    }
+                    
+                    if (line === 'Line Items') {
+                        inLineItems = true;
+                        inProjectInfo = false;
+                        i++;
+                        continue;
+                    }
+                    
+                    if (line === 'Project Summary' || line === '') {
+                        inLineItems = false;
+                        continue;
+                    }
+                    
+                    if (inProjectInfo) {
+                        const parts = line.split(',');
+                        if (parts[0] === 'Project Name') document.getElementById('projectName').value = parts[1];
+                        if (parts[0] === 'Project Type') document.getElementById('projectType').value = parts[1];
+                        if (parts[0] === 'Contingency %') document.getElementById('contingency').value = parts[1];
+                        if (parts[0] === 'Overhead %') document.getElementById('overhead').value = parts[1];
+                        if (parts[0] === 'Profit %') document.getElementById('profit').value = parts[1];
+                        if (parts[0] === 'Bond %') document.getElementById('bond').value = parts[1];
+                    }
+                    
+                    if (inLineItems && line) {
+                        const parts = parseCSVLine(line);
+                        if (parts.length >= 13) {
+                            addLineItem();
+                            const item = container.lastElementChild;
+                            
+                            item.querySelector('.item-description').value = parts[1];
+                            item.querySelector('.item-quantity').value = parts[2];
+                            item.querySelector('.item-unit').value = parts[3];
+                            item.querySelector('.item-material').value = parts[4];
+                            item.querySelector('.item-labor').value = parts[5];
+                            item.querySelector('.item-surcharge').value = parts[6];
+                            item.querySelector('.item-equipment').value = parts[7];
+                            item.querySelector('.item-notes').value = parts[12];
+                            
+                            calculateLineTotal(item.querySelector('.item-quantity'));
+                            currentItemIndex++;
+                        }
+                    }
+                }
+                
+                if (lineItemCounter === 0) {
+                    addLineItem();
+                }
+                
+                alert('CSV imported successfully!');
+            };
+            
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            
+            return result;
+        }
+    </script>
