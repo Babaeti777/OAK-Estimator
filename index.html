@@ -89,6 +89,13 @@
             margin-bottom: 15px;
         }
 
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
         .grid-4 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -372,6 +379,33 @@
             overflow-y: auto;
         }
 
+        .project-folder {
+            background: #fff;
+            border-radius: 10px;
+            border: 2px solid #e0e7ff;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .folder-header {
+            padding: 12px 15px;
+            background: #eef2ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #4c51bf;
+        }
+
+        .folder-count {
+            font-size: 0.85em;
+            color: #4a5568;
+        }
+
+        .folder-projects {
+            padding: 10px;
+        }
+
         .project-item {
             background: #f8f9fa;
             padding: 15px;
@@ -482,7 +516,7 @@
             <div class="card">
                 <div class="card-header">📁 My Projects</div>
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="createNewProject()">+ New Project</button>
+                    <button class="btn btn-primary" onclick="createNewProject({ autoSave: true })">+ New Project</button>
                     <button class="btn btn-secondary" onclick="saveCurrentProject()">💾 Save Project</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Import CSV</button>
                     <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
@@ -496,10 +530,14 @@
             <!-- Project Information -->
             <div class="card">
                 <div class="card-header">📋 Project Information</div>
-                <div class="grid-2">
+                <div class="grid-3">
                     <div class="input-group">
                         <label class="input-label">Project Name *</label>
                         <input type="text" class="input-field" id="projectName" placeholder="Enter project name">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Project Folder</label>
+                        <input type="text" class="input-field" id="projectFolder" placeholder="e.g., My Projects">
                     </div>
                     <div class="input-group">
                         <label class="input-label">Project Type</label>
@@ -901,7 +939,6 @@
             document.getElementById('summarySection').classList.remove('hidden');
             document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
         }
-
         function saveCurrentProject() {
             const projectName = document.getElementById('projectName').value.trim();
             if (!projectName) {
@@ -912,6 +949,7 @@
             const projectData = {
                 id: currentProjectId || generateProjectId(),
                 name: projectName,
+                folder: normalizeProjectFolder(document.getElementById('projectFolder').value),
                 type: document.getElementById('projectType').value,
                 contingency: parseFloat(document.getElementById('contingency').value) || 0,
                 overhead: parseFloat(document.getElementById('overhead').value) || 0,
@@ -1049,10 +1087,13 @@
             }
         }
 
-        function createNewProject() {
+        function createNewProject(options = {}) {
+            const { autoSave = false, folderName } = options;
             currentProjectId = null;
             document.getElementById('projectName').value = '';
             document.getElementById('projectType').value = '';
+            const normalizedFolder = typeof folderName === 'string' ? normalizeProjectFolder(folderName) : DEFAULT_PROJECT_FOLDER;
+            document.getElementById('projectFolder').value = normalizedFolder;
             document.getElementById('contingency').value = 10;
             document.getElementById('overhead').value = 10;
             document.getElementById('profit').value = 10;
@@ -1065,11 +1106,20 @@
 
             document.getElementById('summarySection').classList.add('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (autoSave) {
+                const nameInput = document.getElementById('projectName');
+                if (!nameInput.value.trim()) {
+                    nameInput.value = getDefaultProjectName();
+                }
+                saveCurrentProject({ silent: true });
+            }
         }
 
         function exportToCSV() {
             const projectName = document.getElementById('projectName').value || 'Untitled_Project';
             const projectType = document.getElementById('projectType').value;
+            const projectFolder = normalizeProjectFolder(document.getElementById('projectFolder').value);
             const contingency = document.getElementById('contingency').value;
             const overhead = document.getElementById('overhead').value;
             const profit = document.getElementById('profit').value;
@@ -1078,6 +1128,7 @@
             let csv = 'Construction Project Estimate\n\n';
             csv += 'Project Information\n';
             csv += `Project Name,${projectName}\n`;
+            csv += `Project Folder,${projectFolder}\n`;
             csv += `Project Type,${projectType}\n`;
             csv += `Contingency %,${contingency}\n`;
             csv += `Overhead %,${overhead}\n`;
@@ -1166,6 +1217,7 @@
                     if (inProjectInfo) {
                         const parts = line.split(',');
                         if (parts[0] === 'Project Name') document.getElementById('projectName').value = parts[1];
+                        if (parts[0] === 'Project Folder') document.getElementById('projectFolder').value = normalizeProjectFolder(parts[1]);
                         if (parts[0] === 'Project Type') document.getElementById('projectType').value = parts[1];
                         if (parts[0] === 'Contingency %') document.getElementById('contingency').value = parts[1];
                         if (parts[0] === 'Overhead %') document.getElementById('overhead').value = parts[1];
