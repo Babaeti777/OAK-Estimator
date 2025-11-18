@@ -973,6 +973,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -986,6 +987,7 @@
 
         let firebaseApp = null;
         let auth = null;
+        let firestore = null;
         let currentUser = null;
 
         const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23667eea"/></svg>';
@@ -1160,6 +1162,7 @@
             try {
                 firebaseApp = firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
+                firestore = firebase.firestore ? firebase.firestore() : null;
                 auth.onAuthStateChanged((user) => {
                     hideLoadingScreen();
                     if (user) {
@@ -1186,8 +1189,17 @@
             }
         }
 
-        function bootstrapProjectWorkspace() {
-            projectsCache = loadProjectsFromStorage();
+        async function bootstrapProjectWorkspace() {
+            try {
+                if (currentUser && firestore) {
+                    projectsCache = await loadProjectsFromFirestore();
+                } else {
+                    projectsCache = loadProjectsFromStorage();
+                }
+            } catch (error) {
+                console.error('Unable to load cloud projects, falling back to local data:', error);
+                projectsCache = loadProjectsFromStorage();
+            }
             renderProjectsList();
             if (projectsCache.length) {
                 const latestProject = [...projectsCache].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0];
@@ -1283,13 +1295,60 @@
             }
         }
 
-        function persistProjects() {
+        async function loadProjectsFromFirestore() {
+            if (!currentUser || !firestore) {
+                return loadProjectsFromStorage();
+            }
+            const snapshot = await firestore
+                .collection('users')
+                .doc(currentUser.uid)
+                .collection('projects')
+                .get();
+            const projects = snapshot.docs.map(doc => {
+                const data = doc.data() || {};
+                return {
+                    ...data,
+                    id: data.id || doc.id
+                };
+            });
+            try {
+                localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projects));
+            } catch (error) {
+                console.warn('Unable to cache cloud projects locally:', error);
+            }
+            return projects;
+        }
+
+        function persistProjectsLocally() {
             try {
                 localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projectsCache));
             } catch (error) {
                 console.error('Unable to save projects:', error);
                 throw error;
             }
+        }
+
+        function getUserProjectsCollection() {
+            if (!currentUser || !firestore) {
+                return null;
+            }
+            return firestore.collection('users').doc(currentUser.uid).collection('projects');
+        }
+
+        async function saveProjectToFirestore(projectData) {
+            const collectionRef = getUserProjectsCollection();
+            if (!collectionRef) {
+                return;
+            }
+            await collectionRef.doc(projectData.id).set(projectData);
+        }
+
+        async function deleteProjectFromFirestore(projectId) {
+            const collectionRef = getUserProjectsCollection();
+            if (!collectionRef) {
+                return;
+            }
+            await collectionRef.doc(projectId).delete();
         }
 
         function generateProjectId() {
@@ -1512,7 +1571,7 @@
             }
         }
 
-        function saveCurrentProject(options = {}) {
+        async function saveCurrentProject(options = {}) {
             const { silent = false } = options;
             const projectName = document.getElementById('projectName').value.trim();
             if (!projectName) {
@@ -1557,18 +1616,34 @@
             currentProjectId = projectData.id;
             const successMessage = existingIndex >= 0 ? 'Project updated successfully!' : 'Project saved locally!';
 
+            let cloudSynced = true;
+
             try {
-                persistProjects();
+                persistProjectsLocally();
                 renderProjectsList();
-                if (!silent) {
-                    alert(successMessage);
-                }
-                return projectData;
             } catch (error) {
                 console.error('Unable to save project locally:', error);
                 alert('Unable to save project locally. Please check your browser storage settings.');
                 return null;
             }
+
+            if (currentUser && firestore) {
+                try {
+                    await saveProjectToFirestore(projectData);
+                } catch (error) {
+                    cloudSynced = false;
+                    console.error('Unable to sync project to cloud:', error);
+                }
+            }
+
+            if (!silent) {
+                const message = cloudSynced
+                    ? successMessage
+                    : successMessage + ' However, cloud sync is unavailable. The project is saved locally only.';
+                alert(message);
+            }
+
+            return projectData;
         }
 
         function renderProjectsList() {
@@ -1675,7 +1750,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function deleteProject(projectId) {
+        async function deleteProject(projectId) {
             if (!confirm('Delete this project? This cannot be undone.')) {
                 return;
             }
@@ -1686,14 +1761,35 @@
                 createNewProject({ autoSave: true });
             }
 
+            let cloudSynced = true;
+
             try {
-                persistProjects();
+                persistProjectsLocally();
                 renderProjectsList();
-                alert('Project deleted successfully.');
             } catch (error) {
                 console.error('Unable to update local storage:', error);
                 alert('Unable to update local storage. Please check your browser settings.');
+                return;
             }
+
+            if (currentUser && firestore) {
+                try {
+                    await deleteProjectFromFirestore(projectId);
+                } catch (error) {
+                    cloudSynced = false;
+                    console.error('Unable to delete cloud project:', error);
+                }
+            }
+
+            const message = cloudSynced
+                ? 'Project deleted successfully.'
+                : 'Project deleted locally, but cloud sync failed. Please check your connection and try again.';
+            alert(message);
+        }
+
+        function persistProjects() {
+            console.warn('persistProjects() is deprecated. Use persistProjectsLocally() instead.');
+            persistProjectsLocally();
         }
 
         function createNewProject(options = {}) {
