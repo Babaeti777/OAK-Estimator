@@ -832,11 +832,6 @@
                         <button class="btn btn-primary btn-full" onclick="addLineItem()">+ Add Line Item</button>
                     </div>
 
-                    <!-- Calculate Button -->
-                    <button class="btn btn-success btn-full" onclick="calculateEstimate()" style="font-size: 1.2em; padding: 18px;">
-                        🧮 Calculate Estimate
-                    </button>
-
                     <!-- Summary -->
                     <div id="summarySection" class="hidden">
                         <div class="summary-card">
@@ -1343,6 +1338,15 @@
             }
         }
 
+        function persistProjectsLocally() {
+            try {
+                localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projectsCache));
+            } catch (error) {
+                console.error('Unable to save projects locally:', error);
+                throw error;
+            }
+        }
+
         async function fetchProjectsForCurrentUser() {
             const localProjects = loadProjectsFromStorage();
             if (!currentUser || !firestore) {
@@ -1356,7 +1360,7 @@
                     const data = snapshot.data();
                     if (data && Array.isArray(data.projects)) {
                         projectsCache = data.projects;
-                        persistProjects({ skipCloud: true });
+                        persistProjectsLocally();
                         return data.projects;
                     }
                 } else if (localProjects.length) {
@@ -1367,20 +1371,6 @@
             }
 
             return localProjects;
-        }
-
-        function persistProjects(options = {}) {
-            const { skipCloud = false } = options;
-            try {
-                localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projectsCache));
-            } catch (error) {
-                console.error('Unable to save projects:', error);
-                throw error;
-            }
-
-            if (!skipCloud) {
-                syncProjectsToCloud(projectsCache);
-            }
         }
 
         async function syncProjectsToCloud(projects) {
@@ -1396,29 +1386,6 @@
             } catch (error) {
                 console.error('Unable to sync projects to cloud:', error);
             }
-        }
-
-        function getUserProjectsCollection() {
-            if (!currentUser || !firestore) {
-                return null;
-            }
-            return firestore.collection('users').doc(currentUser.uid).collection('projects');
-        }
-
-        async function saveProjectToFirestore(projectData) {
-            const collectionRef = getUserProjectsCollection();
-            if (!collectionRef) {
-                return;
-            }
-            await collectionRef.doc(projectData.id).set(projectData);
-        }
-
-        async function deleteProjectFromFirestore(projectId) {
-            const collectionRef = getUserProjectsCollection();
-            if (!collectionRef) {
-                return;
-            }
-            await collectionRef.doc(projectId).delete();
         }
 
         function generateProjectId() {
@@ -1529,6 +1496,7 @@
                 </div>
             `;
             container.appendChild(itemDiv);
+            calculateEstimate({ auto: true });
         }
 
         function removeLineItem(btn) {
@@ -1699,7 +1667,7 @@
 
             if (currentUser && firestore) {
                 try {
-                    await saveProjectToFirestore(projectData);
+                    await syncProjectsToCloud(projectsCache);
                 } catch (error) {
                     cloudSynced = false;
                     console.error('Unable to sync project to cloud:', error);
@@ -1849,7 +1817,7 @@
 
             if (currentUser && firestore) {
                 try {
-                    await deleteProjectFromFirestore(projectId);
+                    await syncProjectsToCloud(projectsCache);
                 } catch (error) {
                     cloudSynced = false;
                     console.error('Unable to delete cloud project:', error);
@@ -1860,11 +1828,6 @@
                 ? 'Project deleted successfully.'
                 : 'Project deleted locally, but cloud sync failed. Please check your connection and try again.';
             alert(message);
-        }
-
-        function persistProjects() {
-            console.warn('persistProjects() is deprecated. Use persistProjectsLocally() instead.');
-            persistProjectsLocally();
         }
 
         function createNewProject(options = {}) {
