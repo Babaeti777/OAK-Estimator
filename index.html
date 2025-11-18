@@ -1229,7 +1229,7 @@
                     projectToLoad = [...projectsCache].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0]?.id || projectsCache[0].id;
                 }
 
-                if (projectToLoad && projectToLoad !== currentProjectId) {
+                if (projectToLoad) {
                     loadProject(projectToLoad, { silent: true, skipScroll: true });
                 }
 
@@ -1326,25 +1326,28 @@
         }
 
         function loadProjectsFromStorage() {
+            const emptyResult = { projects: [], isFallback: false };
             try {
                 const storageKey = getStorageKeyForCurrentUser();
                 const saved = localStorage.getItem(storageKey);
                 if (saved) {
-                    return JSON.parse(saved);
+                    return { projects: JSON.parse(saved), isFallback: false };
                 }
                 if (storageKey !== LOCAL_STORAGE_KEY_PREFIX) {
                     const fallback = localStorage.getItem(LOCAL_STORAGE_KEY_PREFIX);
-                    return fallback ? JSON.parse(fallback) : [];
+                    if (fallback) {
+                        return { projects: JSON.parse(fallback), isFallback: true };
+                    }
                 }
-                return [];
+                return emptyResult;
             } catch (error) {
                 console.error('Unable to parse saved projects:', error);
-                return [];
+                return emptyResult;
             }
         }
 
         async function fetchProjectsForCurrentUser() {
-            const localProjects = loadProjectsFromStorage();
+            const { projects: localProjects, isFallback } = loadProjectsFromStorage();
             if (!currentUser || !firestore) {
                 return localProjects;
             }
@@ -1360,7 +1363,18 @@
                         return data.projects;
                     }
                 } else if (localProjects.length) {
-                    await syncProjectsToCloud(localProjects);
+                    if (isFallback) {
+                        const shouldImportFallbackProjects = confirm(
+                            'Projects saved on this device were created while signed out.\n' +
+                            'Do you want to import them into your account? Only confirm if they belong to you.'
+                        );
+                        if (shouldImportFallbackProjects) {
+                            await syncProjectsToCloud(localProjects);
+                            persistProjects({ skipCloud: true });
+                        }
+                    } else {
+                        await syncProjectsToCloud(localProjects);
+                    }
                 }
             } catch (error) {
                 console.error('Unable to load projects from cloud:', error);
