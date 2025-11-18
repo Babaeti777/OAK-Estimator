@@ -1296,21 +1296,41 @@
         }
 
         async function loadProjectsFromFirestore() {
+            const localProjects = loadProjectsFromStorage();
             if (!currentUser || !firestore) {
-                return loadProjectsFromStorage();
+                return localProjects;
             }
             const snapshot = await firestore
                 .collection('users')
                 .doc(currentUser.uid)
                 .collection('projects')
                 .get();
-            const projects = snapshot.docs.map(doc => {
+            const cloudProjects = snapshot.docs.map(doc => {
                 const data = doc.data() || {};
                 return {
                     ...data,
                     id: data.id || doc.id
                 };
             });
+            const mergedProjectsMap = new Map();
+            const getTimestamp = (project) => new Date(project?.updatedAt || project?.createdAt || 0).getTime() || 0;
+            localProjects.forEach(project => {
+                if (project && project.id) {
+                    mergedProjectsMap.set(project.id, project);
+                }
+            });
+            cloudProjects.forEach(project => {
+                if (!project || !project.id) {
+                    return;
+                }
+                const existing = mergedProjectsMap.get(project.id);
+                if (!existing || getTimestamp(project) >= getTimestamp(existing)) {
+                    mergedProjectsMap.set(project.id, project);
+                }
+            });
+            const projects = Array.from(mergedProjectsMap.values()).sort(
+                (a, b) => getTimestamp(b) - getTimestamp(a)
+            );
             try {
                 localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projects));
             } catch (error) {
