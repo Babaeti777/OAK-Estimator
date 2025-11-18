@@ -1231,12 +1231,34 @@
                 alert('Authentication is currently unavailable. Please try again shortly.');
                 return;
             }
+
             const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+
+            const authButton = document.querySelector('#authScreen .btn-primary');
+            const originalButtonContent = authButton ? authButton.innerHTML : '';
+            if (authButton) {
+                authButton.disabled = true;
+                authButton.innerHTML = 'Connecting to Google…';
+            }
+
             try {
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projectsCache));
+                const storageKey = getStorageKeyForCurrentUser();
+                localStorage.setItem(storageKey, JSON.stringify(projectsCache));
+
+                if (auth.setPersistence) {
+                    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                }
+
+                await auth.signInWithPopup(provider);
             } catch (error) {
-                console.error('Unable to save projects:', error);
-                throw error;
+                console.error('Google sign-in failed:', error);
+                alert('Unable to complete Google sign-in. Please ensure pop-ups are allowed and try again.');
+            } finally {
+                if (authButton) {
+                    authButton.disabled = false;
+                    authButton.innerHTML = originalButtonContent || '🔐 Sign in with Google';
+                }
             }
         }
 
