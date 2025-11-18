@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Construction Project Estimator</title>
-    <style>
+        <style>
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +13,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: radial-gradient(circle at top, #1f2937 0%, #0f172a 45%, #020617 100%);
+            color: #e2e8f0;
             min-height: 100vh;
         }
 
@@ -22,10 +23,11 @@
             min-height: 100vh;
         }
 
-        /* Header with Auth */
+        /* Header */
         .app-header {
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 2px 30px rgba(0, 0, 0, 0.6);
+            border-bottom: 1px solid #1f2937;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -50,14 +52,14 @@
 
         .logo-section h1 {
             font-size: 1.5em;
-            color: #fff;
+            color: #f8fafc;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .header-tagline {
-            color: #4a5568;
+            color: #94a3b8;
             font-size: 1em;
             margin: 0;
         }
@@ -78,7 +80,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 2px solid #667eea;
+            border: 2px solid #38bdf8;
             object-fit: cover;
         }
 
@@ -90,26 +92,92 @@
 
         .user-name {
             font-weight: 600;
-            color: #2c3e50;
+            color: #f8fafc;
         }
 
         .user-email {
             font-size: 0.85em;
-            color: #6b7280;
+            color: #94a3b8;
         }
 
-        /* Main Content Area */
+        /* Layout */
         .main-content {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Card System */
+        .workspace-layout {
+            display: grid;
+            grid-template-columns: minmax(280px, 340px) 1fr;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .workspace-layout.sidebar-collapsed {
+            grid-template-columns: 1fr;
+        }
+
+        .workspace-layout.sidebar-collapsed #projectsSidebar {
+            display: none;
+        }
+
+        .sidebar-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #f8fafc;
+        }
+
+        .collapse-toggle {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #cbd5f5;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .collapse-toggle:hover {
+            background: rgba(59, 130, 246, 0.15);
+            color: #f8fafc;
+        }
+
+        .sidebar-floating-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 12px 16px;
+            border-radius: 999px;
+            border: none;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.35);
+            cursor: pointer;
+            z-index: 200;
+        }
+
+        .content-area .card,
         .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 16px;
+            border: 1px solid #1f2937;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
             padding: 20px;
             margin-bottom: 20px;
         }
@@ -117,35 +185,50 @@
         .card-header {
             font-size: 1.3em;
             font-weight: 700;
-            color: #2c3e50;
+            color: #f8fafc;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #2563eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
         }
 
-        /* Responsive Grid System */
-        .grid-2 {
+        .collapsible .collapsible-content {
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            overflow: hidden;
+            max-height: 1000px;
+        }
+
+        .collapsible.collapsed .collapsible-content {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+        }
+
+        /* Grid */
+        .grid-2,
+        .grid-3,
+        .grid-4 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 15px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         }
 
         .grid-3 {
-            display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
         }
 
         .grid-4 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         }
 
-        /* Input Styling */
+        /* Inputs */
         .input-group {
             margin-bottom: 0;
         }
@@ -153,39 +236,48 @@
         .input-label {
             display: block;
             margin-bottom: 6px;
-            color: #555;
+            color: #a5b4fc;
             font-weight: 600;
             font-size: 0.9em;
         }
 
-        .input-field, select {
+        .input-field,
+        select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            border: 1px solid #334155;
+            border-radius: 10px;
             font-size: 1em;
-            transition: all 0.3s;
+            transition: border 0.3s, box-shadow 0.3s;
+            background: #0f172a;
+            color: #f8fafc;
         }
 
-        .input-field:focus, select:focus {
+        .input-field::placeholder,
+        select option {
+            color: #94a3b8;
+        }
+
+        .input-field:focus,
+        select:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
 
-        /* Line Items */
+        /* Line items */
         .line-item {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
+            background: rgba(2, 6, 23, 0.65);
+            border: 1px solid #1f2937;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
-            transition: all 0.3s;
+            transition: border 0.3s, box-shadow 0.3s;
         }
 
         .line-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            border-color: #38bdf8;
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.15);
         }
 
         .line-item-header {
@@ -194,21 +286,21 @@
             align-items: center;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #dee2e6;
+            border-bottom: 1px solid #1f2937;
         }
 
         .line-number {
             font-weight: 700;
-            color: #667eea;
+            color: #38bdf8;
             font-size: 1.1em;
         }
 
         .item-totals-box {
-            background: white;
+            background: rgba(15, 23, 42, 0.8);
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-top: 15px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #38bdf8;
         }
 
         .total-line {
@@ -216,25 +308,26 @@
             justify-content: space-between;
             padding: 8px 0;
             font-weight: 600;
+            color: #f8fafc;
         }
 
         .total-line.grand {
-            border-top: 2px solid #dee2e6;
+            border-top: 1px solid #334155;
             margin-top: 10px;
             padding-top: 10px;
             font-size: 1.15em;
-            color: #667eea;
+            color: #38bdf8;
         }
 
         /* Buttons */
         .btn {
             padding: 12px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1em;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -243,44 +336,44 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
         }
 
         .btn-primary {
-            background: #667eea;
+            background: #2563eb;
             color: white;
         }
 
         .btn-primary:hover {
-            background: #5568d3;
+            background: #1d4ed8;
         }
 
         .btn-success {
-            background: #27ae60;
+            background: #059669;
             color: white;
         }
 
         .btn-success:hover {
-            background: #229954;
+            background: #047857;
         }
 
         .btn-danger {
-            background: #e74c3c;
+            background: #dc2626;
             color: white;
             padding: 8px 16px;
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background: #b91c1c;
         }
 
         .btn-secondary {
-            background: #3498db;
+            background: #0ea5e9;
             color: white;
         }
 
         .btn-secondary:hover {
-            background: #2980b9;
+            background: #0284c7;
         }
 
         .btn-full {
@@ -296,13 +389,14 @@
             margin: 20px 0;
         }
 
-        /* Summary Card */
+        /* Summary */
         .summary-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #312e81 50%, #1d4ed8 100%);
             color: white;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 30px;
             margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.5);
         }
 
         .summary-row {
@@ -325,9 +419,48 @@
             margin-top: 10px;
         }
 
-        /* Calculator Styles */
-        .calculator-card {
-            margin-top: 20px;
+        /* Calculator */
+        .floating-calculator-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: #22d3ee;
+            color: #0f172a;
+            font-size: 1.4em;
+            cursor: pointer;
+            box-shadow: 0 18px 35px rgba(34, 211, 238, 0.35);
+            z-index: 200;
+        }
+
+        .floating-calculator {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: min(420px, 90vw);
+            max-height: 80vh;
+            background: rgba(2, 6, 23, 0.95);
+            border-radius: 20px;
+            border: 1px solid #1f2937;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            z-index: 250;
+            display: none;
+        }
+
+        .floating-calculator.active {
+            display: block;
+        }
+
+        .floating-calculator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #f8fafc;
         }
 
         .calculator-tabs {
@@ -341,17 +474,18 @@
             flex: 1;
             padding: 10px 15px;
             border-radius: 8px;
-            background: #eef2ff;
-            border: none;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid transparent;
             font-weight: 600;
-            color: #4c51bf;
+            color: #a5b4fc;
             cursor: pointer;
-            transition: background 0.3s, color 0.3s;
+            transition: background 0.3s, color 0.3s, border 0.3s;
         }
 
         .calculator-tab.active {
-            background: #4c51bf;
+            background: #4c1d95;
             color: #fff;
+            border-color: #7c3aed;
         }
 
         .calculator-panel {
@@ -365,12 +499,13 @@
         .calc-display {
             width: 100%;
             padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            border: 1px solid #1f2937;
             margin-bottom: 12px;
             font-size: 1.4em;
             text-align: right;
-            background: #f9fafb;
+            background: #0f172a;
+            color: #f8fafc;
         }
 
         .calculator-grid {
@@ -385,63 +520,65 @@
 
         .calc-btn {
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 10px;
             border: none;
             font-size: 1.1em;
             font-weight: 600;
             cursor: pointer;
-            background: #f4f4f8;
-            color: #2c3e50;
+            background: rgba(15, 23, 42, 0.9);
+            color: #f8fafc;
+            border: 1px solid #1f2937;
             transition: background 0.3s, transform 0.2s;
         }
 
         .calc-btn.primary {
-            background: #4c51bf;
-            color: #fff;
+            background: #3730a3;
+            border-color: #4c1d95;
         }
 
         .calc-btn.accent {
-            background: #27ae60;
-            color: #fff;
+            background: #059669;
+            border-color: #047857;
         }
 
         .calc-btn.danger {
-            background: #e74c3c;
-            color: #fff;
+            background: #b91c1c;
+            border-color: #7f1d1d;
         }
 
         .calc-btn:hover {
-            background: #e0e7ff;
+            background: rgba(59, 130, 246, 0.3);
             transform: translateY(-1px);
         }
 
-        /* Projects List */
+        /* Projects */
         .projects-list {
-            max-height: 400px;
+            max-height: 60vh;
             overflow-y: auto;
+            padding-right: 5px;
         }
 
         .project-folder {
-            background: #fff;
+            background: rgba(15, 23, 42, 0.9);
             border-radius: 10px;
-            border: 2px solid #e0e7ff;
+            border: 1px solid #1f2937;
             margin-bottom: 15px;
             overflow: hidden;
         }
 
         .folder-header {
             padding: 12px 15px;
-            background: #eef2ff;
+            background: rgba(30, 41, 59, 0.9);
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-weight: 600;
-            color: #4c51bf;
+            color: #cbd5f5;
         }
 
         .folder-count {
             font-size: 0.85em;
-            color: #4a5568;
+            color: #94a3b8;
         }
 
         .folder-projects {
@@ -449,40 +586,36 @@
         }
 
         .project-item {
-            background: #f8f9fa;
+            background: rgba(15, 23, 42, 0.6);
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
             transition: all 0.3s;
-            border: 2px solid transparent;
+            border: 1px solid transparent;
         }
 
         .project-item:hover {
-            border-color: #667eea;
-            background: #e9ecef;
-        }
-
-        .project-info-item {
-            flex: 1;
+            border-color: #38bdf8;
+            background: rgba(15, 23, 42, 0.9);
         }
 
         .project-name {
             font-weight: 700;
-            color: #2c3e50;
-            font-size: 1.1em;
+            color: #f8fafc;
+            font-size: 1.05em;
         }
 
         .project-meta {
             font-size: 0.9em;
-            color: #6c757d;
+            color: #94a3b8;
             margin-top: 5px;
         }
 
-        /* Loading & Auth States */
+        /* Loading & Auth */
         .loading-screen,
         .auth-screen {
             display: flex;
@@ -492,30 +625,32 @@
             min-height: 100vh;
             padding: 20px;
             text-align: center;
+            color: #f8fafc;
         }
 
         .auth-card {
-            background: white;
+            background: rgba(15, 23, 42, 0.95);
             padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
             max-width: 400px;
             width: 100%;
+            border: 1px solid #1f2937;
         }
 
         .auth-card h2 {
-            color: #2c3e50;
+            color: #f8fafc;
             margin-bottom: 20px;
         }
 
         .auth-card p {
-            color: #6c757d;
+            color: #94a3b8;
             margin: 15px 0;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #38bdf8;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -536,7 +671,17 @@
             display: none;
         }
 
-        /* Mobile Optimizations */
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .workspace-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .workspace-layout.sidebar-collapsed {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -560,32 +705,10 @@
                 padding: 15px;
             }
 
-            .line-item {
-                padding: 15px;
-            }
-
-            .btn-group {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .summary-card {
-                padding: 20px;
-            }
-
-            .summary-row {
-                flex-direction: column;
-                gap: 5px;
-            }
-        }
-
-        /* Tablet Optimizations */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .main-content {
-                padding: 15px;
+            .floating-calculator {
+                right: 10px;
+                left: 10px;
+                width: auto;
             }
         }
     </style>
@@ -634,205 +757,218 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- My Projects Section -->
-            <div class="card">
-                <div class="card-header">📁 My Projects</div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="createNewProject({ autoSave: true })">+ New Project</button>
-                    <button class="btn btn-secondary" onclick="saveCurrentProject()">💾 Save Project</button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Import CSV</button>
-                    <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
-                </div>
-                <div class="projects-list" id="projectsList">
-                    <p style="text-align: center; color: #6c757d; padding: 20px;">No saved projects yet. Create your first project!</p>
-                </div>
-                <input type="file" id="fileInput" accept=".csv" onchange="importFromCSV(event)">
-            </div>
+            <div class="workspace-layout" id="workspaceLayout">
+                <aside class="sidebar-card" id="projectsSidebar">
+                    <div class="sidebar-header">
+                        <span>📁 My Projects</span>
+                        <button class="collapse-toggle" onclick="toggleProjectsSidebar(true)">Hide</button>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="createNewProject({ autoSave: true })">+ New Project</button>
+                        <button class="btn btn-secondary" onclick="saveCurrentProject()">💾 Save Project</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Import CSV</button>
+                        <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
+                    </div>
+                    <div class="projects-list" id="projectsList">
+                        <p style="text-align: center; color: #94a3b8; padding: 20px;">No saved projects yet. Create your first project!</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".csv" onchange="importFromCSV(event)">
+                </aside>
 
-            <!-- Project Information -->
-            <div class="card">
-                <div class="card-header">📋 Project Information</div>
-                <div class="grid-3">
-                    <div class="input-group">
-                        <label class="input-label">Project Name *</label>
-                        <input type="text" class="input-field" id="projectName" placeholder="Enter project name">
+                <section class="content-area">
+                    <!-- Project Information -->
+                    <div class="card collapsible" id="projectInfoCard">
+                        <div class="card-header">
+                            <span>📋 Project Information</span>
+                            <button class="collapse-toggle" id="projectInfoToggle" onclick="toggleProjectInfo()" aria-expanded="true">Collapse</button>
+                        </div>
+                        <div class="collapsible-content" id="projectInfoContent">
+                            <div class="grid-3">
+                                <div class="input-group">
+                                    <label class="input-label">Project Name *</label>
+                                    <input type="text" class="input-field" id="projectName" placeholder="Enter project name">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Project Folder</label>
+                                    <input type="text" class="input-field" id="projectFolder" placeholder="e.g., My Projects">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Project Type</label>
+                                    <select class="input-field" id="projectType">
+                                        <option value="">Select type</option>
+                                        <option value="residential">Residential</option>
+                                        <option value="commercial">Commercial</option>
+                                        <option value="industrial">Industrial</option>
+                                        <option value="renovation">Renovation</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid-4">
+                                <div class="input-group">
+                                    <label class="input-label">Contingency (%)</label>
+                                    <input type="number" class="input-field" id="contingency" value="10" min="0" max="100" step="0.1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Overhead (%)</label>
+                                    <input type="number" class="input-field" id="overhead" value="10" min="0" max="100" step="0.1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Profit (%)</label>
+                                    <input type="number" class="input-field" id="profit" value="10" min="0" max="100" step="0.1">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Bond Cost (%)</label>
+                                    <input type="number" class="input-field" id="bond" value="2" min="0" max="100" step="0.1">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label class="input-label">Project Folder</label>
-                        <input type="text" class="input-field" id="projectFolder" placeholder="e.g., My Projects">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Project Type</label>
-                        <select class="input-field" id="projectType">
-                            <option value="">Select type</option>
-                            <option value="residential">Residential</option>
-                            <option value="commercial">Commercial</option>
-                            <option value="industrial">Industrial</option>
-                            <option value="renovation">Renovation</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid-4">
-                    <div class="input-group">
-                        <label class="input-label">Contingency (%)</label>
-                        <input type="number" class="input-field" id="contingency" value="10" min="0" max="100" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Overhead (%)</label>
-                        <input type="number" class="input-field" id="overhead" value="10" min="0" max="100" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Profit (%)</label>
-                        <input type="number" class="input-field" id="profit" value="10" min="0" max="100" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Bond Cost (%)</label>
-                        <input type="number" class="input-field" id="bond" value="2" min="0" max="100" step="0.1">
-                    </div>
-                </div>
-            </div>
 
-            <!-- Line Items -->
-            <div class="card">
-                <div class="card-header">📝 Line Items</div>
-                <div id="lineItemsContainer"></div>
-                <button class="btn btn-primary btn-full" onclick="addLineItem()">+ Add Line Item</button>
-            </div>
-
-            <!-- Calculate Button -->
-            <button class="btn btn-success btn-full" onclick="calculateEstimate()" style="font-size: 1.2em; padding: 18px;">
-                🧮 Calculate Estimate
-            </button>
-
-            <!-- Summary -->
-            <div id="summarySection" class="hidden">
-                <div class="summary-card">
-                    <h2 style="margin-bottom: 20px;">💰 Project Summary</h2>
-                    <div class="summary-row">
-                        <span>Materials Subtotal:</span>
-                        <span id="materialsTotal">$0.00</span>
+                    <!-- Line Items -->
+                    <div class="card">
+                        <div class="card-header">📝 Line Items</div>
+                        <div id="lineItemsContainer"></div>
+                        <button class="btn btn-primary btn-full" onclick="addLineItem()">+ Add Line Item</button>
                     </div>
-                    <div class="summary-row">
-                        <span>Labor Subtotal:</span>
-                        <span id="laborTotal">$0.00</span>
+
+                    <!-- Calculate Button -->
+                    <button class="btn btn-success btn-full" onclick="calculateEstimate()" style="font-size: 1.2em; padding: 18px;">
+                        🧮 Calculate Estimate
+                    </button>
+
+                    <!-- Summary -->
+                    <div id="summarySection" class="hidden">
+                        <div class="summary-card">
+                            <h2 style="margin-bottom: 20px;">💰 Project Summary</h2>
+                            <div class="summary-row">
+                                <span>Materials Subtotal:</span>
+                                <span id="materialsTotal">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Labor Subtotal:</span>
+                                <span id="laborTotal">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Equipment Subtotal:</span>
+                                <span id="equipmentTotal">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Project Subtotal:</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Contingency (<span id="contingencyPercent">10</span>%):</span>
+                                <span id="contingencyAmount">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Overhead (<span id="overheadPercent">10</span>%):</span>
+                                <span id="overheadAmount">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Profit (<span id="profitPercent">10</span>%):</span>
+                                <span id="profitAmount">$0.00</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Bond Cost (<span id="bondPercent">2</span>%):</span>
+                                <span id="bondAmount">$0.00</span>
+                            </div>
+                            <div class="summary-row summary-total">
+                                <span>Total Estimate:</span>
+                                <span id="totalEstimate">$0.00</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="summary-row">
-                        <span>Equipment Subtotal:</span>
-                        <span id="equipmentTotal">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Project Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Contingency (<span id="contingencyPercent">10</span>%):</span>
-                        <span id="contingencyAmount">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Overhead (<span id="overheadPercent">10</span>%):</span>
-                        <span id="overheadAmount">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Profit (<span id="profitPercent">10</span>%):</span>
-                        <span id="profitAmount">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Bond Cost (<span id="bondPercent">2</span>%):</span>
-                        <span id="bondAmount">$0.00</span>
-                    </div>
-                    <div class="summary-row summary-total">
-                        <span>Total Estimate:</span>
-                        <span id="totalEstimate">$0.00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Calculators -->
-            <div class="card calculator-card">
-                <div class="card-header">🧮 Project Calculators</div>
-                <div class="calculator-tabs">
-                    <button class="calculator-tab active" data-panel="basicCalculator" onclick="switchCalculatorTab('basicCalculator')">Basic Calculator</button>
-                    <button class="calculator-tab" data-panel="engineeringCalculator" onclick="switchCalculatorTab('engineeringCalculator')">Engineering Calculator</button>
-                </div>
-                <p style="margin-bottom: 20px; color: #6c757d; text-align: center;">Keep quick math within reach. The engineering calculator treats trigonometric inputs in degrees.</p>
-
-                <div id="basicCalculator" class="calculator-panel active">
-                    <input type="text" id="basicCalcDisplay" class="calc-display" value="0" readonly>
-                    <div class="calculator-grid">
-                        <button class="calc-btn danger" onclick="resetBasicCalculator()">C</button>
-                        <button class="calc-btn" onclick="toggleBasicSign()">±</button>
-                        <button class="calc-btn" onclick="handleBasicPercent()">%</button>
-                        <button class="calc-btn primary" onclick="handleBasicOperator('/')">÷</button>
-
-                        <button class="calc-btn" onclick="inputBasicDigit('7')">7</button>
-                        <button class="calc-btn" onclick="inputBasicDigit('8')">8</button>
-                        <button class="calc-btn" onclick="inputBasicDigit('9')">9</button>
-                        <button class="calc-btn primary" onclick="handleBasicOperator('*')">×</button>
-
-                        <button class="calc-btn" onclick="inputBasicDigit('4')">4</button>
-                        <button class="calc-btn" onclick="inputBasicDigit('5')">5</button>
-                        <button class="calc-btn" onclick="inputBasicDigit('6')">6</button>
-                        <button class="calc-btn primary" onclick="handleBasicOperator('-')">−</button>
-
-                        <button class="calc-btn" onclick="inputBasicDigit('1')">1</button>
-                        <button class="calc-btn" onclick="inputBasicDigit('2')">2</button>
-                        <button class="calc-btn" onclick="inputBasicDigit('3')">3</button>
-                        <button class="calc-btn primary" onclick="handleBasicOperator('+')">+</button>
-
-                        <button class="calc-btn" style="grid-column: span 2;" onclick="inputBasicDigit('0')">0</button>
-                        <button class="calc-btn" onclick="inputBasicDecimal()">.</button>
-                        <button class="calc-btn accent" onclick="handleBasicEquals()">=</button>
-                    </div>
-                </div>
-
-                <div id="engineeringCalculator" class="calculator-panel">
-                    <input type="text" id="engineeringCalcDisplay" class="calc-display" placeholder="Enter value or expression">
-                    <div class="calculator-grid engineering">
-                        <button class="calc-btn danger" onclick="clearEngineeringDisplay()">C</button>
-                        <button class="calc-btn" onclick="deleteEngineeringChar()">⌫</button>
-                        <button class="calc-btn" onclick="toggleEngineeringSign()">±</button>
-                        <button class="calc-btn" onclick="insertEngineeringConstant('pi')">π</button>
-                        <button class="calc-btn" onclick="insertEngineeringConstant('e')">e</button>
-
-                        <button class="calc-btn" onclick="applyEngineeringFunction('sin')">sin</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('cos')">cos</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('tan')">tan</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('log')">log</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('ln')">ln</button>
-
-                        <button class="calc-btn" onclick="applyEngineeringFunction('sqrt')">√</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('square')">x²</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('^')">xʸ</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('reciprocal')">1/x</button>
-                        <button class="calc-btn" onclick="applyEngineeringFunction('abs')">|x|</button>
-
-                        <button class="calc-btn" onclick="appendEngineeringValue('7')">7</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('8')">8</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('9')">9</button>
-                        <button class="calc-btn primary" onclick="appendEngineeringValue('/')">÷</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('(')">(</button>
-
-                        <button class="calc-btn" onclick="appendEngineeringValue('4')">4</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('5')">5</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('6')">6</button>
-                        <button class="calc-btn primary" onclick="appendEngineeringValue('*')">×</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue(')')">)</button>
-
-                        <button class="calc-btn" onclick="appendEngineeringValue('1')">1</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('2')">2</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('3')">3</button>
-                        <button class="calc-btn primary" onclick="appendEngineeringValue('-')">−</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('^')">^</button>
-
-                        <button class="calc-btn" onclick="appendEngineeringValue('0')">0</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('.')">.</button>
-                        <button class="calc-btn" onclick="appendEngineeringValue('%')">%</button>
-                        <button class="calc-btn primary" onclick="appendEngineeringValue('+')">+</button>
-                        <button class="calc-btn accent" onclick="engineeringEquals()">=</button>
-                    </div>
-                </div>
+                </section>
             </div>
         </main>
+        <button id="sidebarCollapsedToggle" class="sidebar-floating-toggle hidden" onclick="toggleProjectsSidebar(false)">📁 Show Projects</button>
+        <button id="calculatorToggle" class="floating-calculator-btn" onclick="toggleFloatingCalculator()" aria-label="Toggle floating calculator">🧮</button>
+        <div id="floatingCalculator" class="floating-calculator" aria-live="polite">
+            <div class="floating-calculator-header">
+                <strong>Project Calculators</strong>
+                <button class="collapse-toggle" onclick="toggleFloatingCalculator(false)">Close ✕</button>
+            </div>
+            <p style="margin-bottom: 15px; color: #94a3b8;">Keep quick math within reach. The engineering calculator treats trigonometric inputs in degrees.</p>
+            <div class="calculator-tabs">
+                <button class="calculator-tab active" data-panel="basicCalculator" onclick="switchCalculatorTab('basicCalculator')">Basic Calculator</button>
+                <button class="calculator-tab" data-panel="engineeringCalculator" onclick="switchCalculatorTab('engineeringCalculator')">Engineering Calculator</button>
+            </div>
+            <div id="basicCalculator" class="calculator-panel active">
+                <input type="text" id="basicCalcDisplay" class="calc-display" value="0" readonly>
+                <div class="calculator-grid">
+                    <button class="calc-btn danger" onclick="resetBasicCalculator()">C</button>
+                    <button class="calc-btn" onclick="toggleBasicSign()">±</button>
+                    <button class="calc-btn" onclick="handleBasicPercent()">%</button>
+                    <button class="calc-btn primary" onclick="handleBasicOperator('/')">÷</button>
+
+                    <button class="calc-btn" onclick="inputBasicDigit('7')">7</button>
+                    <button class="calc-btn" onclick="inputBasicDigit('8')">8</button>
+                    <button class="calc-btn" onclick="inputBasicDigit('9')">9</button>
+                    <button class="calc-btn primary" onclick="handleBasicOperator('*')">×</button>
+
+                    <button class="calc-btn" onclick="inputBasicDigit('4')">4</button>
+                    <button class="calc-btn" onclick="inputBasicDigit('5')">5</button>
+                    <button class="calc-btn" onclick="inputBasicDigit('6')">6</button>
+                    <button class="calc-btn primary" onclick="handleBasicOperator('-')">−</button>
+
+                    <button class="calc-btn" onclick="inputBasicDigit('1')">1</button>
+                    <button class="calc-btn" onclick="inputBasicDigit('2')">2</button>
+                    <button class="calc-btn" onclick="inputBasicDigit('3')">3</button>
+                    <button class="calc-btn primary" onclick="handleBasicOperator('+')">+</button>
+
+                    <button class="calc-btn" style="grid-column: span 2;" onclick="inputBasicDigit('0')">0</button>
+                    <button class="calc-btn" onclick="inputBasicDecimal()">.</button>
+                    <button class="calc-btn accent" onclick="handleBasicEquals()">=</button>
+                </div>
+            </div>
+
+            <div id="engineeringCalculator" class="calculator-panel">
+                <input type="text" id="engineeringCalcDisplay" class="calc-display" placeholder="Enter value or expression">
+                <div class="calculator-grid engineering">
+                    <button class="calc-btn danger" onclick="clearEngineeringDisplay()">C</button>
+                    <button class="calc-btn" onclick="deleteEngineeringChar()">⌫</button>
+                    <button class="calc-btn" onclick="toggleEngineeringSign()">±</button>
+                    <button class="calc-btn" onclick="insertEngineeringConstant('pi')">π</button>
+                    <button class="calc-btn" onclick="insertEngineeringConstant('e')">e</button>
+
+                    <button class="calc-btn" onclick="applyEngineeringFunction('sin')">sin</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('cos')">cos</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('tan')">tan</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('log')">log</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('ln')">ln</button>
+
+                    <button class="calc-btn" onclick="applyEngineeringFunction('sqrt')">√</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('square')">x²</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('^')">xʸ</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('reciprocal')">1/x</button>
+                    <button class="calc-btn" onclick="applyEngineeringFunction('abs')">|x|</button>
+
+                    <button class="calc-btn" onclick="appendEngineeringValue('7')">7</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('8')">8</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('9')">9</button>
+                    <button class="calc-btn primary" onclick="appendEngineeringValue('/')">÷</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('(')">(</button>
+
+                    <button class="calc-btn" onclick="appendEngineeringValue('4')">4</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('5')">5</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('6')">6</button>
+                    <button class="calc-btn primary" onclick="appendEngineeringValue('*')">×</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue(')')">)</button>
+
+                    <button class="calc-btn" onclick="appendEngineeringValue('1')">1</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('2')">2</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('3')">3</button>
+                    <button class="calc-btn primary" onclick="appendEngineeringValue('-')">−</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('^')">^</button>
+
+                    <button class="calc-btn" onclick="appendEngineeringValue('0')">0</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('.')">.</button>
+                    <button class="calc-btn" onclick="appendEngineeringValue('%')">%</button>
+                    <button class="calc-btn primary" onclick="appendEngineeringValue('+')">+</button>
+                    <button class="calc-btn accent" onclick="engineeringEquals()">=</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -858,6 +994,9 @@
         let lineItemCounter = 0;
         let currentProjectId = null;
         let projectsCache = [];
+        let sidebarCollapsed = false;
+        let calculatorVisible = false;
+        let hasShownSummary = false;
         const basicCalculatorState = {
             displayValue: '0',
             firstOperand: null,
@@ -868,7 +1007,146 @@
         document.addEventListener('DOMContentLoaded', () => {
             switchCalculatorTab('basicCalculator');
             initializeFirebaseAuth();
+            setupAutoEstimateListeners();
+            document.addEventListener('keydown', handleCalculatorKeyboard);
         });
+
+        function setupAutoEstimateListeners() {
+            ['contingency', 'overhead', 'profit', 'bond'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', () => calculateEstimate({ auto: true }));
+                }
+            });
+        }
+
+        function toggleProjectsSidebar(forceCollapse = null) {
+            if (typeof forceCollapse === 'boolean') {
+                sidebarCollapsed = forceCollapse;
+            } else {
+                sidebarCollapsed = !sidebarCollapsed;
+            }
+            const layout = document.getElementById('workspaceLayout');
+            const toggleButton = document.getElementById('sidebarCollapsedToggle');
+            if (!layout || !toggleButton) return;
+
+            if (sidebarCollapsed) {
+                layout.classList.add('sidebar-collapsed');
+                toggleButton.classList.remove('hidden');
+            } else {
+                layout.classList.remove('sidebar-collapsed');
+                toggleButton.classList.add('hidden');
+            }
+        }
+
+        function toggleProjectInfo() {
+            const card = document.getElementById('projectInfoCard');
+            const toggle = document.getElementById('projectInfoToggle');
+            if (!card || !toggle) return;
+            card.classList.toggle('collapsed');
+            const isCollapsed = card.classList.contains('collapsed');
+            toggle.textContent = isCollapsed ? 'Expand' : 'Collapse';
+            toggle.setAttribute('aria-expanded', (!isCollapsed).toString());
+        }
+
+        function toggleFloatingCalculator(forceState = null) {
+            const calculator = document.getElementById('floatingCalculator');
+            const toggleBtn = document.getElementById('calculatorToggle');
+            if (!calculator || !toggleBtn) return;
+            if (typeof forceState === 'boolean') {
+                calculatorVisible = forceState;
+            } else {
+                calculatorVisible = !calculator.classList.contains('active');
+            }
+            calculator.classList.toggle('active', calculatorVisible);
+            toggleBtn.setAttribute('aria-pressed', calculatorVisible.toString());
+            if (calculatorVisible) {
+                focusActiveCalculatorDisplay();
+            }
+        }
+
+        function focusActiveCalculatorDisplay() {
+            const activePanel = document.querySelector('.calculator-panel.active');
+            if (!activePanel) return;
+            const display = activePanel.querySelector('.calc-display');
+            if (display) {
+                display.focus({ preventScroll: true });
+                if (display.setSelectionRange) {
+                    const valueLength = display.value ? display.value.length : 0;
+                    display.setSelectionRange(valueLength, valueLength);
+                }
+            }
+        }
+
+        function handleCalculatorKeyboard(event) {
+            const calculator = document.getElementById('floatingCalculator');
+            if (!calculator || !calculator.classList.contains('active')) {
+                return;
+            }
+
+            const activeElement = document.activeElement;
+            if (!calculator.contains(activeElement)) {
+                return;
+            }
+
+            const activePanel = document.querySelector('.calculator-panel.active');
+            if (!activePanel) return;
+
+            if (activePanel.id === 'basicCalculator') {
+                if (/^[0-9]$/.test(event.key)) {
+                    inputBasicDigit(event.key);
+                    event.preventDefault();
+                    return;
+                }
+
+                switch (event.key) {
+                    case '.':
+                        inputBasicDecimal();
+                        event.preventDefault();
+                        break;
+                    case '+':
+                    case '-':
+                    case '*':
+                    case '/':
+                        handleBasicOperator(event.key);
+                        event.preventDefault();
+                        break;
+                    case '=':
+                    case 'Enter':
+                        handleBasicEquals();
+                        event.preventDefault();
+                        break;
+                    case 'Backspace':
+                        deleteBasicLastChar();
+                        event.preventDefault();
+                        break;
+                    case 'Escape':
+                        resetBasicCalculator();
+                        event.preventDefault();
+                        break;
+                    default:
+                        break;
+                }
+            } else if (activePanel.id === 'engineeringCalculator') {
+                if (event.key === 'Enter' || event.key === '=') {
+                    engineeringEquals();
+                    event.preventDefault();
+                }
+            }
+        }
+
+        function deleteBasicLastChar() {
+            if (basicCalculatorState.waitingForSecondOperand) {
+                return;
+            }
+            const currentValue = basicCalculatorState.displayValue.toString();
+            if (currentValue.length <= 1) {
+                basicCalculatorState.displayValue = '0';
+            } else {
+                basicCalculatorState.displayValue = currentValue.slice(0, -1);
+            }
+            updateBasicDisplay();
+        }
 
         function initializeFirebaseAuth() {
             if (typeof firebase === 'undefined') {
@@ -1107,6 +1385,7 @@
             if (container.children.length > 1) {
                 btn.closest('.line-item').remove();
                 renumberLineItems();
+                calculateEstimate({ auto: true });
             } else {
                 alert('At least one line item is required');
             }
@@ -1137,9 +1416,12 @@
             item.querySelector('.labor-total').textContent = '$' + labTotal.toFixed(2);
             item.querySelector('.equipment-total').textContent = '$' + equipTotal.toFixed(2);
             item.querySelector('.line-total').textContent = '$' + lineTotal.toFixed(2);
+
+            calculateEstimate({ auto: true });
         }
 
-        function calculateEstimate() {
+        function calculateEstimate(options = {}) {
+            const { auto = false } = options;
             let matSubtotal = 0;
             let labSubtotal = 0;
             let equipSubtotal = 0;
@@ -1190,8 +1472,22 @@
             document.getElementById('bondAmount').textContent = '$' + bondAmt.toFixed(2);
             document.getElementById('totalEstimate').textContent = '$' + total.toFixed(2);
 
-            document.getElementById('summarySection').classList.remove('hidden');
-            document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
+            const summarySection = document.getElementById('summarySection');
+            if (!summarySection) {
+                return;
+            }
+
+            if (!auto || subtotal > 0 || hasShownSummary) {
+                summarySection.classList.remove('hidden');
+                if (!hasShownSummary) {
+                    hasShownSummary = true;
+                }
+                if (!auto) {
+                    summarySection.scrollIntoView({ behavior: 'smooth' });
+                }
+            } else {
+                summarySection.classList.add('hidden');
+            }
         }
 
         function saveCurrentProject(options = {}) {
@@ -1352,7 +1648,7 @@
                 addLineItem();
             }
 
-            calculateEstimate();
+            calculateEstimate({ auto: true });
             alert('Project loaded successfully!');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1396,6 +1692,7 @@
             addLineItem();
 
             document.getElementById('summarySection').classList.add('hidden');
+            hasShownSummary = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
             if (autoSave) {
@@ -1541,7 +1838,7 @@
                     addLineItem();
                 }
 
-                calculateEstimate();
+                calculateEstimate({ auto: true });
                 alert('CSV imported successfully!');
             };
 
@@ -1580,6 +1877,10 @@
             document.querySelectorAll('.calculator-panel').forEach(panel => {
                 panel.classList.toggle('active', panel.id === panelId);
             });
+
+            if (calculatorVisible) {
+                focusActiveCalculatorDisplay();
+            }
         }
 
         function updateBasicDisplay() {
