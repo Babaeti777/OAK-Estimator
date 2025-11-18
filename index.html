@@ -750,6 +750,7 @@
                             <span class="user-email" id="userEmail"></span>
                         </div>
                     </div>
+                    <button id="refreshProjectsBtn" class="btn btn-secondary" onclick="refreshProjects()">↻ Refresh Projects</button>
                     <button id="signOutBtn" class="btn btn-danger hidden" onclick="signOut()">Sign Out</button>
                 </div>
             </div>
@@ -992,6 +993,7 @@
 
         const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23667eea"/></svg>';
         const LOCAL_STORAGE_KEY_PREFIX = 'constructionEstimatorProjects';
+        const CLOUD_PROJECTS_COLLECTION = 'userProjects';
         const DEFAULT_PROJECT_FOLDER = 'My Projects';
         let lineItemCounter = 0;
         let currentProjectId = null;
@@ -1162,7 +1164,7 @@
             try {
                 firebaseApp = firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
-                firestore = firebase.firestore ? firebase.firestore() : null;
+                firestore = firebase.firestore();
                 auth.onAuthStateChanged((user) => {
                     hideLoadingScreen();
                     if (user) {
@@ -1190,22 +1192,60 @@
         }
 
         async function bootstrapProjectWorkspace() {
+            await refreshProjects({ silent: true, preferLatest: true });
+        }
+
+        async function refreshProjects(options = {}) {
+            const { silent = false, preferLatest = false } = options;
+            const refreshBtn = document.getElementById('refreshProjectsBtn');
+            const shouldShowButtonState = !silent && refreshBtn;
+            const originalButtonContent = shouldShowButtonState ? refreshBtn.innerHTML : '';
+
             try {
-                if (currentUser && firestore) {
-                    projectsCache = await loadProjectsFromFirestore();
+                if (shouldShowButtonState) {
+                    refreshBtn.disabled = true;
+                    refreshBtn.innerHTML = 'Refreshing…';
+                }
+
+                const previousProjectId = currentProjectId;
+                const projects = await fetchProjectsForCurrentUser();
+                projectsCache = projects;
+                renderProjectsList();
+
+                if (!projectsCache.length) {
+                    createNewProject({ autoSave: true });
+                    if (!silent) {
+                        alert('No saved projects were found, so a new project has been started.');
+                    }
+                    return;
+                }
+
+                let projectToLoad = null;
+                if (preferLatest) {
+                    projectToLoad = [...projectsCache].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0]?.id || null;
+                } else if (previousProjectId && projectsCache.some(project => project.id === previousProjectId)) {
+                    projectToLoad = previousProjectId;
                 } else {
-                    projectsCache = loadProjectsFromStorage();
+                    projectToLoad = [...projectsCache].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0]?.id || projectsCache[0].id;
+                }
+
+                if (projectToLoad && projectToLoad !== currentProjectId) {
+                    loadProject(projectToLoad, { silent: true, skipScroll: true });
+                }
+
+                if (!silent) {
+                    alert('Projects refreshed successfully.');
                 }
             } catch (error) {
-                console.error('Unable to load cloud projects, falling back to local data:', error);
-                projectsCache = loadProjectsFromStorage();
-            }
-            renderProjectsList();
-            if (projectsCache.length) {
-                const latestProject = [...projectsCache].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0];
-                loadProject(latestProject.id);
-            } else {
-                createNewProject({ autoSave: true });
+                console.error('Unable to refresh projects:', error);
+                if (!silent) {
+                    alert('Unable to refresh projects right now. Please try again.');
+                }
+            } finally {
+                if (shouldShowButtonState) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = originalButtonContent || '↻ Refresh Projects';
+                }
             }
         }
 
@@ -1287,44 +1327,74 @@
 
         function loadProjectsFromStorage() {
             try {
-                const saved = localStorage.getItem(getStorageKeyForCurrentUser());
-                return saved ? JSON.parse(saved) : [];
+                const storageKey = getStorageKeyForCurrentUser();
+                const saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                if (storageKey !== LOCAL_STORAGE_KEY_PREFIX) {
+                    const fallback = localStorage.getItem(LOCAL_STORAGE_KEY_PREFIX);
+                    return fallback ? JSON.parse(fallback) : [];
+                }
+                return [];
             } catch (error) {
                 console.error('Unable to parse saved projects:', error);
                 return [];
             }
         }
 
-        async function loadProjectsFromFirestore() {
+        async function fetchProjectsForCurrentUser() {
+            const localProjects = loadProjectsFromStorage();
             if (!currentUser || !firestore) {
-                return loadProjectsFromStorage();
+                return localProjects;
             }
-            const snapshot = await firestore
-                .collection('users')
-                .doc(currentUser.uid)
-                .collection('projects')
-                .get();
-            const projects = snapshot.docs.map(doc => {
-                const data = doc.data() || {};
-                return {
-                    ...data,
-                    id: data.id || doc.id
-                };
-            });
+
             try {
-                localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projects));
+                const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
+                const snapshot = await docRef.get();
+                if (snapshot.exists) {
+                    const data = snapshot.data();
+                    if (data && Array.isArray(data.projects)) {
+                        projectsCache = data.projects;
+                        persistProjects({ skipCloud: true });
+                        return data.projects;
+                    }
+                } else if (localProjects.length) {
+                    await syncProjectsToCloud(localProjects);
+                }
             } catch (error) {
-                console.warn('Unable to cache cloud projects locally:', error);
+                console.error('Unable to load projects from cloud:', error);
             }
-            return projects;
+
+            return localProjects;
         }
 
-        function persistProjectsLocally() {
+        function persistProjects(options = {}) {
+            const { skipCloud = false } = options;
             try {
                 localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projectsCache));
             } catch (error) {
                 console.error('Unable to save projects:', error);
                 throw error;
+            }
+
+            if (!skipCloud) {
+                syncProjectsToCloud(projectsCache);
+            }
+        }
+
+        async function syncProjectsToCloud(projects) {
+            if (!currentUser || !firestore) {
+                return;
+            }
+
+            try {
+                await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).set({
+                    projects,
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error('Unable to sync projects to cloud:', error);
             }
         }
 
@@ -1614,7 +1684,7 @@
             }
 
             currentProjectId = projectData.id;
-            const successMessage = existingIndex >= 0 ? 'Project updated successfully!' : 'Project saved locally!';
+            const successMessage = existingIndex >= 0 ? 'Project updated successfully!' : 'Project saved!';
 
             let cloudSynced = true;
 
@@ -1651,7 +1721,7 @@
             container.innerHTML = '';
 
             if (!projectsCache.length) {
-                container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No saved projects yet. Save a project to keep it in your browser.</p>';
+                container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">No saved projects yet. Save a project to keep it available across your devices.</p>';
                 return;
             }
 
@@ -1706,7 +1776,8 @@
             });
         }
 
-        function loadProject(projectId) {
+        function loadProject(projectId, options = {}) {
+            const { silent = false, skipScroll = false } = options;
             const project = projectsCache.find(p => p.id === projectId);
             if (!project) {
                 alert('Project not found.');
@@ -1746,8 +1817,12 @@
             }
 
             calculateEstimate({ auto: true });
-            alert('Project loaded successfully!');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!silent) {
+                alert('Project loaded successfully!');
+            }
+            if (!skipScroll) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         async function deleteProject(projectId) {
