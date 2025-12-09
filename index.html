@@ -746,7 +746,13 @@
                             <span class="user-email" id="userEmail"></span>
                         </div>
                     </div>
-                    <button id="refreshProjectsBtn" class="btn btn-secondary" onclick="refreshProjects()">↻ Refresh Projects</button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="syncStatus" class="hidden" style="display: flex; align-items: center; gap: 5px; font-size: 0.85em; color: #10b981;">
+                            <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; display: inline-block;"></span>
+                            Live sync
+                        </span>
+                        <button id="refreshProjectsBtn" class="btn btn-secondary" onclick="refreshProjects()">↻ Refresh</button>
+                    </div>
                     <button id="signOutBtn" class="btn btn-danger hidden" onclick="signOut()">Sign Out</button>
                 </div>
             </div>
@@ -981,6 +987,7 @@
         let auth = null;
         let firestore = null;
         let currentUser = null;
+        let firestoreUnsubscribe = null; // Real-time sync listener
 
         const DEFAULT_AVATAR = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23667eea"/></svg>';
         const LOCAL_STORAGE_KEY_PREFIX = 'constructionEstimatorProjects';
@@ -992,6 +999,7 @@
         let sidebarCollapsed = false;
         let calculatorVisible = false;
         let hasShownSummary = false;
+        let isSyncing = false; // Prevent sync loops
         const basicCalculatorState = {
             displayValue: '0',
             firstOperand: null,
@@ -1200,6 +1208,124 @@
 
         async function bootstrapProjectWorkspace() {
             await refreshProjects({ silent: true, preferLatest: true });
+            setupRealtimeSync(); // Enable real-time sync across devices
+        }
+
+        function setupRealtimeSync() {
+            // Clean up any existing listener
+            if (firestoreUnsubscribe) {
+                firestoreUnsubscribe();
+                firestoreUnsubscribe = null;
+            }
+
+            const syncStatusEl = document.getElementById('syncStatus');
+
+            // Only set up real-time sync if user is authenticated and Firestore is available
+            if (!currentUser || !firestore) {
+                if (syncStatusEl) {
+                    syncStatusEl.classList.add('hidden');
+                }
+                return;
+            }
+
+            try {
+                const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
+
+                // Set up real-time listener for project changes
+                firestoreUnsubscribe = docRef.onSnapshot((snapshot) => {
+                    // Skip if we're currently syncing to prevent loops
+                    if (isSyncing) {
+                        return;
+                    }
+
+                    if (snapshot.exists) {
+                        const data = snapshot.data();
+                        if (data && Array.isArray(data.projects)) {
+                            const remoteProjects = data.projects;
+
+                            // Merge remote changes with local cache intelligently
+                            const mergedProjects = mergeProjects(projectsCache, remoteProjects);
+
+                            // Update cache and UI if there are changes
+                            if (JSON.stringify(mergedProjects) !== JSON.stringify(projectsCache)) {
+                                projectsCache = mergedProjects;
+                                persistProjectsLocally();
+                                renderProjectsList();
+
+                                // Reload current project if it was updated remotely
+                                const currentProject = projectsCache.find(p => p.id === currentProjectId);
+                                if (currentProject) {
+                                    loadProject(currentProjectId, { silent: true, skipScroll: true });
+                                }
+
+                                console.log('Projects synced from cloud');
+                            }
+                        }
+                    }
+                }, (error) => {
+                    console.error('Real-time sync error:', error);
+                    if (syncStatusEl) {
+                        syncStatusEl.classList.add('hidden');
+                    }
+                });
+
+                // Show sync status indicator
+                if (syncStatusEl) {
+                    syncStatusEl.classList.remove('hidden');
+                }
+
+                console.log('Real-time sync enabled');
+            } catch (error) {
+                console.error('Failed to set up real-time sync:', error);
+                if (syncStatusEl) {
+                    syncStatusEl.classList.add('hidden');
+                }
+            }
+        }
+
+        function mergeProjects(localProjects, remoteProjects) {
+            // Create a map of remote projects by ID with their update times
+            const remoteMap = new Map();
+            remoteProjects.forEach(project => {
+                remoteMap.set(project.id, project);
+            });
+
+            // Create a map of local projects by ID
+            const localMap = new Map();
+            localProjects.forEach(project => {
+                localMap.set(project.id, project);
+            });
+
+            const merged = [];
+
+            // Add all remote projects, preferring newer versions
+            remoteProjects.forEach(remoteProject => {
+                const localProject = localMap.get(remoteProject.id);
+
+                if (!localProject) {
+                    // New project from another device
+                    merged.push(remoteProject);
+                } else {
+                    // Project exists locally, use the newer version
+                    const remoteTime = new Date(remoteProject.updatedAt || 0).getTime();
+                    const localTime = new Date(localProject.updatedAt || 0).getTime();
+
+                    if (remoteTime >= localTime) {
+                        merged.push(remoteProject);
+                    } else {
+                        merged.push(localProject);
+                    }
+                }
+            });
+
+            // Add any local projects that don't exist remotely
+            localProjects.forEach(localProject => {
+                if (!remoteMap.has(localProject.id)) {
+                    merged.push(localProject);
+                }
+            });
+
+            return merged;
         }
 
         async function refreshProjects(options = {}) {
@@ -1388,12 +1514,23 @@
             }
 
             try {
+                // Set syncing flag to prevent snapshot listener from triggering
+                isSyncing = true;
+
                 await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).set({
                     projects,
                     updatedAt: new Date().toISOString()
                 });
+
+                console.log('Projects synced to cloud successfully');
             } catch (error) {
                 console.error('Unable to sync projects to cloud:', error);
+                throw error;
+            } finally {
+                // Reset syncing flag after a short delay to allow Firestore to process
+                setTimeout(() => {
+                    isSyncing = false;
+                }, 1000);
             }
         }
 
