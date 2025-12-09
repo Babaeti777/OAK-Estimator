@@ -676,10 +676,6 @@
             .workspace-layout {
                 grid-template-columns: 1fr;
             }
-
-            .workspace-layout.sidebar-collapsed {
-                grid-template-columns: 1fr;
-            }
         }
 
         @media (max-width: 768px) {
@@ -1003,6 +999,22 @@
             operator: null
         };
 
+        // Debounce utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Debounced version of calculateEstimate for auto-calculation
+        const debouncedCalculateEstimate = debounce((options) => calculateEstimate(options), 300);
+
         document.addEventListener('DOMContentLoaded', () => {
             switchCalculatorTab('basicCalculator');
             initializeFirebaseAuth();
@@ -1014,7 +1026,7 @@
             ['contingency', 'overhead', 'profit', 'bond'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
-                    input.addEventListener('input', () => calculateEstimate({ auto: true }));
+                    input.addEventListener('input', () => debouncedCalculateEstimate({ auto: true }));
                 }
             });
         }
@@ -1209,9 +1221,6 @@
 
                 if (!projectsCache.length) {
                     createNewProject({ autoSave: true });
-                    if (!silent) {
-                        alert('No saved projects were found, so a new project has been started.');
-                    }
                     return;
                 }
 
@@ -1496,7 +1505,7 @@
                 </div>
             `;
             container.appendChild(itemDiv);
-            calculateEstimate({ auto: true });
+            debouncedCalculateEstimate({ auto: true });
         }
 
         function removeLineItem(btn) {
@@ -1504,7 +1513,7 @@
             if (container.children.length > 1) {
                 btn.closest('.line-item').remove();
                 renumberLineItems();
-                calculateEstimate({ auto: true });
+                debouncedCalculateEstimate({ auto: true });
             } else {
                 alert('At least one line item is required');
             }
@@ -1520,11 +1529,26 @@
 
         function calculateLineTotal(input) {
             const item = input.closest('.line-item');
-            const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
-            const mat = parseFloat(item.querySelector('.item-material').value) || 0;
-            const lab = parseFloat(item.querySelector('.item-labor').value) || 0;
-            const sur = parseFloat(item.querySelector('.item-surcharge').value) || 0;
-            const equip = parseFloat(item.querySelector('.item-equipment').value) || 0;
+
+            // Validate and sanitize inputs - ensure no negative values
+            const qtyInput = item.querySelector('.item-quantity');
+            const matInput = item.querySelector('.item-material');
+            const labInput = item.querySelector('.item-labor');
+            const surInput = item.querySelector('.item-surcharge');
+            const equipInput = item.querySelector('.item-equipment');
+
+            const qty = Math.max(0, parseFloat(qtyInput.value) || 0);
+            const mat = Math.max(0, parseFloat(matInput.value) || 0);
+            const lab = Math.max(0, parseFloat(labInput.value) || 0);
+            const sur = Math.max(0, parseFloat(surInput.value) || 0);
+            const equip = Math.max(0, parseFloat(equipInput.value) || 0);
+
+            // Update inputs if negative values were entered
+            if (parseFloat(qtyInput.value) < 0) qtyInput.value = qty;
+            if (parseFloat(matInput.value) < 0) matInput.value = mat;
+            if (parseFloat(labInput.value) < 0) labInput.value = lab;
+            if (parseFloat(surInput.value) < 0) surInput.value = sur;
+            if (parseFloat(equipInput.value) < 0) equipInput.value = equip;
 
             const matTotal = qty * mat;
             const labTotal = qty * (lab * (1 + sur / 100));
@@ -1536,7 +1560,7 @@
             item.querySelector('.equipment-total').textContent = '$' + equipTotal.toFixed(2);
             item.querySelector('.line-total').textContent = '$' + lineTotal.toFixed(2);
 
-            calculateEstimate({ auto: true });
+            debouncedCalculateEstimate({ auto: true });
         }
 
         function calculateEstimate(options = {}) {
@@ -1547,11 +1571,11 @@
 
             const items = document.querySelectorAll('.line-item');
             items.forEach(item => {
-                const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
-                const mat = parseFloat(item.querySelector('.item-material').value) || 0;
-                const lab = parseFloat(item.querySelector('.item-labor').value) || 0;
-                const sur = parseFloat(item.querySelector('.item-surcharge').value) || 0;
-                const equip = parseFloat(item.querySelector('.item-equipment').value) || 0;
+                const qty = Math.max(0, parseFloat(item.querySelector('.item-quantity').value) || 0);
+                const mat = Math.max(0, parseFloat(item.querySelector('.item-material').value) || 0);
+                const lab = Math.max(0, parseFloat(item.querySelector('.item-labor').value) || 0);
+                const sur = Math.max(0, parseFloat(item.querySelector('.item-surcharge').value) || 0);
+                const equip = Math.max(0, parseFloat(item.querySelector('.item-equipment').value) || 0);
 
                 matSubtotal += qty * mat;
                 labSubtotal += qty * (lab * (1 + sur / 100));
@@ -1559,19 +1583,21 @@
             });
 
             const subtotal = matSubtotal + labSubtotal + equipSubtotal;
-            const contPct = parseFloat(document.getElementById('contingency').value) || 0;
+
+            // Validate percentage inputs (0-100 range)
+            const contPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('contingency').value) || 0));
             const contAmt = subtotal * (contPct / 100);
 
             const withCont = subtotal + contAmt;
-            const ohPct = parseFloat(document.getElementById('overhead').value) || 0;
+            const ohPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('overhead').value) || 0));
             const ohAmt = withCont * (ohPct / 100);
 
             const withOH = withCont + ohAmt;
-            const profPct = parseFloat(document.getElementById('profit').value) || 0;
+            const profPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('profit').value) || 0));
             const profAmt = withOH * (profPct / 100);
 
             const withProf = withOH + profAmt;
-            const bondPct = parseFloat(document.getElementById('bond').value) || 0;
+            const bondPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('bond').value) || 0));
             const bondAmt = withProf * (bondPct / 100);
 
             const total = withProf + bondAmt;
@@ -1925,19 +1951,44 @@
             const file = event.target.files[0];
             if (!file) return;
 
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Please select a valid CSV file.');
+                event.target.value = '';
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File is too large. Please select a CSV file smaller than 5MB.');
+                event.target.value = '';
+                return;
+            }
+
             const reader = new FileReader();
+            reader.onerror = function() {
+                alert('Error reading file. Please try again.');
+                event.target.value = '';
+            };
+
             reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n');
+                try {
+                    const text = e.target.result;
+                    if (!text || text.trim().length === 0) {
+                        alert('The CSV file appears to be empty.');
+                        return;
+                    }
 
-                let inProjectInfo = false;
-                let inLineItems = false;
+                    const lines = text.split('\n');
+                    let inProjectInfo = false;
+                    let inLineItems = false;
+                    let importedItems = 0;
 
-                const container = document.getElementById('lineItemsContainer');
-                container.innerHTML = '';
-                lineItemCounter = 0;
-                currentProjectId = null;
-                document.getElementById('projectFolder').value = DEFAULT_PROJECT_FOLDER;
+                    const container = document.getElementById('lineItemsContainer');
+                    container.innerHTML = '';
+                    lineItemCounter = 0;
+                    currentProjectId = null;
+                    document.getElementById('projectFolder').value = DEFAULT_PROJECT_FOLDER;
 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i].trim();
@@ -1976,16 +2027,17 @@
                             addLineItem();
                             const item = container.lastElementChild;
 
-                            item.querySelector('.item-description').value = parts[1];
-                            item.querySelector('.item-quantity').value = parts[2];
-                            item.querySelector('.item-unit').value = parts[3];
-                            item.querySelector('.item-material').value = parts[4];
-                            item.querySelector('.item-labor').value = parts[5];
-                            item.querySelector('.item-surcharge').value = parts[6];
-                            item.querySelector('.item-equipment').value = parts[7];
-                            item.querySelector('.item-notes').value = parts[12];
+                            item.querySelector('.item-description').value = parts[1] || '';
+                            item.querySelector('.item-quantity').value = parts[2] || '0';
+                            item.querySelector('.item-unit').value = parts[3] || 'ea';
+                            item.querySelector('.item-material').value = parts[4] || '0';
+                            item.querySelector('.item-labor').value = parts[5] || '0';
+                            item.querySelector('.item-surcharge').value = parts[6] || '0';
+                            item.querySelector('.item-equipment').value = parts[7] || '0';
+                            item.querySelector('.item-notes').value = parts[12] || '';
 
                             calculateLineTotal(item.querySelector('.item-quantity'));
+                            importedItems++;
                         }
                     }
                 }
@@ -1995,7 +2047,11 @@
                 }
 
                 calculateEstimate({ auto: true });
-                alert('CSV imported successfully!');
+                alert(`CSV imported successfully! ${importedItems} line item(s) imported.`);
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    alert('Error importing CSV file. The file may be corrupted or in an incorrect format.');
+                }
             };
 
             reader.readAsText(file);
@@ -2096,7 +2152,11 @@
                 case '*':
                     return firstOperand * secondOperand;
                 case '/':
-                    return secondOperand === 0 ? 0 : firstOperand / secondOperand;
+                    if (secondOperand === 0) {
+                        alert('Cannot divide by zero');
+                        return firstOperand;
+                    }
+                    return firstOperand / secondOperand;
                 default:
                     return secondOperand;
             }
@@ -2233,10 +2293,18 @@
 
         function safeEvaluateEngineering(expression) {
             if (!expression.trim()) return 0;
+            // Sanitize: only allow numbers, operators, parentheses, and spaces
             const sanitized = expression.replace(/[^0-9+\-*/().^% ]/g, '');
+
+            // Additional validation: check for dangerous patterns
+            if (sanitized.length === 0) return 0;
+            if (/[^0-9+\-*/().^% ]/.test(sanitized)) return null;
+
             try {
                 const normalized = sanitized.replace(/\^/g, '**').replace(/%/g, '/100');
-                return Function('return ' + normalized)();
+                // Use indirect eval for better safety in strict mode context
+                const result = (new Function('"use strict"; return (' + normalized + ')'))();
+                return Number.isFinite(result) ? result : null;
             } catch (error) {
                 console.error('Engineering calculator error:', error);
                 return null;
