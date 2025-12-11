@@ -1551,7 +1551,12 @@
             } catch (error) {
                 // If the server fetch fails (offline), fall back to cache so the app still works.
                 console.error('Unable to load projects from cloud:', error);
-                if (error.code === 'unavailable') {
+
+                const isOfflineError = error?.code === 'unavailable'
+                    || error?.code === 'failed-precondition'
+                    || (typeof error?.message === 'string' && error.message.toLowerCase().includes('offline'));
+
+                if (isOfflineError) {
                     const cachedDoc = await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).get({ source: 'cache' });
                     if (cachedDoc.exists) {
                         const data = cachedDoc.data();
@@ -1563,6 +1568,8 @@
                             return data.projects;
                         }
                     }
+
+                    console.log('No cached cloud data available; falling back to local projects.');
                 }
             }
 
