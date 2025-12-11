@@ -1528,8 +1528,11 @@
 
             try {
                 const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
-                // Let Firebase decide source (server if online, cache if offline)
-                const snapshot = await docRef.get();
+
+                // Always ask the server for the latest copy first so we don't get stuck on a stale cache
+                // when the user is signed in on multiple devices.
+                const snapshot = await docRef.get({ source: 'server' });
+
                 if (snapshot.exists) {
                     const data = snapshot.data();
                     if (data && Array.isArray(data.projects)) {
@@ -1546,7 +1549,28 @@
                     await syncProjectsToCloud(localProjects);
                 }
             } catch (error) {
+                // If the server fetch fails (offline), fall back to cache so the app still works.
                 console.error('Unable to load projects from cloud:', error);
+
+                const isOfflineError = error?.code === 'unavailable'
+                    || error?.code === 'failed-precondition'
+                    || (typeof error?.message === 'string' && error.message.toLowerCase().includes('offline'));
+
+                if (isOfflineError) {
+                    const cachedDoc = await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).get({ source: 'cache' });
+                    if (cachedDoc.exists) {
+                        const data = cachedDoc.data();
+                        if (data && Array.isArray(data.projects)) {
+                            lastSyncedTimestamp = data.updatedAt || null;
+                            projectsCache = data.projects;
+                            persistProjectsLocally();
+                            console.log('Loaded projects from offline cache, timestamp:', lastSyncedTimestamp);
+                            return data.projects;
+                        }
+                    }
+
+                    console.log('No cached cloud data available; falling back to local projects.');
+                }
             }
 
             return localProjects;
