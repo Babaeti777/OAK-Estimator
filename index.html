@@ -1023,10 +1023,20 @@
         // Debounced version of calculateEstimate for auto-calculation
         const debouncedCalculateEstimate = debounce((options) => calculateEstimate(options), 300);
 
+        // Debounced auto-save (2 seconds after last change)
+        const debouncedAutoSave = debounce(() => {
+            const projectName = document.getElementById('projectName').value.trim();
+            if (projectName && currentUser) {
+                console.log('[AutoSave] Triggering auto-save...');
+                saveCurrentProject({ silent: true });
+            }
+        }, 2000);
+
         document.addEventListener('DOMContentLoaded', () => {
             switchCalculatorTab('basicCalculator');
             initializeFirebaseAuth();
             setupAutoEstimateListeners();
+            setupAutoSaveListeners();
             document.addEventListener('keydown', handleCalculatorKeyboard);
         });
 
@@ -1037,6 +1047,29 @@
                     input.addEventListener('input', () => debouncedCalculateEstimate({ auto: true }));
                 }
             });
+        }
+
+        function setupAutoSaveListeners() {
+            // Auto-save on project info changes
+            ['projectName', 'projectFolder', 'projectType', 'contingency', 'overhead', 'profit', 'bond'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', () => {
+                        if (currentUser && firestore) {
+                            debouncedAutoSave();
+                        }
+                    });
+                }
+            });
+
+            console.log('[AutoSave] Auto-save listeners set up');
+        }
+
+        // Call this when line items change
+        function triggerAutoSave() {
+            if (currentUser && firestore) {
+                debouncedAutoSave();
+            }
         }
 
         function toggleProjectsSidebar(forceCollapse = null) {
@@ -1212,8 +1245,11 @@
         }
 
         function setupRealtimeSync() {
+            console.log('[Sync] Setting up real-time sync...');
+
             // Clean up any existing listener
             if (firestoreUnsubscribe) {
+                console.log('[Sync] Cleaning up existing listener');
                 firestoreUnsubscribe();
                 firestoreUnsubscribe = null;
             }
@@ -1222,6 +1258,7 @@
 
             // Only set up real-time sync if user is authenticated and Firestore is available
             if (!currentUser || !firestore) {
+                console.log('[Sync] Cannot setup sync - user or firestore not available', { currentUser: !!currentUser, firestore: !!firestore });
                 if (syncStatusEl) {
                     syncStatusEl.classList.add('hidden');
                 }
@@ -1230,11 +1267,25 @@
 
             try {
                 const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
+                console.log('[Sync] Setting up listener for user:', currentUser.uid);
 
                 // Set up real-time listener for project changes
                 firestoreUnsubscribe = docRef.onSnapshot((snapshot) => {
+                    console.log('[Sync] Snapshot received', {
+                        exists: snapshot.exists,
+                        isSyncing: isSyncing,
+                        metadata: snapshot.metadata
+                    });
+
                     // Skip if we're currently syncing to prevent loops
                     if (isSyncing) {
+                        console.log('[Sync] Skipping - currently syncing locally');
+                        return;
+                    }
+
+                    // Skip if this is from local cache and we haven't confirmed server write
+                    if (snapshot.metadata.hasPendingWrites) {
+                        console.log('[Sync] Skipping - has pending writes');
                         return;
                     }
 
@@ -1242,28 +1293,44 @@
                         const data = snapshot.data();
                         if (data && Array.isArray(data.projects)) {
                             const remoteProjects = data.projects;
+                            console.log('[Sync] Remote projects:', remoteProjects.length, 'Local projects:', projectsCache.length);
 
                             // Merge remote changes with local cache intelligently
                             const mergedProjects = mergeProjects(projectsCache, remoteProjects);
 
-                            // Update cache and UI if there are changes
-                            if (JSON.stringify(mergedProjects) !== JSON.stringify(projectsCache)) {
+                            // Check if there are actual changes
+                            const hasChanges = mergedProjects.length !== projectsCache.length ||
+                                               mergedProjects.some((proj, idx) => {
+                                                   const localProj = projectsCache.find(p => p.id === proj.id);
+                                                   return !localProj || localProj.updatedAt !== proj.updatedAt;
+                                               });
+
+                            if (hasChanges) {
+                                console.log('[Sync] Changes detected - updating local cache');
                                 projectsCache = mergedProjects;
                                 persistProjectsLocally();
                                 renderProjectsList();
 
                                 // Reload current project if it was updated remotely
                                 const currentProject = projectsCache.find(p => p.id === currentProjectId);
-                                if (currentProject) {
-                                    loadProject(currentProjectId, { silent: true, skipScroll: true });
+                                if (currentProject && currentProjectId) {
+                                    const remoteVersion = remoteProjects.find(p => p.id === currentProjectId);
+                                    if (remoteVersion && remoteVersion.updatedAt !== currentProject.updatedAt) {
+                                        console.log('[Sync] Current project updated remotely - reloading');
+                                        loadProject(currentProjectId, { silent: true, skipScroll: true });
+                                    }
                                 }
 
-                                console.log('Projects synced from cloud');
+                                console.log('[Sync] ✓ Projects synced from cloud');
+                            } else {
+                                console.log('[Sync] No changes detected');
                             }
                         }
+                    } else {
+                        console.log('[Sync] Document does not exist');
                     }
                 }, (error) => {
-                    console.error('Real-time sync error:', error);
+                    console.error('[Sync] Real-time sync error:', error);
                     if (syncStatusEl) {
                         syncStatusEl.classList.add('hidden');
                     }
@@ -1274,9 +1341,9 @@
                     syncStatusEl.classList.remove('hidden');
                 }
 
-                console.log('Real-time sync enabled');
+                console.log('[Sync] ✓ Real-time sync enabled successfully');
             } catch (error) {
-                console.error('Failed to set up real-time sync:', error);
+                console.error('[Sync] Failed to set up real-time sync:', error);
                 if (syncStatusEl) {
                     syncStatusEl.classList.add('hidden');
                 }
@@ -1284,6 +1351,8 @@
         }
 
         function mergeProjects(localProjects, remoteProjects) {
+            console.log('[Sync] Merging projects - Local:', localProjects.length, 'Remote:', remoteProjects.length);
+
             // Create a map of remote projects by ID with their update times
             const remoteMap = new Map();
             remoteProjects.forEach(project => {
@@ -1297,6 +1366,9 @@
             });
 
             const merged = [];
+            let newFromRemote = 0;
+            let updatedFromRemote = 0;
+            let keptLocal = 0;
 
             // Add all remote projects, preferring newer versions
             remoteProjects.forEach(remoteProject => {
@@ -1304,7 +1376,9 @@
 
                 if (!localProject) {
                     // New project from another device
+                    console.log('[Sync] New project from remote:', remoteProject.name);
                     merged.push(remoteProject);
+                    newFromRemote++;
                 } else {
                     // Project exists locally, use the newer version
                     const remoteTime = new Date(remoteProject.updatedAt || 0).getTime();
@@ -1312,8 +1386,14 @@
 
                     if (remoteTime >= localTime) {
                         merged.push(remoteProject);
+                        if (remoteTime > localTime) {
+                            console.log('[Sync] Updated from remote:', remoteProject.name);
+                            updatedFromRemote++;
+                        }
                     } else {
+                        console.log('[Sync] Kept local version:', localProject.name);
                         merged.push(localProject);
+                        keptLocal++;
                     }
                 }
             });
@@ -1321,8 +1401,16 @@
             // Add any local projects that don't exist remotely
             localProjects.forEach(localProject => {
                 if (!remoteMap.has(localProject.id)) {
+                    console.log('[Sync] Local-only project:', localProject.name);
                     merged.push(localProject);
                 }
+            });
+
+            console.log('[Sync] Merge complete:', {
+                total: merged.length,
+                newFromRemote,
+                updatedFromRemote,
+                keptLocal
             });
 
             return merged;
@@ -1510,8 +1598,11 @@
 
         async function syncProjectsToCloud(projects) {
             if (!currentUser || !firestore) {
+                console.log('[Sync] Cannot sync to cloud - user or firestore not available');
                 return;
             }
+
+            console.log('[Sync] Syncing', projects.length, 'projects to cloud...');
 
             try {
                 // Set syncing flag to prevent snapshot listener from triggering
@@ -1522,15 +1613,16 @@
                     updatedAt: new Date().toISOString()
                 });
 
-                console.log('Projects synced to cloud successfully');
+                console.log('[Sync] ✓ Projects synced to cloud successfully');
             } catch (error) {
-                console.error('Unable to sync projects to cloud:', error);
+                console.error('[Sync] ✗ Unable to sync projects to cloud:', error);
                 throw error;
             } finally {
                 // Reset syncing flag after a short delay to allow Firestore to process
                 setTimeout(() => {
                     isSyncing = false;
-                }, 1000);
+                    console.log('[Sync] isSyncing flag reset');
+                }, 1500);
             }
         }
 
@@ -1575,16 +1667,16 @@
                 <div class="grid-2">
                     <div class="input-group">
                         <label class="input-label">Description</label>
-                        <input type="text" class="input-field item-description" placeholder="Item description">
+                        <input type="text" class="input-field item-description" placeholder="Item description" oninput="triggerAutoSave()">
                     </div>
                     <div class="grid-2" style="gap: 10px;">
                         <div class="input-group">
                             <label class="input-label">Quantity</label>
-                            <input type="number" class="input-field item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                            <input type="number" class="input-field item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this); triggerAutoSave()">
                         </div>
                         <div class="input-group">
                             <label class="input-label">Unit</label>
-                            <select class="input-field item-unit">
+                            <select class="input-field item-unit" onchange="triggerAutoSave()">
                                 <option value="ea">Each</option>
                                 <option value="sqft">Sq Ft</option>
                                 <option value="sqm">Sq M</option>
@@ -1601,25 +1693,25 @@
                 <div class="grid-4">
                     <div class="input-group">
                         <label class="input-label">Material Cost</label>
-                        <input type="number" class="input-field item-material" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                        <input type="number" class="input-field item-material" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this); triggerAutoSave()">
                     </div>
                     <div class="input-group">
                         <label class="input-label">Labor Cost</label>
-                        <input type="number" class="input-field item-labor" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                        <input type="number" class="input-field item-labor" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this); triggerAutoSave()">
                     </div>
                     <div class="input-group">
                         <label class="input-label">Labor Surcharge (%)</label>
-                        <input type="number" class="input-field item-surcharge" placeholder="0" min="0" step="0.1" oninput="calculateLineTotal(this)">
+                        <input type="number" class="input-field item-surcharge" placeholder="0" min="0" step="0.1" oninput="calculateLineTotal(this); triggerAutoSave()">
                     </div>
                     <div class="input-group">
                         <label class="input-label">Equipment Cost</label>
-                        <input type="number" class="input-field item-equipment" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
+                        <input type="number" class="input-field item-equipment" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this); triggerAutoSave()">
                     </div>
                 </div>
 
                 <div class="input-group">
                     <label class="input-label">Notes</label>
-                    <input type="text" class="input-field item-notes" placeholder="Additional notes">
+                    <input type="text" class="input-field item-notes" placeholder="Additional notes" oninput="triggerAutoSave()">
                 </div>
 
                 <div class="item-totals-box">
@@ -1643,6 +1735,7 @@
             `;
             container.appendChild(itemDiv);
             debouncedCalculateEstimate({ auto: true });
+            triggerAutoSave();
         }
 
         function removeLineItem(btn) {
@@ -1651,6 +1744,7 @@
                 btn.closest('.line-item').remove();
                 renumberLineItems();
                 debouncedCalculateEstimate({ auto: true });
+                triggerAutoSave();
             } else {
                 alert('At least one line item is required');
             }
@@ -1779,6 +1873,8 @@
                 alert('Please enter a project name before saving.');
                 return null;
             }
+
+            console.log('[Save] Saving project:', projectName);
 
             const projectData = {
                 id: currentProjectId || generateProjectId(),
