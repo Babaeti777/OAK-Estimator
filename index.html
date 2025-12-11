@@ -1550,18 +1550,25 @@
                 }
             } catch (error) {
                 // If the server fetch fails (offline), fall back to cache so the app still works.
+                // Firebase offline errors can have code 'unavailable' or message containing 'offline'
                 console.error('Unable to load projects from cloud:', error);
-                if (error.code === 'unavailable') {
-                    const cachedDoc = await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).get({ source: 'cache' });
-                    if (cachedDoc.exists) {
-                        const data = cachedDoc.data();
-                        if (data && Array.isArray(data.projects)) {
-                            lastSyncedTimestamp = data.updatedAt || null;
-                            projectsCache = data.projects;
-                            persistProjectsLocally();
-                            console.log('Loaded projects from offline cache, timestamp:', lastSyncedTimestamp);
-                            return data.projects;
+                const isOfflineError = error.code === 'unavailable' ||
+                    (error.message && error.message.toLowerCase().includes('offline'));
+                if (isOfflineError) {
+                    try {
+                        const cachedDoc = await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).get({ source: 'cache' });
+                        if (cachedDoc.exists) {
+                            const data = cachedDoc.data();
+                            if (data && Array.isArray(data.projects)) {
+                                lastSyncedTimestamp = data.updatedAt || null;
+                                projectsCache = data.projects;
+                                persistProjectsLocally();
+                                console.log('Loaded projects from offline cache, timestamp:', lastSyncedTimestamp);
+                                return data.projects;
+                            }
                         }
+                    } catch (cacheError) {
+                        console.warn('Unable to load from cache, using local storage:', cacheError);
                     }
                 }
             }
