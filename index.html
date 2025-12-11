@@ -1029,6 +1029,14 @@
             initializeFirebaseAuth();
             setupAutoEstimateListeners();
             document.addEventListener('keydown', handleCalculatorKeyboard);
+
+            // Auto-refresh projects when tab becomes visible (catches missed sync updates)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && currentUser && firestore) {
+                    console.log('Tab became visible - checking for updates');
+                    refreshProjects({ silent: true });
+                }
+            });
         });
 
         function setupAutoEstimateListeners() {
@@ -1232,59 +1240,66 @@
             try {
                 const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
 
-                // Set up real-time listener for project changes with metadata to detect source
-                firestoreUnsubscribe = docRef.onSnapshot({ includeMetadataChanges: true }, (snapshot) => {
-                    // Skip if this is a local pending write (not yet confirmed by server)
-                    // This prevents processing our own local changes before server confirmation
-                    if (snapshot.metadata.hasPendingWrites) {
-                        console.log('Skipping local pending write');
-                        return;
-                    }
-
-                    // Skip if we're in the middle of a sync operation
+                // Set up real-time listener for project changes
+                // Using includeMetadataChanges to track write confirmations
+                firestoreUnsubscribe = docRef.onSnapshot({ includeMetadataChanges: false }, (snapshot) => {
+                    // Skip if we're in the middle of a local sync operation
                     if (isSyncing) {
+                        console.log('Skipping snapshot - local sync in progress');
                         return;
                     }
 
-                    if (snapshot.exists) {
-                        const data = snapshot.data();
-                        if (data && Array.isArray(data.projects)) {
-                            const remoteTimestamp = data.updatedAt || null;
-                            const remoteProjects = data.projects;
+                    if (!snapshot.exists) {
+                        console.log('No cloud document exists yet');
+                        return;
+                    }
 
-                            // Check if this is a new update we haven't processed yet
-                            // by comparing timestamps - this ensures we catch remote changes
-                            const isNewRemoteUpdate = remoteTimestamp && remoteTimestamp !== lastSyncedTimestamp;
+                    const data = snapshot.data();
+                    if (!data || !Array.isArray(data.projects)) {
+                        console.log('Invalid cloud data structure');
+                        return;
+                    }
 
-                            // Merge remote changes with local cache intelligently
-                            const mergedProjects = mergeProjects(projectsCache, remoteProjects);
+                    const remoteTimestamp = data.updatedAt || '';
+                    const remoteProjects = data.projects;
 
-                            // Update cache and UI if there are actual changes or new remote timestamp
-                            const hasChanges = JSON.stringify(mergedProjects) !== JSON.stringify(projectsCache);
+                    // Skip if this is data we just synced (same timestamp)
+                    if (remoteTimestamp && remoteTimestamp === lastSyncedTimestamp) {
+                        console.log('Skipping snapshot - same timestamp as last sync');
+                        return;
+                    }
 
-                            if (hasChanges || isNewRemoteUpdate) {
-                                // Update the last synced timestamp
-                                lastSyncedTimestamp = remoteTimestamp;
+                    // Check if remote data is actually different from local
+                    // Use a simple hash comparison for reliability
+                    const remoteHash = JSON.stringify(remoteProjects.map(p => ({ id: p.id, updatedAt: p.updatedAt })));
+                    const localHash = JSON.stringify(projectsCache.map(p => ({ id: p.id, updatedAt: p.updatedAt })));
 
-                                if (hasChanges) {
-                                    projectsCache = mergedProjects;
-                                    persistProjectsLocally();
-                                    renderProjectsList();
+                    if (remoteHash === localHash) {
+                        // Update timestamp tracking but no data changes
+                        lastSyncedTimestamp = remoteTimestamp;
+                        console.log('Remote data matches local - updating timestamp only');
+                        return;
+                    }
 
-                                    // Reload current project if it was updated remotely
-                                    const currentProject = projectsCache.find(p => p.id === currentProjectId);
-                                    if (currentProject) {
-                                        loadProject(currentProjectId, { silent: true, skipScroll: true });
-                                    }
+                    console.log('Remote changes detected - syncing from cloud');
 
-                                    console.log('Projects synced from cloud (remote changes detected)');
-                                } else {
-                                    // Just update the timestamp tracking
-                                    console.log('Remote timestamp updated, no project changes');
-                                }
-                            }
+                    // Update timestamp first
+                    lastSyncedTimestamp = remoteTimestamp;
+
+                    // Replace local cache with remote data (remote is source of truth)
+                    projectsCache = remoteProjects;
+                    persistProjectsLocally();
+                    renderProjectsList();
+
+                    // Reload current project if it exists in the updated list
+                    if (currentProjectId) {
+                        const currentProject = projectsCache.find(p => p.id === currentProjectId);
+                        if (currentProject) {
+                            loadProject(currentProjectId, { silent: true, skipScroll: true });
                         }
                     }
+
+                    console.log('Projects synced from cloud successfully');
                 }, (error) => {
                     console.error('Real-time sync error:', error);
                     if (syncStatusEl) {
@@ -1513,6 +1528,7 @@
 
             try {
                 const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
+                // Let Firebase decide source (server if online, cache if offline)
                 const snapshot = await docRef.get();
                 if (snapshot.exists) {
                     const data = snapshot.data();
@@ -1521,9 +1537,12 @@
                         lastSyncedTimestamp = data.updatedAt || null;
                         projectsCache = data.projects;
                         persistProjectsLocally();
+                        const source = snapshot.metadata.fromCache ? 'cache' : 'server';
+                        console.log('Loaded projects from cloud (' + source + '), timestamp:', lastSyncedTimestamp);
                         return data.projects;
                     }
                 } else if (localProjects.length) {
+                    console.log('No cloud data, uploading local projects');
                     await syncProjectsToCloud(localProjects);
                 }
             } catch (error) {
@@ -1538,14 +1557,14 @@
                 return;
             }
 
+            // Set syncing flag to prevent snapshot listener from triggering during write
+            isSyncing = true;
+
+            // Generate timestamp for this sync
+            const syncTimestamp = new Date().toISOString();
+
             try {
-                // Set syncing flag to prevent snapshot listener from triggering during write
-                isSyncing = true;
-
-                // Generate timestamp for this sync
-                const syncTimestamp = new Date().toISOString();
-
-                // Update our tracking timestamp BEFORE the write so we skip our own confirmed write
+                // Update our tracking timestamp BEFORE the write so we skip our own echo
                 lastSyncedTimestamp = syncTimestamp;
 
                 await firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid).set({
@@ -1553,18 +1572,15 @@
                     updatedAt: syncTimestamp
                 });
 
-                console.log('Projects synced to cloud successfully');
+                console.log('Projects synced to cloud successfully at', syncTimestamp);
             } catch (error) {
                 console.error('Unable to sync projects to cloud:', error);
-                // Reset the timestamp on error so we can retry
+                // Reset the timestamp on error so we can detect fresh data
                 lastSyncedTimestamp = null;
                 throw error;
             } finally {
-                // Reset syncing flag after a short delay to allow Firestore to process
-                // and avoid race conditions with the snapshot listener
-                setTimeout(() => {
-                    isSyncing = false;
-                }, 500);
+                // Reset syncing flag immediately - the timestamp check will prevent echo
+                isSyncing = false;
             }
         }
 
