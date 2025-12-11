@@ -1,0 +1,110 @@
+rules_version = '2';
+
+/**
+ * Firestore Security Rules for OAK Construction Estimator
+ *
+ * DEPLOYMENT INSTRUCTIONS:
+ * 1. Go to Firebase Console > Firestore Database > Rules
+ * 2. Copy and paste these rules
+ * 3. Click "Publish"
+ *
+ * These rules ensure:
+ * - Users can only access their own data
+ * - All operations require authentication
+ * - Data validation for writes
+ * - Rate limiting considerations
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+
+    /**
+     * Check if user is authenticated
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /**
+     * Check if user owns the document
+     */
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    /**
+     * Validate project object structure
+     */
+    function isValidProject(project) {
+      return project.keys().hasAll(['id', 'name', 'type', 'updatedAt']) &&
+             project.id is string &&
+             project.name is string &&
+             project.type is string &&
+             project.updatedAt is string &&
+             project.lineItems is list;
+    }
+
+    /**
+     * Validate projects array
+     */
+    function hasValidProjects(data) {
+      return data.keys().hasAll(['projects', 'updatedAt']) &&
+             data.projects is list &&
+             data.updatedAt is string;
+    }
+
+    /**
+     * Check if write is not too large (prevent abuse)
+     */
+    function isReasonableSize() {
+      return request.resource.size() < 1000000; // 1MB limit
+    }
+
+    // User Projects Collection
+    // Each user has a single document containing all their projects
+    match /userProjects/{userId} {
+      // Read: User can only read their own projects
+      allow read: if isOwner(userId);
+
+      // Create: User can create their own document
+      allow create: if isOwner(userId) &&
+                       hasValidProjects(request.resource.data) &&
+                       isReasonableSize();
+
+      // Update: User can update their own document with valid data
+      allow update: if isOwner(userId) &&
+                       hasValidProjects(request.resource.data) &&
+                       isReasonableSize();
+
+      // Delete: User can delete their own document
+      allow delete: if isOwner(userId);
+    }
+
+    // User Settings Collection (optional - for future use)
+    // Store user preferences, app settings, etc.
+    match /userSettings/{userId} {
+      // Read: User can only read their own settings
+      allow read: if isOwner(userId);
+
+      // Write: User can write their own settings
+      allow write: if isOwner(userId) && isReasonableSize();
+    }
+
+    // Sync Metadata Collection (optional - for future use)
+    // Store sync timestamps, device info, etc.
+    match /syncMetadata/{userId} {
+      // Read: User can only read their own metadata
+      allow read: if isOwner(userId);
+
+      // Write: User can write their own metadata
+      allow write: if isOwner(userId) && isReasonableSize();
+    }
+
+    // Deny all other collections by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

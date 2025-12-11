@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Integration Example</title>
+    <style>
+        /* Connection Status Indicator */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .connection-status.offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .connection-status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        /* Sync Status Indicator */
+        .sync-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: #007bff;
+            color: white;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sync-status.visible {
+            opacity: 1;
+        }
+
+        .sync-status.syncing {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .sync-status.success {
+            background: #28a745;
+        }
+
+        .sync-status.error {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status connecting">
+        ⚡ Checking connection...
+    </div>
+
+    <!-- Sync Status Indicator -->
+    <div id="sync-status" class="sync-status">
+        Synced
+    </div>
+
+    <!-- Your existing HTML content -->
+    <!-- ... -->
+
+    <!-- Firebase SDK (compat version for compatibility) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase Integration Module -->
+    <script type="module">
+        // Import Firebase services
+        import { quickSetup } from './firebase/index.js';
+
+        // Global Firebase app instance
+        let firebaseApp = null;
+
+        /**
+         * Initialize Firebase with all features
+         */
+        async function initializeOAKFirebase() {
+            try {
+                console.log('🔥 Initializing Firebase...');
+
+                firebaseApp = await quickSetup({
+                    // Auth state change handler
+                    onAuthChange: (user, isLoading) => {
+                        handleAuthStateChange(user, isLoading);
+                    },
+
+                    // Connection status change handler
+                    onConnectionChange: (status) => {
+                        updateConnectionStatus(status);
+                    },
+
+                    // Realtime project sync handler
+                    onSyncUpdate: (projects, metadata) => {
+                        handleProjectsUpdate(projects, metadata);
+                    },
+
+                    // Error handler
+                    onError: (error) => {
+                        console.error('Firebase error:', error);
+                    }
+                });
+
+                console.log('✅ Firebase initialized successfully');
+
+                // Expose to window for debugging (optional)
+                if (typeof window !== 'undefined') {
+                    window.firebaseApp = firebaseApp;
+                }
+
+            } catch (error) {
+                console.error('❌ Firebase initialization failed:', error);
+
+                // Fallback to offline mode
+                initializeOfflineMode();
+
+                // Show error to user
+                showNotification('Running in offline mode. Sign in to sync your data.', 'warning');
+            }
+        }
+
+        /**
+         * Handle authentication state changes
+         */
+        function handleAuthStateChange(user, isLoading) {
+            console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user', 'Loading:', isLoading);
+
+            if (isLoading) {
+                // Show loading screen
+                showLoadingScreen();
+                return;
+            }
+
+            // Hide loading screen
+            hideLoadingScreen();
+
+            if (user) {
+                // User signed in
+                console.log('✅ User signed in:', user.email);
+
+                // Update UI for signed-in state
+                updateUIForSignedInUser(user);
+
+                // Load user's projects from cloud
+                loadUserProjects();
+
+                // Show success notification
+                showNotification(`Welcome, ${user.displayName || user.email}!`, 'success');
+
+            } else {
+                // User signed out
+                console.log('👋 User signed out');
+
+                // Update UI for signed-out state
+                updateUIForSignedOutUser();
+
+                // Load local projects only
+                loadLocalProjects();
+            }
+        }
+
+        /**
+         * Update connection status indicator
+         */
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connection-status');
+            if (!indicator) return;
+
+            if (status.isOnline && status.isFirestoreConnected) {
+                indicator.textContent = '⚡ Online';
+                indicator.className = 'connection-status online';
+            } else if (status.isOnline && !status.isFirestoreConnected) {
+                indicator.textContent = '⚡ Connecting...';
+                indicator.className = 'connection-status connecting';
+            } else {
+                indicator.textContent = '⚡ Offline';
+                indicator.className = 'connection-status offline';
+            }
+        }
+
+        /**
+         * Handle realtime project updates
+         */
+        function handleProjectsUpdate(projects, metadata) {
+            console.log(`📦 Projects synced: ${projects.length} projects`);
+            console.log('From cache:', metadata.fromCache, 'Pending writes:', metadata.hasPendingWrites);
+
+            // Update global projects array (adapt to your app structure)
+            if (typeof window !== 'undefined') {
+                window.projects = projects;
+            }
+
+            // Refresh UI
+            refreshProjectsList();
+
+            // Show sync indicator
+            if (!metadata.fromCache && !metadata.hasPendingWrites) {
+                showSyncIndicator('success', 'Synced');
+            }
+        }
+
+        /**
+         * Load projects for authenticated user
+         */
+        async function loadUserProjects() {
+            try {
+                const projects = await firebaseApp.loadProjects();
+                console.log(`Loaded ${projects.length} projects for user`);
+
+                // Update global state
+                if (typeof window !== 'undefined') {
+                    window.projects = projects;
+                }
+
+                // Refresh UI
+                refreshProjectsList();
+
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+                showNotification('Failed to load projects. Using offline data.', 'error');
+                loadLocalProjects();
+            }
+        }
+
+        /**
+         * Load projects from local storage (offline mode)
+         */
+        function loadLocalProjects() {
+            const stored = localStorage.getItem('constructionEstimatorProjects');
+            const projects = stored ? JSON.parse(stored) : [];
+
+            console.log(`Loaded ${projects.length} projects from local storage`);
+
+            // Update global state
+            if (typeof window !== 'undefined') {
+                window.projects = projects;
+            }
+
+            // Refresh UI
+            refreshProjectsList();
+        }
+
+        /**
+         * Initialize offline mode
+         */
+        function initializeOfflineMode() {
+            console.log('🔌 Running in offline mode');
+            updateUIForSignedOutUser();
+            loadLocalProjects();
+        }
+
+        /**
+         * Update UI for signed-in user
+         */
+        function updateUIForSignedInUser(user) {
+            // Update user info display
+            const userNameEl = document.getElementById('user-name');
+            const userEmailEl = document.getElementById('user-email');
+            const userAvatarEl = document.getElementById('user-avatar');
+
+            if (userNameEl) userNameEl.textContent = user.displayName || 'User';
+            if (userEmailEl) userEmailEl.textContent = user.email;
+            if (userAvatarEl && user.photoURL) userAvatarEl.src = user.photoURL;
+
+            // Show/hide buttons
+            const signInBtn = document.getElementById('sign-in-btn');
+            const signOutBtn = document.getElementById('sign-out-btn');
+            const userInfo = document.getElementById('user-info');
+
+            if (signInBtn) signInBtn.style.display = 'none';
+            if (signOutBtn) signOutBtn.style.display = 'block';
+            if (userInfo) userInfo.style.display = 'block';
+        }
+
+        /**
+         * Update UI for signed-out user
+         */
+        function updateUIForSignedOutUser() {
+            // Show/hide buttons
+            const signInBtn = document.getElementById('sign-in-btn');
+            const signOutBtn = document.getElementById('sign-out-btn');
+            const userInfo = document.getElementById('user-info');
+
+            if (signInBtn) signInBtn.style.display = 'block';
+            if (signOutBtn) signOutBtn.style.display = 'none';
+            if (userInfo) userInfo.style.display = 'none';
+        }
+
+        /**
+         * Refresh projects list in UI
+         */
+        function refreshProjectsList() {
+            // Implement your UI refresh logic here
+            console.log('Refreshing projects list...');
+
+            // Example: Trigger your existing refresh function
+            if (typeof window.loadProjectsIntoList === 'function') {
+                window.loadProjectsIntoList();
+            }
+        }
+
+        /**
+         * Show loading screen
+         */
+        function showLoadingScreen() {
+            const loader = document.getElementById('loading-screen');
+            if (loader) loader.style.display = 'flex';
+        }
+
+        /**
+         * Hide loading screen
+         */
+        function hideLoadingScreen() {
+            const loader = document.getElementById('loading-screen');
+            if (loader) loader.style.display = 'none';
+        }
+
+        /**
+         * Show notification to user
+         */
+        function showNotification(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+
+            // Implement your notification UI here
+            // Could be a toast, alert, or custom notification component
+            // For now, just log to console
+        }
+
+        /**
+         * Show sync status indicator
+         */
+        function showSyncIndicator(status, message) {
+            const indicator = document.getElementById('sync-status');
+            if (!indicator) return;
+
+            indicator.textContent = message;
+            indicator.className = `sync-status visible ${status}`;
+
+            // Hide after 2 seconds
+            setTimeout(() => {
+                indicator.classList.remove('visible');
+            }, 2000);
+        }
+
+        // ============================================
+        // GLOBAL FUNCTIONS FOR UI BUTTONS
+        // ============================================
+
+        /**
+         * Handle sign-in button click
+         */
+        window.handleSignIn = async function() {
+            try {
+                showLoadingScreen();
+                await firebaseApp.signIn();
+                // Success handled by auth state change listener
+            } catch (error) {
+                console.error('Sign-in failed:', error);
+                showNotification('Sign-in failed. Please try again.', 'error');
+            } finally {
+                hideLoadingScreen();
+            }
+        };
+
+        /**
+         * Handle sign-out button click
+         */
+        window.handleSignOut = async function() {
+            if (!confirm('Are you sure you want to sign out?')) {
+                return;
+            }
+
+            try {
+                showLoadingScreen();
+                await firebaseApp.signOut();
+                showNotification('Signed out successfully', 'success');
+            } catch (error) {
+                console.error('Sign-out failed:', error);
+                showNotification('Sign-out failed. Please try again.', 'error');
+            } finally {
+                hideLoadingScreen();
+            }
+        };
+
+        /**
+         * Save current project (call this when saving a project)
+         */
+        window.saveCurrentProject = async function() {
+            try {
+                // Your existing save logic here
+                // ...
+
+                // Then sync to cloud if signed in
+                if (firebaseApp && firebaseApp.isSignedIn()) {
+                    showSyncIndicator('syncing', 'Syncing...');
+
+                    const result = await firebaseApp.saveProjects(window.projects);
+
+                    if (result.success) {
+                        showSyncIndicator('success', 'Synced');
+                        console.log('✅ Project synced to cloud');
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } else {
+                    // Save locally only
+                    localStorage.setItem('constructionEstimatorProjects', JSON.stringify(window.projects));
+                    console.log('💾 Project saved locally');
+                }
+
+            } catch (error) {
+                console.error('Save failed:', error);
+                showSyncIndicator('error', 'Sync failed');
+                showNotification('Failed to save project to cloud. Saved locally.', 'warning');
+            }
+        };
+
+        /**
+         * Refresh projects manually
+         */
+        window.refreshProjects = async function() {
+            if (!firebaseApp || !firebaseApp.isSignedIn()) {
+                showNotification('Please sign in to sync projects', 'info');
+                return;
+            }
+
+            try {
+                showSyncIndicator('syncing', 'Syncing...');
+                await loadUserProjects();
+                showSyncIndicator('success', 'Synced');
+                showNotification('Projects refreshed', 'success');
+            } catch (error) {
+                console.error('Refresh failed:', error);
+                showSyncIndicator('error', 'Sync failed');
+                showNotification('Failed to refresh projects', 'error');
+            }
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        /**
+         * Initialize when DOM is ready
+         */
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeOAKFirebase);
+        } else {
+            initializeOAKFirebase();
+        }
+
+    </script>
+</body>
+</html>
