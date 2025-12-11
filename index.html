@@ -1029,6 +1029,14 @@
             initializeFirebaseAuth();
             setupAutoEstimateListeners();
             document.addEventListener('keydown', handleCalculatorKeyboard);
+
+            // Auto-refresh projects when tab becomes visible (catches missed sync updates)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && currentUser && firestore) {
+                    console.log('Tab became visible - checking for updates');
+                    refreshProjects({ silent: true });
+                }
+            });
         });
 
         function setupAutoEstimateListeners() {
