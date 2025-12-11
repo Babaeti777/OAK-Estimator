@@ -1528,8 +1528,8 @@
 
             try {
                 const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
-                // Force fetch from server to get latest data, not cached
-                const snapshot = await docRef.get({ source: 'server' });
+                // Let Firebase decide source (server if online, cache if offline)
+                const snapshot = await docRef.get();
                 if (snapshot.exists) {
                     const data = snapshot.data();
                     if (data && Array.isArray(data.projects)) {
@@ -1537,7 +1537,8 @@
                         lastSyncedTimestamp = data.updatedAt || null;
                         projectsCache = data.projects;
                         persistProjectsLocally();
-                        console.log('Loaded projects from cloud, timestamp:', lastSyncedTimestamp);
+                        const source = snapshot.metadata.fromCache ? 'cache' : 'server';
+                        console.log('Loaded projects from cloud (' + source + '), timestamp:', lastSyncedTimestamp);
                         return data.projects;
                     }
                 } else if (localProjects.length) {
@@ -1546,23 +1547,6 @@
                 }
             } catch (error) {
                 console.error('Unable to load projects from cloud:', error);
-                // If server fetch fails, try cache as fallback
-                try {
-                    const docRef = firestore.collection(CLOUD_PROJECTS_COLLECTION).doc(currentUser.uid);
-                    const cachedSnapshot = await docRef.get({ source: 'cache' });
-                    if (cachedSnapshot.exists) {
-                        const data = cachedSnapshot.data();
-                        if (data && Array.isArray(data.projects)) {
-                            lastSyncedTimestamp = data.updatedAt || null;
-                            projectsCache = data.projects;
-                            persistProjectsLocally();
-                            console.log('Loaded projects from cache (offline mode)');
-                            return data.projects;
-                        }
-                    }
-                } catch (cacheError) {
-                    console.log('Cache also unavailable:', cacheError);
-                }
             }
 
             return localProjects;
