@@ -1570,6 +1570,8 @@
                     } catch (cacheError) {
                         console.warn('Unable to load from cache, using local storage:', cacheError);
                     }
+
+                    console.log('No cached cloud data available; falling back to local projects.');
                 }
             }
 
