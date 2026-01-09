@@ -275,9 +275,177 @@
             transition: border 0.3s, box-shadow 0.3s;
         }
 
-        .line-item:hover {
+        /* Spreadsheet-style Line Items Table */
+        .line-items-table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+
+        .line-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            min-width: 900px;
+        }
+
+        .line-items-table thead {
+            background: rgba(30, 41, 59, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .line-items-table th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #a5b4fc;
+            border-bottom: 2px solid #38bdf8;
+            white-space: nowrap;
+            font-size: 0.85em;
+        }
+
+        .line-items-table th.center {
+            text-align: center;
+        }
+
+        .line-items-table tbody tr {
+            border-bottom: 1px solid #1f2937;
+            transition: background 0.2s;
+        }
+
+        .line-items-table tbody tr:hover {
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        .line-items-table tbody tr:nth-child(even) {
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .line-items-table tbody tr:nth-child(even):hover {
+            background: rgba(56, 189, 248, 0.12);
+        }
+
+        .line-items-table td {
+            padding: 6px 6px;
+            vertical-align: middle;
+        }
+
+        .line-items-table .line-num {
+            text-align: center;
+            font-weight: 700;
+            color: #38bdf8;
+            width: 35px;
+        }
+
+        .line-items-table .table-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            font-size: 0.9em;
+            background: #0f172a;
+            color: #f8fafc;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        .line-items-table .table-input:focus {
+            outline: none;
             border-color: #38bdf8;
-            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.15);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+        }
+
+        .line-items-table .table-input.desc {
+            min-width: 150px;
+        }
+
+        .line-items-table .table-input.qty {
+            width: 70px;
+            text-align: right;
+        }
+
+        .line-items-table .table-input.unit {
+            width: 80px;
+        }
+
+        .line-items-table .table-input.cost {
+            width: 85px;
+            text-align: right;
+        }
+
+        .line-items-table .table-input.surcharge {
+            width: 65px;
+            text-align: right;
+        }
+
+        .line-items-table .table-input.notes {
+            min-width: 100px;
+        }
+
+        .line-items-table .line-total-cell {
+            font-weight: 700;
+            color: #22d3ee;
+            text-align: right;
+            white-space: nowrap;
+            min-width: 90px;
+        }
+
+        .line-items-table .remove-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+
+        .line-items-table .remove-btn:hover {
+            background: #b91c1c;
+        }
+
+        /* Company Settings */
+        .company-settings {
+            margin-bottom: 15px;
+        }
+
+        .company-logo-preview {
+            max-width: 200px;
+            max-height: 80px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .logo-upload-area {
+            border: 2px dashed #334155;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .logo-upload-area:hover {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .logo-upload-area.has-logo {
+            border-style: solid;
+            border-color: #059669;
+        }
+
+        /* Legacy line item styles (kept for backwards compatibility during migration) */
+        .line-item {
+            background: rgba(2, 6, 23, 0.65);
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: border 0.3s, box-shadow 0.3s;
+            display: none; /* Hidden - using table layout now */
         }
 
         .line-item-header {
@@ -771,6 +939,7 @@
                         <button class="btn btn-secondary" onclick="saveCurrentProject()">💾 Save Project</button>
                         <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📤 Import CSV</button>
                         <button class="btn btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
+                        <button class="btn btn-success" onclick="exportToPDF()">📄 Export PDF</button>
                     </div>
                     <div class="projects-list" id="projectsList">
                         <p style="text-align: center; color: #94a3b8; padding: 20px;">No saved projects yet. Create your first project!</p>
@@ -779,6 +948,48 @@
                 </aside>
 
                 <section class="content-area">
+                    <!-- Company Settings -->
+                    <div class="card collapsible collapsed" id="companySettingsCard">
+                        <div class="card-header">
+                            <span>🏢 Company Settings (for PDF Export)</span>
+                            <button class="collapse-toggle" onclick="toggleCompanySettings()" aria-expanded="false">Expand</button>
+                        </div>
+                        <div class="collapsible-content" id="companySettingsContent">
+                            <div class="grid-2">
+                                <div class="input-group">
+                                    <label class="input-label">Company Name</label>
+                                    <input type="text" class="input-field" id="companyName" placeholder="Your Company Name">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Company Address</label>
+                                    <input type="text" class="input-field" id="companyAddress" placeholder="123 Main St, City, State ZIP">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div class="input-group">
+                                    <label class="input-label">Phone</label>
+                                    <input type="text" class="input-field" id="companyPhone" placeholder="(555) 123-4567">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Email</label>
+                                    <input type="email" class="input-field" id="companyEmail" placeholder="info@company.com">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Company Logo</label>
+                                <div class="logo-upload-area" id="logoUploadArea" onclick="document.getElementById('logoInput').click()">
+                                    <div id="logoPlaceholder">
+                                        <p style="color: #94a3b8; margin: 0;">Click to upload logo (PNG, JPG - Max 500KB)</p>
+                                        <p style="color: #64748b; font-size: 0.85em; margin-top: 5px;">Recommended: 300x100 pixels</p>
+                                    </div>
+                                    <img id="companyLogoPreview" class="company-logo-preview" style="display: none;" alt="Company Logo">
+                                </div>
+                                <input type="file" id="logoInput" accept="image/png,image/jpeg" style="display: none;" onchange="handleLogoUpload(event)">
+                                <button class="btn btn-danger" style="margin-top: 10px; padding: 6px 12px; font-size: 0.85em;" onclick="removeLogo()" id="removeLogoBtn" hidden>Remove Logo</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Project Information -->
                     <div class="card collapsible" id="projectInfoCard">
                         <div class="card-header">
@@ -830,7 +1041,27 @@
                     <!-- Line Items -->
                     <div class="card">
                         <div class="card-header">📝 Line Items</div>
-                        <div id="lineItemsContainer"></div>
+                        <div class="line-items-table-wrapper">
+                            <table class="line-items-table">
+                                <thead>
+                                    <tr>
+                                        <th class="center">#</th>
+                                        <th>Description</th>
+                                        <th>Qty</th>
+                                        <th>Unit</th>
+                                        <th>Material $</th>
+                                        <th>Labor $</th>
+                                        <th>Surch %</th>
+                                        <th>Equip $</th>
+                                        <th>Notes</th>
+                                        <th>Line Total</th>
+                                        <th class="center"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lineItemsContainer">
+                                </tbody>
+                            </table>
+                        </div>
                         <button class="btn btn-primary btn-full" onclick="addLineItem()">+ Add Line Item</button>
                     </div>
 
@@ -972,6 +1203,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -1028,6 +1262,7 @@
             switchCalculatorTab('basicCalculator');
             initializeFirebaseAuth();
             setupAutoEstimateListeners();
+            loadCompanySettings();
             document.addEventListener('keydown', handleCalculatorKeyboard);
 
             // Auto-refresh projects when tab becomes visible (catches missed sync updates)
@@ -1640,91 +1875,40 @@
         function addLineItem() {
             lineItemCounter++;
             const container = document.getElementById('lineItemsContainer');
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'line-item';
-            itemDiv.innerHTML = `
-                <div class="line-item-header">
-                    <span class="line-number">Line Item #${lineItemCounter}</span>
-                    <button class="btn btn-danger" onclick="removeLineItem(this)">✕ Remove</button>
-                </div>
-
-                <div class="grid-2">
-                    <div class="input-group">
-                        <label class="input-label">Description</label>
-                        <input type="text" class="input-field item-description" placeholder="Item description">
-                    </div>
-                    <div class="grid-2" style="gap: 10px;">
-                        <div class="input-group">
-                            <label class="input-label">Quantity</label>
-                            <input type="number" class="input-field item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this)">
-                        </div>
-                        <div class="input-group">
-                            <label class="input-label">Unit</label>
-                            <select class="input-field item-unit">
-                                <option value="ea">Each</option>
-                                <option value="sqft">Sq Ft</option>
-                                <option value="sqm">Sq M</option>
-                                <option value="lf">Lin Ft</option>
-                                <option value="cy">Cu Yd</option>
-                                <option value="hr">Hours</option>
-                                <option value="day">Days</option>
-                                <option value="ls">Lump Sum</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid-4">
-                    <div class="input-group">
-                        <label class="input-label">Material Cost</label>
-                        <input type="number" class="input-field item-material" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Labor Cost</label>
-                        <input type="number" class="input-field item-labor" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Labor Surcharge (%)</label>
-                        <input type="number" class="input-field item-surcharge" placeholder="0" min="0" step="0.1" oninput="calculateLineTotal(this)">
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Equipment Cost</label>
-                        <input type="number" class="input-field item-equipment" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Notes</label>
-                    <input type="text" class="input-field item-notes" placeholder="Additional notes">
-                </div>
-
-                <div class="item-totals-box">
-                    <div class="total-line">
-                        <span>Material Total:</span>
-                        <span class="material-total">$0.00</span>
-                    </div>
-                    <div class="total-line">
-                        <span>Labor Total:</span>
-                        <span class="labor-total">$0.00</span>
-                    </div>
-                    <div class="total-line">
-                        <span>Equipment Total:</span>
-                        <span class="equipment-total">$0.00</span>
-                    </div>
-                    <div class="total-line grand">
-                        <span>Line Total:</span>
-                        <span class="line-total">$0.00</span>
-                    </div>
-                </div>
+            const row = document.createElement('tr');
+            row.className = 'line-item';
+            row.innerHTML = `
+                <td class="line-num"><span class="line-number">${lineItemCounter}</span></td>
+                <td><input type="text" class="table-input desc item-description" placeholder="Description"></td>
+                <td><input type="number" class="table-input qty item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
+                <td>
+                    <select class="table-input unit item-unit">
+                        <option value="ea">Each</option>
+                        <option value="sqft">Sq Ft</option>
+                        <option value="sqm">Sq M</option>
+                        <option value="lf">Lin Ft</option>
+                        <option value="cy">Cu Yd</option>
+                        <option value="hr">Hours</option>
+                        <option value="day">Days</option>
+                        <option value="ls">Lump Sum</option>
+                    </select>
+                </td>
+                <td><input type="number" class="table-input cost item-material" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
+                <td><input type="number" class="table-input cost item-labor" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
+                <td><input type="number" class="table-input surcharge item-surcharge" placeholder="0" min="0" step="0.1" oninput="calculateLineTotal(this)"></td>
+                <td><input type="number" class="table-input cost item-equipment" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
+                <td><input type="text" class="table-input notes item-notes" placeholder="Notes"></td>
+                <td class="line-total-cell"><span class="line-total">$0.00</span></td>
+                <td><button class="remove-btn" onclick="removeLineItem(this)">✕</button></td>
             `;
-            container.appendChild(itemDiv);
+            container.appendChild(row);
             debouncedCalculateEstimate({ auto: true });
         }
 
         function removeLineItem(btn) {
             const container = document.getElementById('lineItemsContainer');
             if (container.children.length > 1) {
-                btn.closest('.line-item').remove();
+                btn.closest('tr').remove();
                 renumberLineItems();
                 debouncedCalculateEstimate({ auto: true });
             } else {
@@ -1733,15 +1917,15 @@
         }
 
         function renumberLineItems() {
-            const items = document.querySelectorAll('.line-item');
+            const items = document.querySelectorAll('#lineItemsContainer tr');
             items.forEach((item, index) => {
-                item.querySelector('.line-number').textContent = `Line Item #${index + 1}`;
+                item.querySelector('.line-number').textContent = index + 1;
             });
             lineItemCounter = items.length;
         }
 
         function calculateLineTotal(input) {
-            const item = input.closest('.line-item');
+            const item = input.closest('tr');
 
             // Validate and sanitize inputs - ensure no negative values
             const qtyInput = item.querySelector('.item-quantity');
@@ -1768,9 +1952,7 @@
             const equipTotal = qty * equip;
             const lineTotal = matTotal + labTotal + equipTotal;
 
-            item.querySelector('.material-total').textContent = '$' + matTotal.toFixed(2);
-            item.querySelector('.labor-total').textContent = '$' + labTotal.toFixed(2);
-            item.querySelector('.equipment-total').textContent = '$' + equipTotal.toFixed(2);
+            // Update line total in table cell
             item.querySelector('.line-total').textContent = '$' + lineTotal.toFixed(2);
 
             debouncedCalculateEstimate({ auto: true });
@@ -1782,7 +1964,7 @@
             let labSubtotal = 0;
             let equipSubtotal = 0;
 
-            const items = document.querySelectorAll('.line-item');
+            const items = document.querySelectorAll('#lineItemsContainer tr');
             items.forEach(item => {
                 const qty = Math.max(0, parseFloat(item.querySelector('.item-quantity').value) || 0);
                 const mat = Math.max(0, parseFloat(item.querySelector('.item-material').value) || 0);
@@ -2158,6 +2340,339 @@
             a.download = `${projectName.replace(/[^a-z0-9]/gi, '_')}_estimate.csv`;
             a.click();
             window.URL.revokeObjectURL(url);
+        }
+
+        // Company Settings Functions
+        let companyLogo = localStorage.getItem('companyLogo') || null;
+
+        function loadCompanySettings() {
+            const settings = JSON.parse(localStorage.getItem('companySettings') || '{}');
+            if (settings.name) document.getElementById('companyName').value = settings.name;
+            if (settings.address) document.getElementById('companyAddress').value = settings.address;
+            if (settings.phone) document.getElementById('companyPhone').value = settings.phone;
+            if (settings.email) document.getElementById('companyEmail').value = settings.email;
+
+            if (companyLogo) {
+                const preview = document.getElementById('companyLogoPreview');
+                preview.src = companyLogo;
+                preview.style.display = 'block';
+                document.getElementById('logoPlaceholder').style.display = 'none';
+                document.getElementById('logoUploadArea').classList.add('has-logo');
+                document.getElementById('removeLogoBtn').hidden = false;
+            }
+        }
+
+        function saveCompanySettings() {
+            const settings = {
+                name: document.getElementById('companyName').value,
+                address: document.getElementById('companyAddress').value,
+                phone: document.getElementById('companyPhone').value,
+                email: document.getElementById('companyEmail').value
+            };
+            localStorage.setItem('companySettings', JSON.stringify(settings));
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 500 * 1024) {
+                alert('Logo file is too large. Please select an image smaller than 500KB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                companyLogo = e.target.result;
+                localStorage.setItem('companyLogo', companyLogo);
+
+                const preview = document.getElementById('companyLogoPreview');
+                preview.src = companyLogo;
+                preview.style.display = 'block';
+                document.getElementById('logoPlaceholder').style.display = 'none';
+                document.getElementById('logoUploadArea').classList.add('has-logo');
+                document.getElementById('removeLogoBtn').hidden = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeLogo() {
+            companyLogo = null;
+            localStorage.removeItem('companyLogo');
+
+            document.getElementById('companyLogoPreview').style.display = 'none';
+            document.getElementById('logoPlaceholder').style.display = 'block';
+            document.getElementById('logoUploadArea').classList.remove('has-logo');
+            document.getElementById('removeLogoBtn').hidden = true;
+            document.getElementById('logoInput').value = '';
+        }
+
+        function toggleCompanySettings() {
+            const card = document.getElementById('companySettingsCard');
+            const btn = card.querySelector('.collapse-toggle');
+            card.classList.toggle('collapsed');
+            const isCollapsed = card.classList.contains('collapsed');
+            btn.textContent = isCollapsed ? 'Expand' : 'Collapse';
+            btn.setAttribute('aria-expanded', !isCollapsed);
+
+            // Save settings when collapsing
+            if (isCollapsed) {
+                saveCompanySettings();
+            }
+        }
+
+        // PDF Export Function
+        function exportToPDF() {
+            // Ensure we have the latest calculations
+            calculateEstimate();
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 15;
+            let yPos = margin;
+
+            // Colors
+            const primaryColor = [37, 99, 235];   // Blue
+            const darkColor = [15, 23, 42];       // Dark
+            const lightGray = [148, 163, 184];
+
+            // Company Header with Logo
+            const companyName = document.getElementById('companyName').value || 'Construction Estimator';
+            const companyAddress = document.getElementById('companyAddress').value;
+            const companyPhone = document.getElementById('companyPhone').value;
+            const companyEmail = document.getElementById('companyEmail').value;
+
+            if (companyLogo) {
+                try {
+                    doc.addImage(companyLogo, 'PNG', margin, yPos, 40, 15);
+                    yPos += 5;
+                } catch (e) {
+                    console.warn('Could not add logo to PDF:', e);
+                }
+            }
+
+            // Company Name
+            doc.setFontSize(18);
+            doc.setTextColor(...darkColor);
+            doc.setFont('helvetica', 'bold');
+            doc.text(companyName, companyLogo ? margin + 45 : margin, yPos + 8);
+
+            // Company Contact Info
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...lightGray);
+            let contactY = yPos + 14;
+            if (companyAddress) {
+                doc.text(companyAddress, companyLogo ? margin + 45 : margin, contactY);
+                contactY += 4;
+            }
+            if (companyPhone || companyEmail) {
+                const contactLine = [companyPhone, companyEmail].filter(Boolean).join(' | ');
+                doc.text(contactLine, companyLogo ? margin + 45 : margin, contactY);
+            }
+
+            yPos = Math.max(yPos + 25, companyLogo ? yPos + 20 : yPos + 25);
+
+            // Blue divider line
+            doc.setDrawColor(...primaryColor);
+            doc.setLineWidth(1);
+            doc.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 8;
+
+            // Estimate Title
+            doc.setFontSize(22);
+            doc.setTextColor(...primaryColor);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PROJECT ESTIMATE', margin, yPos);
+            yPos += 10;
+
+            // Project Information
+            const projectName = document.getElementById('projectName').value || 'Untitled Project';
+            const projectType = document.getElementById('projectType').value || 'N/A';
+            const projectFolder = document.getElementById('projectFolder').value || 'My Projects';
+            const currentDate = new Date().toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            doc.setFontSize(11);
+            doc.setTextColor(...darkColor);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Project Name:', margin, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(projectName, margin + 35, yPos);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('Date:', pageWidth / 2, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(currentDate, pageWidth / 2 + 15, yPos);
+            yPos += 6;
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('Project Type:', margin, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(projectType.charAt(0).toUpperCase() + projectType.slice(1), margin + 35, yPos);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('Folder:', pageWidth / 2, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(projectFolder, pageWidth / 2 + 15, yPos);
+            yPos += 12;
+
+            // Line Items Table
+            doc.setFontSize(14);
+            doc.setTextColor(...primaryColor);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Line Items', margin, yPos);
+            yPos += 6;
+
+            // Prepare table data
+            const tableData = [];
+            const items = document.querySelectorAll('#lineItemsContainer tr');
+            items.forEach((item, index) => {
+                const desc = item.querySelector('.item-description').value || '-';
+                const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
+                const unit = item.querySelector('.item-unit').value || 'ea';
+                const material = parseFloat(item.querySelector('.item-material').value) || 0;
+                const labor = parseFloat(item.querySelector('.item-labor').value) || 0;
+                const surcharge = parseFloat(item.querySelector('.item-surcharge').value) || 0;
+                const equipment = parseFloat(item.querySelector('.item-equipment').value) || 0;
+                const notes = item.querySelector('.item-notes').value || '';
+
+                const matTotal = qty * material;
+                const labTotal = qty * (labor * (1 + surcharge / 100));
+                const equipTotal = qty * equipment;
+                const lineTotal = matTotal + labTotal + equipTotal;
+
+                tableData.push([
+                    index + 1,
+                    desc.length > 25 ? desc.substring(0, 22) + '...' : desc,
+                    qty.toFixed(2),
+                    unit,
+                    '$' + material.toFixed(2),
+                    '$' + labor.toFixed(2),
+                    surcharge.toFixed(1) + '%',
+                    '$' + equipment.toFixed(2),
+                    '$' + lineTotal.toFixed(2)
+                ]);
+            });
+
+            // Auto table for line items
+            doc.autoTable({
+                startY: yPos,
+                head: [['#', 'Description', 'Qty', 'Unit', 'Material', 'Labor', 'Surch', 'Equip', 'Total']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: primaryColor,
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 8
+                },
+                bodyStyles: {
+                    fontSize: 8,
+                    textColor: darkColor
+                },
+                columnStyles: {
+                    0: { cellWidth: 8, halign: 'center' },
+                    1: { cellWidth: 45 },
+                    2: { cellWidth: 15, halign: 'right' },
+                    3: { cellWidth: 15, halign: 'center' },
+                    4: { cellWidth: 20, halign: 'right' },
+                    5: { cellWidth: 20, halign: 'right' },
+                    6: { cellWidth: 15, halign: 'right' },
+                    7: { cellWidth: 20, halign: 'right' },
+                    8: { cellWidth: 22, halign: 'right' }
+                },
+                margin: { left: margin, right: margin },
+                alternateRowStyles: {
+                    fillColor: [241, 245, 249]
+                }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 10;
+
+            // Check if we need a new page for summary
+            if (yPos > pageHeight - 80) {
+                doc.addPage();
+                yPos = margin;
+            }
+
+            // Project Summary
+            doc.setFontSize(14);
+            doc.setTextColor(...primaryColor);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Project Summary', margin, yPos);
+            yPos += 8;
+
+            // Summary box
+            const summaryBoxWidth = 90;
+            const summaryStartX = pageWidth - margin - summaryBoxWidth;
+
+            // Get values
+            const materialsTotal = document.getElementById('materialsTotal').textContent;
+            const laborTotal = document.getElementById('laborTotal').textContent;
+            const equipmentTotal = document.getElementById('equipmentTotal').textContent;
+            const subtotal = document.getElementById('subtotal').textContent;
+            const contingencyAmt = document.getElementById('contingencyAmount').textContent;
+            const contingencyPct = document.getElementById('contingencyPercent').textContent;
+            const overheadAmt = document.getElementById('overheadAmount').textContent;
+            const overheadPct = document.getElementById('overheadPercent').textContent;
+            const profitAmt = document.getElementById('profitAmount').textContent;
+            const profitPct = document.getElementById('profitPercent').textContent;
+            const bondAmt = document.getElementById('bondAmount').textContent;
+            const bondPct = document.getElementById('bondPercent').textContent;
+            const totalEstimate = document.getElementById('totalEstimate').textContent;
+
+            const summaryData = [
+                ['Materials Subtotal', materialsTotal],
+                ['Labor Subtotal', laborTotal],
+                ['Equipment Subtotal', equipmentTotal],
+                ['', ''],
+                ['Project Subtotal', subtotal],
+                [`Contingency (${contingencyPct}%)`, contingencyAmt],
+                [`Overhead (${overheadPct}%)`, overheadAmt],
+                [`Profit (${profitPct}%)`, profitAmt],
+                [`Bond Cost (${bondPct}%)`, bondAmt]
+            ];
+
+            doc.autoTable({
+                startY: yPos,
+                body: summaryData,
+                theme: 'plain',
+                columnStyles: {
+                    0: { cellWidth: 60, fontStyle: 'normal', textColor: darkColor },
+                    1: { cellWidth: 40, halign: 'right', fontStyle: 'normal', textColor: darkColor }
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2
+                },
+                margin: { left: summaryStartX }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 2;
+
+            // Grand Total with highlight
+            doc.setFillColor(...primaryColor);
+            doc.roundedRect(summaryStartX - 2, yPos, summaryBoxWidth + 4, 12, 2, 2, 'F');
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.text('TOTAL ESTIMATE', summaryStartX + 3, yPos + 8);
+            doc.text(totalEstimate, summaryStartX + summaryBoxWidth - 3, yPos + 8, { align: 'right' });
+
+            // Footer
+            yPos = pageHeight - 15;
+            doc.setFontSize(8);
+            doc.setTextColor(...lightGray);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on ${new Date().toLocaleString()} | Page 1 of 1`, pageWidth / 2, yPos, { align: 'center' });
+
+            // Save the PDF
+            const fileName = `${projectName.replace(/[^a-z0-9]/gi, '_')}_estimate.pdf`;
+            doc.save(fileName);
         }
 
         function importFromCSV(event) {
