@@ -507,6 +507,185 @@
             align-items: center;
         }
 
+        /* Division Styles */
+        .division-selector {
+            margin-bottom: 15px;
+        }
+
+        .division-dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .division-dropdown-btn {
+            width: 100%;
+            padding: 12px 15px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: #f8fafc;
+            font-size: 1em;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+
+        .division-dropdown-btn:hover {
+            border-color: #38bdf8;
+        }
+
+        .division-dropdown-btn .arrow {
+            transition: transform 0.2s;
+        }
+
+        .division-dropdown-btn.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .division-dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 350px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .division-dropdown-content.show {
+            display: block;
+        }
+
+        .division-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .division-item:last-child {
+            border-bottom: none;
+        }
+
+        .division-item:hover {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .division-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            accent-color: #38bdf8;
+            cursor: pointer;
+        }
+
+        .division-item label {
+            flex: 1;
+            cursor: pointer;
+            color: #e2e8f0;
+        }
+
+        .division-item .division-code {
+            color: #38bdf8;
+            font-weight: 600;
+            margin-right: 10px;
+            min-width: 60px;
+        }
+
+        .selected-divisions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .selected-division-tag {
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .selected-division-tag .remove-tag {
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .selected-division-tag .remove-tag:hover {
+            opacity: 1;
+        }
+
+        /* Division Header Row in Table */
+        .line-items-table tbody tr.division-header {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.3) 0%, rgba(37, 99, 235, 0.1) 100%);
+            cursor: default;
+        }
+
+        .line-items-table tbody tr.division-header:hover {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.35) 0%, rgba(37, 99, 235, 0.15) 100%);
+        }
+
+        .line-items-table tbody tr.division-header td {
+            padding: 10px 8px;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .line-items-table tbody tr.division-header .division-title {
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .line-items-table tbody tr.division-header .division-code-badge {
+            background: #2563eb;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .add-item-to-division {
+            background: transparent;
+            border: 1px dashed #475569;
+            color: #64748b;
+            padding: 4px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .add-item-to-division:hover {
+            border-color: #38bdf8;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .division-header .drag-handle {
+            visibility: hidden;
+        }
+
         /* Company Settings */
         .company-settings {
             margin-bottom: 15px;
@@ -1093,6 +1272,22 @@
                     <!-- Line Items -->
                     <div class="card">
                         <div class="card-header">📝 Line Items <span style="font-size: 0.7em; color: #64748b; font-weight: normal;">(drag rows to reorder or make sub-tasks)</span></div>
+
+                        <!-- Division Selector -->
+                        <div class="division-selector">
+                            <label class="input-label">Construction Divisions (CSI MasterFormat)</label>
+                            <div class="division-dropdown">
+                                <button type="button" class="division-dropdown-btn" onclick="toggleDivisionDropdown()">
+                                    <span id="divisionDropdownText">Select divisions to organize line items...</span>
+                                    <span class="arrow">▼</span>
+                                </button>
+                                <div class="division-dropdown-content" id="divisionDropdownContent">
+                                    <!-- Divisions will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <div class="selected-divisions" id="selectedDivisionsContainer"></div>
+                        </div>
+
                         <div class="line-items-table-wrapper">
                             <table class="line-items-table">
                                 <thead>
@@ -1288,6 +1483,45 @@
         let hasShownSummary = false;
         let isSyncing = false; // Prevent sync loops
         let lastSyncedTimestamp = null; // Track the last synced document timestamp to detect remote changes
+        let selectedDivisions = []; // Track selected divisions for the current project
+
+        // CSI MasterFormat Divisions (2020 Edition)
+        const CSI_DIVISIONS = [
+            { code: '01', name: 'General Requirements', description: 'Administrative and procedural requirements' },
+            { code: '02', name: 'Existing Conditions', description: 'Site assessment, demolition, remediation' },
+            { code: '03', name: 'Concrete', description: 'Concrete forming, reinforcing, casting' },
+            { code: '04', name: 'Masonry', description: 'Unit masonry, stone assemblies, masonry restoration' },
+            { code: '05', name: 'Metals', description: 'Structural metal framing, metal fabrications' },
+            { code: '06', name: 'Wood, Plastics, and Composites', description: 'Rough carpentry, finish carpentry, millwork' },
+            { code: '07', name: 'Thermal and Moisture Protection', description: 'Waterproofing, insulation, roofing, siding' },
+            { code: '08', name: 'Openings', description: 'Doors, windows, glazing, hardware' },
+            { code: '09', name: 'Finishes', description: 'Plaster, gypsum board, tile, flooring, painting' },
+            { code: '10', name: 'Specialties', description: 'Signage, compartments, lockers, fireplaces' },
+            { code: '11', name: 'Equipment', description: 'Commercial, industrial, and residential equipment' },
+            { code: '12', name: 'Furnishings', description: 'Art, window treatments, furniture, rugs' },
+            { code: '13', name: 'Special Construction', description: 'Pools, ice rinks, kennels, special structures' },
+            { code: '14', name: 'Conveying Equipment', description: 'Elevators, escalators, lifts, hoists' },
+            { code: '21', name: 'Fire Suppression', description: 'Fire suppression systems, sprinklers' },
+            { code: '22', name: 'Plumbing', description: 'Plumbing piping, fixtures, equipment' },
+            { code: '23', name: 'HVAC', description: 'Heating, ventilating, and air conditioning' },
+            { code: '25', name: 'Integrated Automation', description: 'Building automation, control systems' },
+            { code: '26', name: 'Electrical', description: 'Electrical distribution, lighting, communications' },
+            { code: '27', name: 'Communications', description: 'Data, voice, audio-video systems' },
+            { code: '28', name: 'Electronic Safety and Security', description: 'Access control, surveillance, detection' },
+            { code: '31', name: 'Earthwork', description: 'Site clearing, excavation, fill, grading' },
+            { code: '32', name: 'Exterior Improvements', description: 'Paving, landscaping, irrigation, fencing' },
+            { code: '33', name: 'Utilities', description: 'Water, sanitary, storm, gas, electrical utilities' },
+            { code: '34', name: 'Transportation', description: 'Railways, roadways, bridges, runways' },
+            { code: '35', name: 'Waterway and Marine', description: 'Waterway, marine construction' },
+            { code: '40', name: 'Process Integration', description: 'Gas and liquid handling, process integration' },
+            { code: '41', name: 'Material Processing Equipment', description: 'Material handling and processing' },
+            { code: '42', name: 'Process Heating/Cooling', description: 'Industrial process heating and cooling' },
+            { code: '43', name: 'Process Gas/Liquid Handling', description: 'Process piping, pumps, tanks' },
+            { code: '44', name: 'Pollution Control Equipment', description: 'Air and water pollution control' },
+            { code: '46', name: 'Water and Wastewater Equipment', description: 'Water and wastewater treatment' },
+            { code: '48', name: 'Electrical Power Generation', description: 'Power generation equipment' }
+        ];
+
         const basicCalculatorState = {
             displayValue: '0',
             firstOperand: null,
@@ -1316,7 +1550,15 @@
             initializeFirebaseAuth();
             setupAutoEstimateListeners();
             loadCompanySettings();
+            initializeDivisionSelector();
             document.addEventListener('keydown', handleCalculatorKeyboard);
+
+            // Close division dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.division-dropdown')) {
+                    closeDivisionDropdown();
+                }
+            });
 
             // Auto-refresh projects when tab becomes visible (catches missed sync updates)
             document.addEventListener('visibilitychange', () => {
@@ -1326,6 +1568,220 @@
                 }
             });
         });
+
+        // Division Management Functions
+        function initializeDivisionSelector() {
+            const container = document.getElementById('divisionDropdownContent');
+            if (!container) return;
+
+            container.innerHTML = CSI_DIVISIONS.map(div => `
+                <div class="division-item" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="div-${div.code}" value="${div.code}" onchange="toggleDivision('${div.code}')">
+                    <label for="div-${div.code}">
+                        <span class="division-code">${div.code}</span>
+                        ${div.name}
+                    </label>
+                </div>
+            `).join('');
+        }
+
+        function toggleDivisionDropdown() {
+            const btn = document.querySelector('.division-dropdown-btn');
+            const content = document.getElementById('divisionDropdownContent');
+            btn.classList.toggle('open');
+            content.classList.toggle('show');
+        }
+
+        function closeDivisionDropdown() {
+            const btn = document.querySelector('.division-dropdown-btn');
+            const content = document.getElementById('divisionDropdownContent');
+            if (btn) btn.classList.remove('open');
+            if (content) content.classList.remove('show');
+        }
+
+        function toggleDivision(divCode) {
+            const checkbox = document.getElementById(`div-${divCode}`);
+            const division = CSI_DIVISIONS.find(d => d.code === divCode);
+
+            if (checkbox.checked) {
+                // Add division
+                if (!selectedDivisions.includes(divCode)) {
+                    selectedDivisions.push(divCode);
+                    selectedDivisions.sort((a, b) => a.localeCompare(b));
+                    addDivisionHeader(divCode);
+                }
+            } else {
+                // Remove division
+                selectedDivisions = selectedDivisions.filter(d => d !== divCode);
+                removeDivisionHeader(divCode);
+            }
+
+            updateSelectedDivisionsDisplay();
+            updateDivisionDropdownText();
+        }
+
+        function addDivisionHeader(divCode) {
+            const division = CSI_DIVISIONS.find(d => d.code === divCode);
+            if (!division) return;
+
+            const container = document.getElementById('lineItemsContainer');
+            const headerRow = document.createElement('tr');
+            headerRow.className = 'division-header';
+            headerRow.setAttribute('data-division-code', divCode);
+            headerRow.setAttribute('draggable', 'false');
+
+            headerRow.innerHTML = `
+                <td class="drag-handle"></td>
+                <td colspan="10" class="division-title">
+                    <span class="division-code-badge">${divCode}</span>
+                    ${division.name}
+                </td>
+                <td>
+                    <button class="add-item-to-division" onclick="addLineItemToDivision('${divCode}')">+ Add Item</button>
+                </td>
+            `;
+
+            // Find the correct position to insert (sorted by division code)
+            const existingHeaders = container.querySelectorAll('.division-header');
+            let insertBefore = null;
+
+            for (const header of existingHeaders) {
+                const headerCode = header.getAttribute('data-division-code');
+                if (headerCode > divCode) {
+                    insertBefore = header;
+                    break;
+                }
+            }
+
+            if (insertBefore) {
+                container.insertBefore(headerRow, insertBefore);
+            } else {
+                // Find first non-division row or append to end
+                const firstNonDivisionRow = container.querySelector('tr:not(.division-header):not([data-division])');
+                if (firstNonDivisionRow) {
+                    // Insert before unassigned items
+                    const lastDivisionContent = getLastDivisionContentRow();
+                    if (lastDivisionContent) {
+                        lastDivisionContent.insertAdjacentElement('afterend', headerRow);
+                    } else {
+                        container.insertBefore(headerRow, firstNonDivisionRow);
+                    }
+                } else {
+                    container.appendChild(headerRow);
+                }
+            }
+
+            renumberLineItems();
+        }
+
+        function getLastDivisionContentRow() {
+            const container = document.getElementById('lineItemsContainer');
+            const rows = container.querySelectorAll('tr[data-division], tr.division-header');
+            return rows.length > 0 ? rows[rows.length - 1] : null;
+        }
+
+        function removeDivisionHeader(divCode) {
+            const container = document.getElementById('lineItemsContainer');
+
+            // Remove the division header
+            const header = container.querySelector(`tr.division-header[data-division-code="${divCode}"]`);
+            if (header) header.remove();
+
+            // Remove division attribute from items (they become unassigned)
+            const divisionItems = container.querySelectorAll(`tr[data-division="${divCode}"]`);
+            divisionItems.forEach(item => {
+                item.removeAttribute('data-division');
+            });
+
+            renumberLineItems();
+        }
+
+        function addLineItemToDivision(divCode) {
+            const container = document.getElementById('lineItemsContainer');
+            const division = CSI_DIVISIONS.find(d => d.code === divCode);
+
+            // Find the last item in this division or the division header
+            let insertAfter = container.querySelector(`tr.division-header[data-division-code="${divCode}"]`);
+            const divisionItems = container.querySelectorAll(`tr[data-division="${divCode}"]`);
+            if (divisionItems.length > 0) {
+                insertAfter = divisionItems[divisionItems.length - 1];
+            }
+
+            const row = addLineItem({ insertAfterRow: insertAfter });
+            row.setAttribute('data-division', divCode);
+        }
+
+        function updateSelectedDivisionsDisplay() {
+            const container = document.getElementById('selectedDivisionsContainer');
+            if (!container) return;
+
+            container.innerHTML = selectedDivisions.map(divCode => {
+                const division = CSI_DIVISIONS.find(d => d.code === divCode);
+                return `
+                    <span class="selected-division-tag">
+                        <strong>${divCode}</strong> ${division ? division.name : ''}
+                        <span class="remove-tag" onclick="unselectDivision('${divCode}')">&times;</span>
+                    </span>
+                `;
+            }).join('');
+        }
+
+        function updateDivisionDropdownText() {
+            const textSpan = document.getElementById('divisionDropdownText');
+            if (!textSpan) return;
+
+            if (selectedDivisions.length === 0) {
+                textSpan.textContent = 'Select divisions to organize line items...';
+            } else {
+                textSpan.textContent = `${selectedDivisions.length} division${selectedDivisions.length > 1 ? 's' : ''} selected`;
+            }
+        }
+
+        function unselectDivision(divCode) {
+            const checkbox = document.getElementById(`div-${divCode}`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            toggleDivision(divCode);
+        }
+
+        function clearAllDivisions() {
+            selectedDivisions.forEach(divCode => {
+                const checkbox = document.getElementById(`div-${divCode}`);
+                if (checkbox) checkbox.checked = false;
+            });
+            selectedDivisions = [];
+
+            // Remove all division headers and attributes
+            const container = document.getElementById('lineItemsContainer');
+            container.querySelectorAll('.division-header').forEach(h => h.remove());
+            container.querySelectorAll('tr[data-division]').forEach(r => r.removeAttribute('data-division'));
+
+            updateSelectedDivisionsDisplay();
+            updateDivisionDropdownText();
+            renumberLineItems();
+        }
+
+        function setSelectedDivisions(divisions) {
+            // Clear existing
+            clearAllDivisions();
+
+            // Select new divisions
+            divisions.forEach(divCode => {
+                const checkbox = document.getElementById(`div-${divCode}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    if (!selectedDivisions.includes(divCode)) {
+                        selectedDivisions.push(divCode);
+                    }
+                    addDivisionHeader(divCode);
+                }
+            });
+
+            selectedDivisions.sort((a, b) => a.localeCompare(b));
+            updateSelectedDivisionsDisplay();
+            updateDivisionDropdownText();
+        }
 
         function setupAutoEstimateListeners() {
             ['contingency', 'overhead', 'profit', 'bond'].forEach(id => {
@@ -2115,8 +2571,20 @@
             let parentNum = 0;
             let subNum = 0;
             let lastParentId = null;
+            let lineItemCount = 0;
 
             items.forEach((item) => {
+                // Skip division headers
+                if (item.classList.contains('division-header')) {
+                    return;
+                }
+
+                // Skip non-line-item rows
+                if (!item.classList.contains('line-item')) {
+                    return;
+                }
+
+                lineItemCount++;
                 const isSubTask = item.classList.contains('sub-task');
                 const parentId = item.getAttribute('data-parent-id');
 
@@ -2137,7 +2605,7 @@
                     item.querySelector('.line-number').textContent = parentNum;
                 }
             });
-            lineItemCounter = items.length;
+            lineItemCounter = lineItemCount;
         }
 
         function calculateLineTotal(input) {
@@ -2180,8 +2648,11 @@
             let labSubtotal = 0;
             let equipSubtotal = 0;
 
-            const items = document.querySelectorAll('#lineItemsContainer tr');
+            const items = document.querySelectorAll('#lineItemsContainer tr.line-item');
             items.forEach(item => {
+                // Skip division headers
+                if (item.classList.contains('division-header')) return;
+
                 const qty = Math.max(0, parseFloat(item.querySelector('.item-quantity').value) || 0);
                 const mat = Math.max(0, parseFloat(item.querySelector('.item-material').value) || 0);
                 const lab = Math.max(0, parseFloat(item.querySelector('.item-labor').value) || 0);
@@ -2263,15 +2734,20 @@
                 overhead: parseFloat(document.getElementById('overhead').value) || 0,
                 profit: parseFloat(document.getElementById('profit').value) || 0,
                 bond: parseFloat(document.getElementById('bond').value) || 0,
+                divisions: [...selectedDivisions], // Save selected divisions
                 lineItems: [],
                 updatedAt: new Date().toISOString()
             };
 
-            const items = document.querySelectorAll('#lineItemsContainer tr');
+            const items = document.querySelectorAll('#lineItemsContainer tr.line-item');
             items.forEach(item => {
+                // Skip division headers
+                if (item.classList.contains('division-header')) return;
+
                 projectData.lineItems.push({
                     itemId: item.getAttribute('data-item-id'),
                     parentId: item.getAttribute('data-parent-id') || null,
+                    division: item.getAttribute('data-division') || null, // Save division assignment
                     description: item.querySelector('.item-description').value,
                     quantity: parseFloat(item.querySelector('.item-quantity').value) || 0,
                     unit: item.querySelector('.item-unit').value,
@@ -2405,45 +2881,47 @@
             container.innerHTML = '';
             lineItemCounter = 0;
 
+            // Load divisions first
+            clearAllDivisions();
+            if (project.divisions && project.divisions.length > 0) {
+                setSelectedDivisions(project.divisions);
+            }
+
             if (project.lineItems && project.lineItems.length > 0) {
-                // Create a map to look up rows by their itemId for linking parents
-                const rowMap = {};
+                // Group items by division for proper ordering
+                const divisionItems = {};
+                const unassignedItems = [];
 
                 project.lineItems.forEach(itemData => {
-                    const row = addLineItem({ parentId: itemData.parentId || null });
-
-                    // Set the itemId if saved (for maintaining relationships)
-                    if (itemData.itemId) {
-                        row.setAttribute('data-item-id', itemData.itemId);
-                        rowMap[itemData.itemId] = row;
+                    if (itemData.division && project.divisions && project.divisions.includes(itemData.division)) {
+                        if (!divisionItems[itemData.division]) {
+                            divisionItems[itemData.division] = [];
+                        }
+                        divisionItems[itemData.division].push(itemData);
+                    } else {
+                        unassignedItems.push(itemData);
                     }
+                });
 
-                    // If this is a subtask, apply the styling
-                    if (itemData.parentId) {
-                        row.classList.add('sub-task', 'indent-level-1');
-                        row.setAttribute('data-parent-id', itemData.parentId);
-                        // Update buttons for subtask
-                        const actionCell = row.querySelector('.action-buttons');
-                        actionCell.innerHTML = `
-                            <button class="make-parent-btn" onclick="promoteToParent(this)" title="Make parent item">↑ Up</button>
-                            <button class="remove-btn" onclick="removeLineItem(this)">✕</button>
-                        `;
-                    }
+                // Add items under each division
+                if (project.divisions) {
+                    project.divisions.forEach(divCode => {
+                        const items = divisionItems[divCode] || [];
+                        items.forEach(itemData => {
+                            loadLineItemData(itemData, divCode);
+                        });
+                    });
+                }
 
-                    row.querySelector('.item-description').value = itemData.description || '';
-                    row.querySelector('.item-quantity').value = itemData.quantity || 0;
-                    row.querySelector('.item-unit').value = itemData.unit || 'ea';
-                    row.querySelector('.item-material').value = itemData.material || 0;
-                    row.querySelector('.item-labor').value = itemData.labor || 0;
-                    row.querySelector('.item-surcharge').value = itemData.surcharge || 0;
-                    row.querySelector('.item-equipment').value = itemData.equipment || 0;
-                    row.querySelector('.item-notes').value = itemData.notes || '';
-                    calculateLineTotal(row.querySelector('.item-quantity'));
+                // Add unassigned items
+                unassignedItems.forEach(itemData => {
+                    loadLineItemData(itemData, null);
                 });
             } else {
                 addLineItem();
             }
 
+            renumberLineItems();
             calculateEstimate({ auto: true });
             if (!silent) {
                 alert('Project loaded successfully!');
@@ -2451,6 +2929,58 @@
             if (!skipScroll) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+        }
+
+        function loadLineItemData(itemData, divCode) {
+            const container = document.getElementById('lineItemsContainer');
+            let insertAfterRow = null;
+
+            // Find where to insert this item
+            if (divCode) {
+                const header = container.querySelector(`tr.division-header[data-division-code="${divCode}"]`);
+                const divisionItems = container.querySelectorAll(`tr[data-division="${divCode}"]`);
+                if (divisionItems.length > 0) {
+                    insertAfterRow = divisionItems[divisionItems.length - 1];
+                } else {
+                    insertAfterRow = header;
+                }
+            }
+
+            const row = addLineItem({ parentId: itemData.parentId || null, insertAfterRow });
+
+            // Set the itemId if saved (for maintaining relationships)
+            if (itemData.itemId) {
+                row.setAttribute('data-item-id', itemData.itemId);
+            }
+
+            // Set division
+            if (divCode) {
+                row.setAttribute('data-division', divCode);
+            }
+
+            // If this is a subtask, apply the styling
+            if (itemData.parentId) {
+                row.classList.add('sub-task', 'indent-level-1');
+                row.setAttribute('data-parent-id', itemData.parentId);
+                // Update buttons for subtask
+                const actionCell = row.querySelector('.action-buttons');
+                actionCell.innerHTML = `
+                    <button class="make-parent-btn" onclick="promoteToParent(this)" title="Make parent item">↑ Up</button>
+                    <button class="remove-btn" onclick="removeLineItem(this)">✕</button>
+                `;
+            }
+
+            row.querySelector('.item-description').value = itemData.description || '';
+            row.querySelector('.item-quantity').value = itemData.quantity || 0;
+            row.querySelector('.item-unit').value = itemData.unit || 'ea';
+            row.querySelector('.item-material').value = itemData.material || 0;
+            row.querySelector('.item-labor').value = itemData.labor || 0;
+            row.querySelector('.item-surcharge').value = itemData.surcharge || 0;
+            row.querySelector('.item-equipment').value = itemData.equipment || 0;
+            row.querySelector('.item-notes').value = itemData.notes || '';
+            calculateLineTotal(row.querySelector('.item-quantity'));
+
+            return row;
         }
 
         async function deleteProject(projectId) {
@@ -2501,6 +3031,9 @@
             document.getElementById('overhead').value = 10;
             document.getElementById('profit').value = 10;
             document.getElementById('bond').value = 2;
+
+            // Clear divisions
+            clearAllDivisions();
 
             const container = document.getElementById('lineItemsContainer');
             container.innerHTML = '';
@@ -2768,9 +3301,30 @@
 
             // Prepare table data
             const tableData = [];
-            const rowStyles = [];
+            const rowStyles = []; // 'normal', 'subtask', 'division'
             const items = document.querySelectorAll('#lineItemsContainer tr');
-            items.forEach((item, index) => {
+            let itemNum = 0;
+
+            items.forEach((item) => {
+                // Check if this is a division header
+                if (item.classList.contains('division-header')) {
+                    const divCode = item.getAttribute('data-division-code');
+                    const division = CSI_DIVISIONS.find(d => d.code === divCode);
+                    const divName = division ? division.name : divCode;
+
+                    tableData.push([
+                        '',
+                        `DIV ${divCode} - ${divName}`,
+                        '', '', '', '', '', '', ''
+                    ]);
+                    rowStyles.push('division');
+                    return;
+                }
+
+                // Skip non-line-item rows
+                if (!item.classList.contains('line-item')) return;
+
+                itemNum++;
                 const isSubTask = item.classList.contains('sub-task');
                 let desc = item.querySelector('.item-description').value || '-';
                 const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
@@ -2792,7 +3346,7 @@
                 }
 
                 tableData.push([
-                    index + 1,
+                    itemNum,
                     desc.length > 30 ? desc.substring(0, 27) + '...' : desc,
                     qty.toFixed(2),
                     unit,
@@ -2803,8 +3357,8 @@
                     '$' + lineTotal.toFixed(2)
                 ]);
 
-                // Track which rows are sub-tasks for styling
-                rowStyles.push(isSubTask);
+                // Track row type for styling
+                rowStyles.push(isSubTask ? 'subtask' : 'normal');
             });
 
             // Auto table for line items
@@ -2839,10 +3393,19 @@
                     fillColor: [241, 245, 249]
                 },
                 didParseCell: function(data) {
-                    // Style sub-task rows with lighter text color
-                    if (data.section === 'body' && rowStyles[data.row.index]) {
-                        data.cell.styles.textColor = [100, 116, 139];
-                        data.cell.styles.fontStyle = 'italic';
+                    if (data.section === 'body') {
+                        const rowType = rowStyles[data.row.index];
+                        if (rowType === 'division') {
+                            // Style division header rows
+                            data.cell.styles.fillColor = [37, 99, 235];
+                            data.cell.styles.textColor = [255, 255, 255];
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.fontSize = 9;
+                        } else if (rowType === 'subtask') {
+                            // Style sub-task rows with lighter text color
+                            data.cell.styles.textColor = [100, 116, 139];
+                            data.cell.styles.fontStyle = 'italic';
+                        }
                     }
                 }
             });
