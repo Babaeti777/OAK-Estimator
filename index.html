@@ -405,6 +405,108 @@
             background: #b91c1c;
         }
 
+        /* Drag and Drop Styles */
+        .line-items-table tbody tr {
+            cursor: grab;
+        }
+
+        .line-items-table tbody tr:active {
+            cursor: grabbing;
+        }
+
+        .line-items-table tbody tr.dragging {
+            opacity: 0.5;
+            background: rgba(56, 189, 248, 0.2) !important;
+        }
+
+        .line-items-table tbody tr.drag-over {
+            border-top: 3px solid #38bdf8;
+        }
+
+        .line-items-table tbody tr.drag-over-subtask {
+            border-left: 4px solid #22d3ee;
+            background: rgba(34, 211, 238, 0.15) !important;
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: #64748b;
+            padding: 0 5px;
+            user-select: none;
+            font-size: 1.1em;
+        }
+
+        .drag-handle:hover {
+            color: #38bdf8;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        /* Sub-task Styles */
+        .line-items-table tbody tr.sub-task {
+            background: rgba(30, 41, 59, 0.6);
+        }
+
+        .line-items-table tbody tr.sub-task:hover {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .line-items-table tbody tr.sub-task .line-num {
+            color: #64748b;
+            font-size: 0.85em;
+        }
+
+        .line-items-table tbody tr.sub-task td:first-child {
+            padding-left: 25px;
+        }
+
+        .sub-task-indicator {
+            color: #64748b;
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+
+        .indent-level-1 td:nth-child(2) {
+            padding-left: 20px !important;
+        }
+
+        .indent-level-1 td:nth-child(2)::before {
+            content: "└ ";
+            color: #475569;
+        }
+
+        .make-subtask-btn, .make-parent-btn {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            margin-left: 3px;
+            transition: all 0.2s;
+        }
+
+        .make-subtask-btn:hover {
+            background: rgba(34, 211, 238, 0.2);
+            border-color: #22d3ee;
+            color: #22d3ee;
+        }
+
+        .make-parent-btn:hover {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+
         /* Company Settings */
         .company-settings {
             margin-bottom: 15px;
@@ -990,12 +1092,13 @@
 
                     <!-- Line Items -->
                     <div class="card">
-                        <div class="card-header">📝 Line Items</div>
+                        <div class="card-header">📝 Line Items <span style="font-size: 0.7em; color: #64748b; font-weight: normal;">(drag rows to reorder or make sub-tasks)</span></div>
                         <div class="line-items-table-wrapper">
                             <table class="line-items-table">
                                 <thead>
                                     <tr>
-                                        <th class="center">#</th>
+                                        <th style="width: 30px;"></th>
+                                        <th class="center" style="width: 40px;">#</th>
                                         <th>Description</th>
                                         <th>Qty</th>
                                         <th>Unit</th>
@@ -1005,7 +1108,7 @@
                                         <th>Equip $</th>
                                         <th>Notes</th>
                                         <th>Line Total</th>
-                                        <th class="center"></th>
+                                        <th class="center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="lineItemsContainer">
@@ -1822,12 +1925,22 @@
             return trimmed || DEFAULT_PROJECT_FOLDER;
         }
 
-        function addLineItem() {
+        function addLineItem(options = {}) {
+            const { parentId = null, insertAfterRow = null } = options;
             lineItemCounter++;
             const container = document.getElementById('lineItemsContainer');
             const row = document.createElement('tr');
-            row.className = 'line-item';
+            const itemId = 'item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+            row.className = 'line-item' + (parentId ? ' sub-task indent-level-1' : '');
+            row.setAttribute('draggable', 'true');
+            row.setAttribute('data-item-id', itemId);
+            if (parentId) {
+                row.setAttribute('data-parent-id', parentId);
+            }
+
             row.innerHTML = `
+                <td class="drag-handle" title="Drag to reorder">⋮⋮</td>
                 <td class="line-num"><span class="line-number">${lineItemCounter}</span></td>
                 <td><input type="text" class="table-input desc item-description" placeholder="Description"></td>
                 <td><input type="number" class="table-input qty item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
@@ -1849,10 +1962,141 @@
                 <td><input type="number" class="table-input cost item-equipment" placeholder="0.00" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
                 <td><input type="text" class="table-input notes item-notes" placeholder="Notes"></td>
                 <td class="line-total-cell"><span class="line-total">$0.00</span></td>
-                <td><button class="remove-btn" onclick="removeLineItem(this)">✕</button></td>
+                <td class="action-buttons">
+                    ${!parentId ? '<button class="make-subtask-btn" onclick="addSubTask(this)" title="Add sub-task">+ Sub</button>' : '<button class="make-parent-btn" onclick="promoteToParent(this)" title="Make parent item">↑ Up</button>'}
+                    <button class="remove-btn" onclick="removeLineItem(this)">✕</button>
+                </td>
             `;
-            container.appendChild(row);
+
+            // Add drag event listeners
+            row.addEventListener('dragstart', handleDragStart);
+            row.addEventListener('dragend', handleDragEnd);
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('dragleave', handleDragLeave);
+            row.addEventListener('drop', handleDrop);
+
+            if (insertAfterRow) {
+                insertAfterRow.insertAdjacentElement('afterend', row);
+            } else {
+                container.appendChild(row);
+            }
+
+            renumberLineItems();
             debouncedCalculateEstimate({ auto: true });
+            return row;
+        }
+
+        // Drag and Drop functionality
+        let draggedRow = null;
+        let dropMode = 'reorder'; // 'reorder' or 'subtask'
+
+        function handleDragStart(e) {
+            draggedRow = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.getAttribute('data-item-id'));
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drag-over, .drag-over-subtask').forEach(el => {
+                el.classList.remove('drag-over', 'drag-over-subtask');
+            });
+            draggedRow = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            if (!draggedRow || draggedRow === this) return;
+
+            const rect = this.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const quarterX = rect.left + rect.width * 0.25;
+
+            // Remove previous classes
+            this.classList.remove('drag-over', 'drag-over-subtask');
+
+            // If dragging to right side of row (past 25%), make it a subtask candidate
+            // But only if target is not already a subtask
+            if (e.clientX > quarterX && !this.classList.contains('sub-task')) {
+                this.classList.add('drag-over-subtask');
+                dropMode = 'subtask';
+            } else {
+                this.classList.add('drag-over');
+                dropMode = 'reorder';
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over', 'drag-over-subtask');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (!draggedRow || draggedRow === this) return;
+
+            this.classList.remove('drag-over', 'drag-over-subtask');
+
+            const container = document.getElementById('lineItemsContainer');
+
+            if (dropMode === 'subtask' && !this.classList.contains('sub-task')) {
+                // Make the dragged row a subtask of this row
+                makeSubTask(draggedRow, this);
+            } else {
+                // Reorder: insert before this row
+                container.insertBefore(draggedRow, this);
+            }
+
+            renumberLineItems();
+            debouncedCalculateEstimate({ auto: true });
+        }
+
+        function makeSubTask(childRow, parentRow) {
+            const parentId = parentRow.getAttribute('data-item-id');
+            childRow.setAttribute('data-parent-id', parentId);
+            childRow.classList.add('sub-task', 'indent-level-1');
+
+            // Update the action buttons
+            const actionCell = childRow.querySelector('.action-buttons');
+            actionCell.innerHTML = `
+                <button class="make-parent-btn" onclick="promoteToParent(this)" title="Make parent item">↑ Up</button>
+                <button class="remove-btn" onclick="removeLineItem(this)">✕</button>
+            `;
+
+            // Move the subtask right after the parent
+            parentRow.insertAdjacentElement('afterend', childRow);
+
+            renumberLineItems();
+        }
+
+        function addSubTask(btn) {
+            const parentRow = btn.closest('tr');
+            const parentId = parentRow.getAttribute('data-item-id');
+
+            // Find the last subtask of this parent or the parent itself
+            let insertAfter = parentRow;
+            let nextRow = parentRow.nextElementSibling;
+            while (nextRow && nextRow.getAttribute('data-parent-id') === parentId) {
+                insertAfter = nextRow;
+                nextRow = nextRow.nextElementSibling;
+            }
+
+            addLineItem({ parentId: parentId, insertAfterRow: insertAfter });
+        }
+
+        function promoteToParent(btn) {
+            const row = btn.closest('tr');
+            row.removeAttribute('data-parent-id');
+            row.classList.remove('sub-task', 'indent-level-1');
+
+            // Update the action buttons
+            const actionCell = row.querySelector('.action-buttons');
+            actionCell.innerHTML = `
+                <button class="make-subtask-btn" onclick="addSubTask(this)" title="Add sub-task">+ Sub</button>
+                <button class="remove-btn" onclick="removeLineItem(this)">✕</button>
+            `;
+
+            renumberLineItems();
         }
 
         function removeLineItem(btn) {
@@ -1868,8 +2112,30 @@
 
         function renumberLineItems() {
             const items = document.querySelectorAll('#lineItemsContainer tr');
-            items.forEach((item, index) => {
-                item.querySelector('.line-number').textContent = index + 1;
+            let parentNum = 0;
+            let subNum = 0;
+            let lastParentId = null;
+
+            items.forEach((item) => {
+                const isSubTask = item.classList.contains('sub-task');
+                const parentId = item.getAttribute('data-parent-id');
+
+                if (isSubTask && parentId) {
+                    // It's a sub-task
+                    if (parentId !== lastParentId) {
+                        subNum = 1;
+                        lastParentId = parentId;
+                    } else {
+                        subNum++;
+                    }
+                    item.querySelector('.line-number').textContent = parentNum + '.' + subNum;
+                } else {
+                    // It's a parent item
+                    parentNum++;
+                    subNum = 0;
+                    lastParentId = item.getAttribute('data-item-id');
+                    item.querySelector('.line-number').textContent = parentNum;
+                }
             });
             lineItemCounter = items.length;
         }
@@ -2001,9 +2267,11 @@
                 updatedAt: new Date().toISOString()
             };
 
-            const items = document.querySelectorAll('.line-item');
+            const items = document.querySelectorAll('#lineItemsContainer tr');
             items.forEach(item => {
                 projectData.lineItems.push({
+                    itemId: item.getAttribute('data-item-id'),
+                    parentId: item.getAttribute('data-parent-id') || null,
                     description: item.querySelector('.item-description').value,
                     quantity: parseFloat(item.querySelector('.item-quantity').value) || 0,
                     unit: item.querySelector('.item-unit').value,
@@ -2138,18 +2406,39 @@
             lineItemCounter = 0;
 
             if (project.lineItems && project.lineItems.length > 0) {
+                // Create a map to look up rows by their itemId for linking parents
+                const rowMap = {};
+
                 project.lineItems.forEach(itemData => {
-                    addLineItem();
-                    const item = container.lastElementChild;
-                    item.querySelector('.item-description').value = itemData.description || '';
-                    item.querySelector('.item-quantity').value = itemData.quantity || 0;
-                    item.querySelector('.item-unit').value = itemData.unit || 'ea';
-                    item.querySelector('.item-material').value = itemData.material || 0;
-                    item.querySelector('.item-labor').value = itemData.labor || 0;
-                    item.querySelector('.item-surcharge').value = itemData.surcharge || 0;
-                    item.querySelector('.item-equipment').value = itemData.equipment || 0;
-                    item.querySelector('.item-notes').value = itemData.notes || '';
-                    calculateLineTotal(item.querySelector('.item-quantity'));
+                    const row = addLineItem({ parentId: itemData.parentId || null });
+
+                    // Set the itemId if saved (for maintaining relationships)
+                    if (itemData.itemId) {
+                        row.setAttribute('data-item-id', itemData.itemId);
+                        rowMap[itemData.itemId] = row;
+                    }
+
+                    // If this is a subtask, apply the styling
+                    if (itemData.parentId) {
+                        row.classList.add('sub-task', 'indent-level-1');
+                        row.setAttribute('data-parent-id', itemData.parentId);
+                        // Update buttons for subtask
+                        const actionCell = row.querySelector('.action-buttons');
+                        actionCell.innerHTML = `
+                            <button class="make-parent-btn" onclick="promoteToParent(this)" title="Make parent item">↑ Up</button>
+                            <button class="remove-btn" onclick="removeLineItem(this)">✕</button>
+                        `;
+                    }
+
+                    row.querySelector('.item-description').value = itemData.description || '';
+                    row.querySelector('.item-quantity').value = itemData.quantity || 0;
+                    row.querySelector('.item-unit').value = itemData.unit || 'ea';
+                    row.querySelector('.item-material').value = itemData.material || 0;
+                    row.querySelector('.item-labor').value = itemData.labor || 0;
+                    row.querySelector('.item-surcharge').value = itemData.surcharge || 0;
+                    row.querySelector('.item-equipment').value = itemData.equipment || 0;
+                    row.querySelector('.item-notes').value = itemData.notes || '';
+                    calculateLineTotal(row.querySelector('.item-quantity'));
                 });
             } else {
                 addLineItem();
@@ -2479,9 +2768,11 @@
 
             // Prepare table data
             const tableData = [];
+            const rowStyles = [];
             const items = document.querySelectorAll('#lineItemsContainer tr');
             items.forEach((item, index) => {
-                const desc = item.querySelector('.item-description').value || '-';
+                const isSubTask = item.classList.contains('sub-task');
+                let desc = item.querySelector('.item-description').value || '-';
                 const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
                 const unit = item.querySelector('.item-unit').value || 'ea';
                 const material = parseFloat(item.querySelector('.item-material').value) || 0;
@@ -2495,9 +2786,14 @@
                 const equipTotal = qty * equipment;
                 const lineTotal = matTotal + labTotal + equipTotal;
 
+                // Add indent prefix for sub-tasks in the description
+                if (isSubTask) {
+                    desc = '    └ ' + desc;
+                }
+
                 tableData.push([
                     index + 1,
-                    desc.length > 25 ? desc.substring(0, 22) + '...' : desc,
+                    desc.length > 30 ? desc.substring(0, 27) + '...' : desc,
                     qty.toFixed(2),
                     unit,
                     '$' + material.toFixed(2),
@@ -2506,6 +2802,9 @@
                     '$' + equipment.toFixed(2),
                     '$' + lineTotal.toFixed(2)
                 ]);
+
+                // Track which rows are sub-tasks for styling
+                rowStyles.push(isSubTask);
             });
 
             // Auto table for line items
@@ -2538,6 +2837,13 @@
                 margin: { left: margin, right: margin },
                 alternateRowStyles: {
                     fillColor: [241, 245, 249]
+                },
+                didParseCell: function(data) {
+                    // Style sub-task rows with lighter text color
+                    if (data.section === 'body' && rowStyles[data.row.index]) {
+                        data.cell.styles.textColor = [100, 116, 139];
+                        data.cell.styles.fontStyle = 'italic';
+                    }
                 }
             });
 
