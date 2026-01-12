@@ -428,6 +428,70 @@
             background: rgba(34, 211, 238, 0.15) !important;
         }
 
+        .line-items-table tbody tr.drag-over-division {
+            background: rgba(37, 99, 235, 0.4) !important;
+            box-shadow: inset 0 0 0 2px #2563eb;
+        }
+
+        /* Multi-select Styles */
+        .line-items-table tbody tr.selected {
+            background: rgba(139, 92, 246, 0.25) !important;
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .line-items-table tbody tr.selected:hover {
+            background: rgba(139, 92, 246, 0.35) !important;
+        }
+
+        .line-items-table tbody tr.selected .line-num {
+            color: #a78bfa;
+        }
+
+        .multi-select-badge {
+            position: fixed;
+            background: #8b5cf6;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            display: none;
+        }
+
+        .multi-select-info {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid #8b5cf6;
+            color: #a78bfa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .multi-select-info.visible {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .multi-select-info .clear-selection {
+            background: transparent;
+            border: 1px solid #8b5cf6;
+            color: #a78bfa;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .multi-select-info .clear-selection:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
         .drag-handle {
             cursor: grab;
             color: #64748b;
@@ -1288,6 +1352,12 @@
                             <div class="selected-divisions" id="selectedDivisionsContainer"></div>
                         </div>
 
+                        <!-- Multi-select info bar -->
+                        <div class="multi-select-info" id="multiSelectInfo">
+                            <span><strong id="selectedCount">0</strong> items selected - Drag to move under a division, or press <kbd>Esc</kbd> to clear</span>
+                            <button class="clear-selection" onclick="clearSelection()">Clear Selection</button>
+                        </div>
+
                         <div class="line-items-table-wrapper">
                             <table class="line-items-table">
                                 <thead>
@@ -1553,6 +1623,19 @@
             initializeDivisionSelector();
             document.addEventListener('keydown', handleCalculatorKeyboard);
 
+            // Multi-select click handler on line items table
+            const lineItemsContainer = document.getElementById('lineItemsContainer');
+            if (lineItemsContainer) {
+                lineItemsContainer.addEventListener('click', handleRowClick);
+            }
+
+            // Escape key to clear selection
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && selectedRows.size > 0) {
+                    clearSelection();
+                }
+            });
+
             // Close division dropdown when clicking outside
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.division-dropdown')) {
@@ -1640,6 +1723,11 @@
                     <button class="add-item-to-division" onclick="addLineItemToDivision('${divCode}')">+ Add Item</button>
                 </td>
             `;
+
+            // Add drag event listeners so division headers can receive drops
+            headerRow.addEventListener('dragover', handleDragOver);
+            headerRow.addEventListener('dragleave', handleDragLeave);
+            headerRow.addEventListener('drop', handleDrop);
 
             // Find the correct position to insert (sorted by division code)
             const existingHeaders = container.querySelectorAll('.division-header');
@@ -2442,39 +2530,104 @@
             return row;
         }
 
-        // Drag and Drop functionality
+        // Drag and Drop functionality with Multi-Select
         let draggedRow = null;
-        let dropMode = 'reorder'; // 'reorder' or 'subtask'
+        let draggedRows = []; // For multi-select drag
+        let dropMode = 'reorder'; // 'reorder', 'subtask', or 'division'
+        let selectedRows = new Set(); // Track selected rows for multi-select
+
+        function handleRowClick(e) {
+            const row = e.target.closest('tr.line-item');
+            if (!row || row.classList.contains('division-header')) return;
+
+            // Don't select if clicking on inputs, buttons, or select elements
+            if (e.target.closest('input, button, select, .action-buttons')) return;
+
+            if (e.ctrlKey || e.metaKey) {
+                // Ctrl+click: toggle selection
+                e.preventDefault();
+                toggleRowSelection(row);
+            } else if (!row.classList.contains('selected')) {
+                // Regular click on unselected row: clear selection
+                clearSelection();
+            }
+        }
+
+        function toggleRowSelection(row) {
+            if (selectedRows.has(row)) {
+                selectedRows.delete(row);
+                row.classList.remove('selected');
+            } else {
+                selectedRows.add(row);
+                row.classList.add('selected');
+            }
+            updateMultiSelectInfo();
+        }
+
+        function clearSelection() {
+            selectedRows.forEach(row => row.classList.remove('selected'));
+            selectedRows.clear();
+            updateMultiSelectInfo();
+        }
+
+        function updateMultiSelectInfo() {
+            const infoBar = document.getElementById('multiSelectInfo');
+            const countSpan = document.getElementById('selectedCount');
+            if (selectedRows.size > 0) {
+                infoBar.classList.add('visible');
+                countSpan.textContent = selectedRows.size;
+            } else {
+                infoBar.classList.remove('visible');
+            }
+        }
 
         function handleDragStart(e) {
             draggedRow = this;
-            this.classList.add('dragging');
+
+            // Check if dragging a selected row (multi-select drag)
+            if (selectedRows.has(this) && selectedRows.size > 1) {
+                // Multi-select drag: include all selected rows
+                draggedRows = Array.from(selectedRows);
+                draggedRows.forEach(row => row.classList.add('dragging'));
+            } else {
+                // Single row drag
+                draggedRows = [this];
+                this.classList.add('dragging');
+                // Clear selection if dragging unselected row
+                if (!selectedRows.has(this)) {
+                    clearSelection();
+                }
+            }
+
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', this.getAttribute('data-item-id'));
+            e.dataTransfer.setData('text/plain', draggedRows.length + ' items');
         }
 
         function handleDragEnd(e) {
-            this.classList.remove('dragging');
-            document.querySelectorAll('.drag-over, .drag-over-subtask').forEach(el => {
-                el.classList.remove('drag-over', 'drag-over-subtask');
+            draggedRows.forEach(row => row.classList.remove('dragging'));
+            document.querySelectorAll('.drag-over, .drag-over-subtask, .drag-over-division').forEach(el => {
+                el.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
             });
             draggedRow = null;
+            draggedRows = [];
         }
 
         function handleDragOver(e) {
             e.preventDefault();
-            if (!draggedRow || draggedRow === this) return;
+            if (!draggedRow || draggedRows.includes(this)) return;
 
             const rect = this.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
             const quarterX = rect.left + rect.width * 0.25;
 
             // Remove previous classes
-            this.classList.remove('drag-over', 'drag-over-subtask');
+            this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
 
-            // If dragging to right side of row (past 25%), make it a subtask candidate
-            // But only if target is not already a subtask
-            if (e.clientX > quarterX && !this.classList.contains('sub-task')) {
+            // Check if this is a division header
+            if (this.classList.contains('division-header')) {
+                this.classList.add('drag-over-division');
+                dropMode = 'division';
+            } else if (e.clientX > quarterX && !this.classList.contains('sub-task')) {
+                // If dragging to right side of row (past 25%), make it a subtask candidate
                 this.classList.add('drag-over-subtask');
                 dropMode = 'subtask';
             } else {
@@ -2484,27 +2637,62 @@
         }
 
         function handleDragLeave(e) {
-            this.classList.remove('drag-over', 'drag-over-subtask');
+            this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
         }
 
         function handleDrop(e) {
             e.preventDefault();
-            if (!draggedRow || draggedRow === this) return;
+            if (!draggedRow || draggedRows.includes(this)) return;
 
-            this.classList.remove('drag-over', 'drag-over-subtask');
+            this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
 
             const container = document.getElementById('lineItemsContainer');
 
-            if (dropMode === 'subtask' && !this.classList.contains('sub-task')) {
-                // Make the dragged row a subtask of this row
+            if (dropMode === 'division' && this.classList.contains('division-header')) {
+                // Move items under a division
+                const divCode = this.getAttribute('data-division-code');
+                moveItemsToDivision(draggedRows, divCode, this);
+            } else if (dropMode === 'subtask' && !this.classList.contains('sub-task') && draggedRows.length === 1) {
+                // Make single dragged row a subtask (only for single select)
                 makeSubTask(draggedRow, this);
             } else {
                 // Reorder: insert before this row
-                container.insertBefore(draggedRow, this);
+                // Sort draggedRows by their current position to maintain relative order
+                const allRows = Array.from(container.querySelectorAll('tr'));
+                draggedRows.sort((a, b) => allRows.indexOf(a) - allRows.indexOf(b));
+
+                draggedRows.forEach(row => {
+                    container.insertBefore(row, this);
+                });
             }
 
+            // Clear selection after drop
+            clearSelection();
             renumberLineItems();
             debouncedCalculateEstimate({ auto: true });
+        }
+
+        function moveItemsToDivision(rows, divCode, divisionHeader) {
+            const container = document.getElementById('lineItemsContainer');
+
+            // Find the last item in this division or the division header itself
+            let insertAfter = divisionHeader;
+            const existingItems = container.querySelectorAll(`tr[data-division="${divCode}"]`);
+            if (existingItems.length > 0) {
+                insertAfter = existingItems[existingItems.length - 1];
+            }
+
+            // Sort rows by their current position to maintain relative order
+            const allRows = Array.from(container.querySelectorAll('tr'));
+            rows.sort((a, b) => allRows.indexOf(a) - allRows.indexOf(b));
+
+            // Move each row and assign to division
+            rows.forEach(row => {
+                // Remove from current position and add after insertAfter
+                insertAfter.insertAdjacentElement('afterend', row);
+                row.setAttribute('data-division', divCode);
+                insertAfter = row; // Update for next iteration
+            });
         }
 
         function makeSubTask(childRow, parentRow) {
