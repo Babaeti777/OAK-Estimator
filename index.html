@@ -492,6 +492,96 @@
             background: rgba(139, 92, 246, 0.2);
         }
 
+        /* Filter Bar Styles */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #1f2937;
+            border-radius: 10px;
+        }
+
+        .filter-bar .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-bar .filter-label {
+            color: #94a3b8;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+
+        .filter-bar .filter-input {
+            padding: 6px 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #f8fafc;
+            font-size: 0.9em;
+            min-width: 150px;
+            transition: border-color 0.2s;
+        }
+
+        .filter-bar .filter-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .filter-bar .filter-select {
+            padding: 6px 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #f8fafc;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .filter-bar .filter-select:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .filter-bar .clear-filters-btn {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .filter-bar .clear-filters-btn:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .filter-bar .filter-count {
+            color: #64748b;
+            font-size: 0.85em;
+            padding: 4px 10px;
+            background: rgba(56, 189, 248, 0.1);
+            border-radius: 12px;
+        }
+
+        .filter-bar .filter-count.has-filter {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .line-items-table tbody tr.filtered-out {
+            display: none !important;
+        }
+
         .drag-handle {
             cursor: grab;
             color: #64748b;
@@ -1358,6 +1448,32 @@
                             <button class="clear-selection" onclick="clearSelection()">Clear Selection</button>
                         </div>
 
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <div class="filter-group">
+                                <label class="filter-label">Search:</label>
+                                <input type="text" class="filter-input" id="filterSearch" placeholder="Filter by description or notes..." oninput="applyFilters()">
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Division:</label>
+                                <select class="filter-select" id="filterDivision" onchange="applyFilters()">
+                                    <option value="">All Divisions</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Show:</label>
+                                <select class="filter-select" id="filterType" onchange="applyFilters()">
+                                    <option value="">All Items</option>
+                                    <option value="with-values">With Values</option>
+                                    <option value="empty">Empty Items</option>
+                                    <option value="parent">Parent Items Only</option>
+                                    <option value="subtask">Sub-tasks Only</option>
+                                </select>
+                            </div>
+                            <span class="filter-count" id="filterCount">Showing all</span>
+                            <button class="clear-filters-btn" onclick="clearFilters()">Clear Filters</button>
+                        </div>
+
                         <div class="line-items-table-wrapper">
                             <table class="line-items-table">
                                 <thead>
@@ -1701,6 +1817,7 @@
 
             updateSelectedDivisionsDisplay();
             updateDivisionDropdownText();
+            updateFilterDivisionOptions();
         }
 
         function addDivisionHeader(divCode) {
@@ -1847,6 +1964,8 @@
 
             updateSelectedDivisionsDisplay();
             updateDivisionDropdownText();
+            updateFilterDivisionOptions();
+            clearFilters();
             renumberLineItems();
         }
 
@@ -1869,6 +1988,159 @@
             selectedDivisions.sort((a, b) => a.localeCompare(b));
             updateSelectedDivisionsDisplay();
             updateDivisionDropdownText();
+            updateFilterDivisionOptions();
+        }
+
+        // Filter Functions
+        function updateFilterDivisionOptions() {
+            const select = document.getElementById('filterDivision');
+            if (!select) return;
+
+            // Keep the "All Divisions" option
+            select.innerHTML = '<option value="">All Divisions</option>';
+
+            // Add currently selected divisions
+            selectedDivisions.forEach(divCode => {
+                const division = CSI_DIVISIONS.find(d => d.code === divCode);
+                if (division) {
+                    const option = document.createElement('option');
+                    option.value = divCode;
+                    option.textContent = `${divCode} - ${division.name}`;
+                    select.appendChild(option);
+                }
+            });
+
+            // Add "Unassigned" option
+            const unassignedOption = document.createElement('option');
+            unassignedOption.value = 'unassigned';
+            unassignedOption.textContent = '— Unassigned Items';
+            select.appendChild(unassignedOption);
+        }
+
+        function applyFilters() {
+            const searchTerm = (document.getElementById('filterSearch').value || '').toLowerCase().trim();
+            const divisionFilter = document.getElementById('filterDivision').value;
+            const typeFilter = document.getElementById('filterType').value;
+
+            const container = document.getElementById('lineItemsContainer');
+            const allRows = container.querySelectorAll('tr');
+
+            let visibleCount = 0;
+            let totalLineItems = 0;
+
+            allRows.forEach(row => {
+                // Always show division headers if they have visible items or no filter
+                if (row.classList.contains('division-header')) {
+                    // Division headers visibility is determined later
+                    row.classList.remove('filtered-out');
+                    return;
+                }
+
+                // Skip non-line-item rows
+                if (!row.classList.contains('line-item')) {
+                    return;
+                }
+
+                totalLineItems++;
+                let visible = true;
+
+                // Search filter
+                if (searchTerm) {
+                    const description = (row.querySelector('.item-description')?.value || '').toLowerCase();
+                    const notes = (row.querySelector('.item-notes')?.value || '').toLowerCase();
+                    if (!description.includes(searchTerm) && !notes.includes(searchTerm)) {
+                        visible = false;
+                    }
+                }
+
+                // Division filter
+                if (visible && divisionFilter) {
+                    const itemDivision = row.getAttribute('data-division');
+                    if (divisionFilter === 'unassigned') {
+                        if (itemDivision) {
+                            visible = false;
+                        }
+                    } else {
+                        if (itemDivision !== divisionFilter) {
+                            visible = false;
+                        }
+                    }
+                }
+
+                // Type filter
+                if (visible && typeFilter) {
+                    const qty = parseFloat(row.querySelector('.item-quantity')?.value) || 0;
+                    const material = parseFloat(row.querySelector('.item-material')?.value) || 0;
+                    const labor = parseFloat(row.querySelector('.item-labor')?.value) || 0;
+                    const equipment = parseFloat(row.querySelector('.item-equipment')?.value) || 0;
+                    const hasValues = qty > 0 || material > 0 || labor > 0 || equipment > 0;
+                    const isSubTask = row.classList.contains('sub-task');
+
+                    switch (typeFilter) {
+                        case 'with-values':
+                            if (!hasValues) visible = false;
+                            break;
+                        case 'empty':
+                            if (hasValues) visible = false;
+                            break;
+                        case 'parent':
+                            if (isSubTask) visible = false;
+                            break;
+                        case 'subtask':
+                            if (!isSubTask) visible = false;
+                            break;
+                    }
+                }
+
+                if (visible) {
+                    row.classList.remove('filtered-out');
+                    visibleCount++;
+                } else {
+                    row.classList.add('filtered-out');
+                }
+            });
+
+            // Update division header visibility based on their items
+            allRows.forEach(row => {
+                if (row.classList.contains('division-header')) {
+                    const divCode = row.getAttribute('data-division-code');
+                    const visibleItems = container.querySelectorAll(`tr.line-item[data-division="${divCode}"]:not(.filtered-out)`);
+
+                    // Show division header if it has visible items, or if filtering by this division
+                    if (visibleItems.length > 0 || divisionFilter === divCode) {
+                        row.classList.remove('filtered-out');
+                    } else if (divisionFilter && divisionFilter !== divCode && divisionFilter !== 'unassigned') {
+                        row.classList.add('filtered-out');
+                    }
+                }
+            });
+
+            // Update filter count display
+            updateFilterCount(visibleCount, totalLineItems);
+        }
+
+        function updateFilterCount(visible, total) {
+            const countSpan = document.getElementById('filterCount');
+            if (!countSpan) return;
+
+            const hasFilter = document.getElementById('filterSearch').value ||
+                              document.getElementById('filterDivision').value ||
+                              document.getElementById('filterType').value;
+
+            if (hasFilter) {
+                countSpan.textContent = `Showing ${visible} of ${total}`;
+                countSpan.classList.add('has-filter');
+            } else {
+                countSpan.textContent = 'Showing all';
+                countSpan.classList.remove('has-filter');
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('filterSearch').value = '';
+            document.getElementById('filterDivision').value = '';
+            document.getElementById('filterType').value = '';
+            applyFilters();
         }
 
         function setupAutoEstimateListeners() {
