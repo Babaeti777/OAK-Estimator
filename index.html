@@ -4796,8 +4796,55 @@
                 if (equipmentInput) equipmentInput.value = material.equipment.toFixed(2);
                 if (notesInput) notesInput.value = `${material.code} - ${material.category || ''}`;
 
+                // Auto-assign to division and create division if needed
+                if (material.divisionCode) {
+                    // Check if division exists, if not create it
+                    if (!selectedDivisions.includes(material.divisionCode)) {
+                        // Add division to selectedDivisions array
+                        selectedDivisions.push(material.divisionCode);
+                        selectedDivisions.sort((a, b) => a.localeCompare(b));
+
+                        // Add division header
+                        addDivisionHeader(material.divisionCode);
+
+                        // Update checkbox in dropdown
+                        const checkbox = document.getElementById(`div-${material.divisionCode}`);
+                        if (checkbox) checkbox.checked = true;
+
+                        // Update UI
+                        updateSelectedDivisionsDisplay();
+                        updateDivisionDropdownText();
+                        updateFilterDivisionOptions();
+                    }
+
+                    // Assign item to division
+                    row.setAttribute('data-division', material.divisionCode);
+
+                    // Move row to correct position under division
+                    const container = document.getElementById('lineItemsContainer');
+                    const divisionHeader = container.querySelector(`tr.division-header[data-division-code="${material.divisionCode}"]`);
+
+                    if (divisionHeader) {
+                        // Find last item in this division
+                        const divisionItems = container.querySelectorAll(`tr[data-division="${material.divisionCode}"]`);
+                        let insertAfter = divisionHeader;
+
+                        if (divisionItems.length > 0) {
+                            // Insert after the last item in the division (excluding the current row)
+                            const otherItems = Array.from(divisionItems).filter(item => item !== row);
+                            if (otherItems.length > 0) {
+                                insertAfter = otherItems[otherItems.length - 1];
+                            }
+                        }
+
+                        // Move the row
+                        insertAfter.insertAdjacentElement('afterend', row);
+                    }
+                }
+
                 // Recalculate totals
                 calculateLineTotal(qtyInput || input);
+                renumberLineItems();
 
                 hideSuggestions();
 
