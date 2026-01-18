@@ -1507,6 +1507,32 @@
             font-size: 0.85em;
             color: #94a3b8;
         }
+
+        .autocomplete-loading {
+            padding: 15px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9em;
+        }
+
+        .autocomplete-loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .autocomplete-error {
+            padding: 15px;
+            text-align: center;
+            color: #f87171;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -4659,6 +4685,31 @@
             let dropdown = null;
             let currentIndex = -1;
             let suggestions = [];
+            let debounceTimer = null;
+            let searchAbortController = null;
+            const listeners = [];
+
+            // Cleanup function
+            function cleanup() {
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = null;
+                }
+                if (searchAbortController) {
+                    searchAbortController.abort();
+                    searchAbortController = null;
+                }
+                listeners.forEach(({ element, event, handler }) => {
+                    element.removeEventListener(event, handler);
+                });
+                listeners.length = 0;
+            }
+
+            // Add tracked listener
+            function addListener(element, event, handler) {
+                element.addEventListener(event, handler);
+                listeners.push({ element, event, handler });
+            }
 
             // Create dropdown element
             function createDropdown() {
@@ -4667,6 +4718,8 @@
                 dropdown = document.createElement('div');
                 dropdown.className = 'autocomplete-dropdown';
                 dropdown.style.display = 'none';
+                dropdown.setAttribute('role', 'listbox');
+                dropdown.setAttribute('id', `autocomplete-${Date.now()}`);
 
                 // Position relative to input
                 const td = input.closest('td');
@@ -4678,57 +4731,98 @@
                 return dropdown;
             }
 
-            // Search materials database
+            // Search materials database with error handling
             function searchMaterials(query) {
-                loadMaterialsDatabase();
-                if (!materialsDatabase || !query || query.length < 2) return [];
+                try {
+                    loadMaterialsDatabase();
 
-                const searchTerm = query.toLowerCase().trim();
-                const results = [];
+                    if (!materialsDatabase) {
+                        console.error('Materials database not loaded');
+                        return { error: 'Database not available', results: [] };
+                    }
 
-                Object.keys(materialsDatabase).forEach(divCode => {
-                    if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
+                    if (!query || query.length < 2) return { results: [] };
 
-                    const division = materialsDatabase[divCode];
-                    if (!division || !division.items) return;
+                    const searchTerm = query.toLowerCase().trim();
+                    const results = [];
 
-                    division.items.forEach(item => {
-                        const matches =
-                            item.description.toLowerCase().includes(searchTerm) ||
-                            item.code.toLowerCase().includes(searchTerm) ||
-                            (item.category && item.category.toLowerCase().includes(searchTerm)) ||
-                            (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm));
+                    Object.keys(materialsDatabase).forEach(divCode => {
+                        if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
 
-                        if (matches) {
-                            results.push({
-                                ...item,
-                                divisionCode: divCode,
-                                divisionName: division.name
-                            });
-                        }
+                        const division = materialsDatabase[divCode];
+                        if (!division || !division.items || !Array.isArray(division.items)) return;
+
+                        division.items.forEach(item => {
+                            if (!item || !item.description) return;
+
+                            const matches =
+                                item.description.toLowerCase().includes(searchTerm) ||
+                                (item.code && item.code.toLowerCase().includes(searchTerm)) ||
+                                (item.category && item.category.toLowerCase().includes(searchTerm)) ||
+                                (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm));
+
+                            if (matches) {
+                                results.push({
+                                    ...item,
+                                    divisionCode: divCode,
+                                    divisionName: division.name
+                                });
+                            }
+                        });
                     });
-                });
 
-                // Sort by relevance (exact matches first)
-                return results.sort((a, b) => {
-                    const aExact = a.description.toLowerCase().startsWith(searchTerm);
-                    const bExact = b.description.toLowerCase().startsWith(searchTerm);
-                    if (aExact && !bExact) return -1;
-                    if (!aExact && bExact) return 1;
-                    return 0;
-                }).slice(0, 10); // Limit to 10 results
+                    // Sort by relevance (exact matches first)
+                    const sorted = results.sort((a, b) => {
+                        const aExact = a.description.toLowerCase().startsWith(searchTerm);
+                        const bExact = b.description.toLowerCase().startsWith(searchTerm);
+                        if (aExact && !bExact) return -1;
+                        if (!aExact && bExact) return 1;
+                        return 0;
+                    }).slice(0, 10); // Limit to 10 results
+
+                    return { results: sorted };
+                } catch (error) {
+                    console.error('Search error:', error);
+                    return { error: 'Search failed', results: [] };
+                }
             }
 
-            // Display suggestions
-            function showSuggestions(results) {
+            // Show loading state
+            function showLoading() {
                 const dropdownEl = createDropdown();
+                dropdownEl.innerHTML = `
+                    <div class="autocomplete-loading">
+                        Searching database
+                    </div>
+                `;
+                dropdownEl.style.display = 'block';
+            }
+
+            // Display suggestions with error handling
+            function showSuggestions(searchResult) {
+                const dropdownEl = createDropdown();
+
+                // Handle errors
+                if (searchResult.error) {
+                    dropdownEl.innerHTML = `
+                        <div class="autocomplete-error">
+                            ⚠️ ${searchResult.error}. Try again or enter custom description.
+                        </div>
+                    `;
+                    dropdownEl.style.display = 'block';
+                    suggestions = [];
+                    currentIndex = -1;
+                    return;
+                }
+
+                const results = searchResult.results || [];
                 suggestions = results;
                 currentIndex = -1;
 
                 if (results.length === 0) {
                     dropdownEl.innerHTML = `
                         <div class="autocomplete-no-results">
-                            No materials found. Type custom description or click 📚 Browse Database.
+                            📝 No materials found. Type custom description or click 📚 Browse Database.
                         </div>
                     `;
                     dropdownEl.style.display = 'block';
@@ -4737,14 +4831,19 @@
 
                 let html = '';
                 results.forEach((item, index) => {
+                    const totalCost = (item.material || 0) + (item.labor || 0) + (item.equipment || 0);
+                    const safeDescription = (item.description || 'Unknown').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    const safeCode = (item.code || '').replace(/"/g, '&quot;');
+                    const safeCategory = (item.category || '').replace(/"/g, '&quot;');
+
                     html += `
-                        <div class="autocomplete-item" data-index="${index}">
-                            <div class="autocomplete-item-title">${item.description}</div>
+                        <div class="autocomplete-item" data-index="${index}" role="option" aria-selected="false">
+                            <div class="autocomplete-item-title">${safeDescription}</div>
                             <div class="autocomplete-item-details">
-                                <span class="autocomplete-item-code">${item.code}</span>
-                                <span>Div ${item.divisionCode}</span>
-                                <span>${item.category || ''}</span>
-                                <span>$${(item.material + item.labor + item.equipment).toFixed(2)}/${item.unit}</span>
+                                <span class="autocomplete-item-code">${safeCode}</span>
+                                <span>Div ${item.divisionCode || '??'}</span>
+                                <span>${safeCategory}</span>
+                                <span>$${totalCost.toFixed(2)}/${item.unit || 'EA'}</span>
                             </div>
                         </div>
                     `;
@@ -4759,9 +4858,10 @@
                 dropdownEl.innerHTML = html;
                 dropdownEl.style.display = 'block';
 
-                // Add click handlers
+                // Add click handlers with proper cleanup
                 dropdownEl.querySelectorAll('.autocomplete-item').forEach((el, index) => {
-                    el.addEventListener('click', () => selectSuggestion(index));
+                    const clickHandler = () => selectSuggestion(index);
+                    el.addEventListener('click', clickHandler);
                 });
             }
 
@@ -4773,116 +4873,191 @@
                 currentIndex = -1;
             }
 
-            // Select suggestion
+            // Select suggestion with comprehensive error handling
             function selectSuggestion(index) {
-                if (index < 0 || index >= suggestions.length) return;
-
-                const material = suggestions[index];
-
-                // Populate all fields
-                input.value = material.description;
-
-                const qtyInput = row.querySelector('.item-quantity');
-                const unitSelect = row.querySelector('.item-unit');
-                const materialInput = row.querySelector('.item-material');
-                const laborInput = row.querySelector('.item-labor');
-                const equipmentInput = row.querySelector('.item-equipment');
-                const notesInput = row.querySelector('.item-notes');
-
-                if (qtyInput && !qtyInput.value) qtyInput.value = 1;
-                if (unitSelect) unitSelect.value = material.unit;
-                if (materialInput) materialInput.value = material.material.toFixed(2);
-                if (laborInput) laborInput.value = material.labor.toFixed(2);
-                if (equipmentInput) equipmentInput.value = material.equipment.toFixed(2);
-                if (notesInput) notesInput.value = `${material.code} - ${material.category || ''}`;
-
-                // Auto-assign to division and create division if needed
-                if (material.divisionCode) {
-                    // Check if division exists, if not create it
-                    if (!selectedDivisions.includes(material.divisionCode)) {
-                        // Add division to selectedDivisions array
-                        selectedDivisions.push(material.divisionCode);
-                        selectedDivisions.sort((a, b) => a.localeCompare(b));
-
-                        // Add division header
-                        addDivisionHeader(material.divisionCode);
-
-                        // Update checkbox in dropdown
-                        const checkbox = document.getElementById(`div-${material.divisionCode}`);
-                        if (checkbox) checkbox.checked = true;
-
-                        // Update UI
-                        updateSelectedDivisionsDisplay();
-                        updateDivisionDropdownText();
-                        updateFilterDivisionOptions();
+                try {
+                    if (index < 0 || index >= suggestions.length) {
+                        console.warn('Invalid suggestion index:', index);
+                        return;
                     }
 
-                    // Assign item to division
-                    row.setAttribute('data-division', material.divisionCode);
+                    const material = suggestions[index];
+                    if (!material) {
+                        console.error('Material not found at index:', index);
+                        return;
+                    }
 
-                    // Move row to correct position under division
-                    const container = document.getElementById('lineItemsContainer');
-                    const divisionHeader = container.querySelector(`tr.division-header[data-division-code="${material.divisionCode}"]`);
+                    // Populate all fields with validation
+                    input.value = material.description || '';
 
-                    if (divisionHeader) {
-                        // Find last item in this division
-                        const divisionItems = container.querySelectorAll(`tr[data-division="${material.divisionCode}"]`);
-                        let insertAfter = divisionHeader;
+                    const qtyInput = row.querySelector('.item-quantity');
+                    const unitSelect = row.querySelector('.item-unit');
+                    const materialInput = row.querySelector('.item-material');
+                    const laborInput = row.querySelector('.item-labor');
+                    const equipmentInput = row.querySelector('.item-equipment');
+                    const notesInput = row.querySelector('.item-notes');
 
-                        if (divisionItems.length > 0) {
-                            // Insert after the last item in the division (excluding the current row)
-                            const otherItems = Array.from(divisionItems).filter(item => item !== row);
-                            if (otherItems.length > 0) {
-                                insertAfter = otherItems[otherItems.length - 1];
+                    // Set quantity if empty
+                    if (qtyInput && !qtyInput.value) qtyInput.value = 1;
+
+                    // Set unit with validation
+                    if (unitSelect && material.unit) {
+                        unitSelect.value = material.unit;
+                    }
+
+                    // Set costs with validation
+                    if (materialInput) {
+                        materialInput.value = (material.material || 0).toFixed(2);
+                    }
+                    if (laborInput) {
+                        laborInput.value = (material.labor || 0).toFixed(2);
+                    }
+                    if (equipmentInput) {
+                        equipmentInput.value = (material.equipment || 0).toFixed(2);
+                    }
+
+                    // Set notes
+                    if (notesInput) {
+                        const notes = material.code ? `${material.code}` : '';
+                        const category = material.category ? ` - ${material.category}` : '';
+                        notesInput.value = notes + category;
+                    }
+
+                    // Auto-assign to division and create division if needed
+                    if (material.divisionCode) {
+                        try {
+                            // Check if division exists, if not create it
+                            if (!selectedDivisions.includes(material.divisionCode)) {
+                                // Add division to selectedDivisions array
+                                selectedDivisions.push(material.divisionCode);
+                                selectedDivisions.sort((a, b) => a.localeCompare(b));
+
+                                // Add division header
+                                addDivisionHeader(material.divisionCode);
+
+                                // Update checkbox in dropdown
+                                const checkbox = document.getElementById(`div-${material.divisionCode}`);
+                                if (checkbox) checkbox.checked = true;
+
+                                // Update UI
+                                updateSelectedDivisionsDisplay();
+                                updateDivisionDropdownText();
+                                updateFilterDivisionOptions();
                             }
+
+                            // Assign item to division
+                            row.setAttribute('data-division', material.divisionCode);
+
+                            // Move row to correct position under division
+                            const container = document.getElementById('lineItemsContainer');
+                            if (container) {
+                                const divisionHeader = container.querySelector(`tr.division-header[data-division-code="${material.divisionCode}"]`);
+
+                                if (divisionHeader) {
+                                    // Find last item in this division
+                                    const divisionItems = container.querySelectorAll(`tr[data-division="${material.divisionCode}"]`);
+                                    let insertAfter = divisionHeader;
+
+                                    if (divisionItems.length > 0) {
+                                        // Insert after the last item in the division (excluding the current row)
+                                        const otherItems = Array.from(divisionItems).filter(item => item !== row);
+                                        if (otherItems.length > 0) {
+                                            insertAfter = otherItems[otherItems.length - 1];
+                                        }
+                                    }
+
+                                    // Move the row
+                                    if (insertAfter && insertAfter.insertAdjacentElement) {
+                                        insertAfter.insertAdjacentElement('afterend', row);
+                                    }
+                                }
+                            }
+                        } catch (divError) {
+                            console.error('Error assigning division:', divError);
+                            // Continue anyway - item is still added
                         }
-
-                        // Move the row
-                        insertAfter.insertAdjacentElement('afterend', row);
                     }
+
+                    // Recalculate totals
+                    try {
+                        calculateLineTotal(qtyInput || input);
+                        renumberLineItems();
+                    } catch (calcError) {
+                        console.error('Error calculating totals:', calcError);
+                    }
+
+                    hideSuggestions();
+
+                    // Flash the row with success feedback
+                    if (row) {
+                        row.style.backgroundColor = '#38bdf8';
+                        row.style.transition = 'background-color 0.3s ease';
+                        setTimeout(() => {
+                            row.style.backgroundColor = '';
+                        }, 800);
+                    }
+                } catch (error) {
+                    console.error('Error selecting suggestion:', error);
+                    hideSuggestions();
                 }
-
-                // Recalculate totals
-                calculateLineTotal(qtyInput || input);
-                renumberLineItems();
-
-                hideSuggestions();
-
-                // Flash the row
-                row.style.backgroundColor = '#38bdf8';
-                setTimeout(() => {
-                    row.style.backgroundColor = '';
-                }, 800);
             }
 
-            // Highlight item
+            // Highlight item with accessibility support
             function highlightItem(index) {
                 if (!dropdown) return;
 
                 dropdown.querySelectorAll('.autocomplete-item').forEach((el, i) => {
                     if (i === index) {
                         el.classList.add('active');
-                        el.scrollIntoView({ block: 'nearest' });
+                        el.setAttribute('aria-selected', 'true');
+                        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     } else {
                         el.classList.remove('active');
+                        el.setAttribute('aria-selected', 'false');
                     }
                 });
             }
 
-            // Input event
-            input.addEventListener('input', (e) => {
-                const value = e.target.value;
-                if (value.length >= 2) {
-                    const results = searchMaterials(value);
-                    showSuggestions(results);
-                } else {
-                    hideSuggestions();
-                }
-            });
+            // Input event with debouncing for performance
+            const inputHandler = (e) => {
+                const value = e.target.value?.trim() || '';
 
-            // Keyboard navigation
-            input.addEventListener('keydown', (e) => {
-                if (!dropdown || dropdown.style.display === 'none') return;
+                // Clear previous timer
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = null;
+                }
+
+                // Hide if too short
+                if (value.length < 2) {
+                    hideSuggestions();
+                    return;
+                }
+
+                // Show loading state immediately
+                showLoading();
+
+                // Debounce search (wait 200ms after user stops typing)
+                debounceTimer = setTimeout(() => {
+                    try {
+                        const searchResult = searchMaterials(value);
+                        showSuggestions(searchResult);
+                    } catch (error) {
+                        console.error('Search error:', error);
+                        showSuggestions({ error: 'Search failed', results: [] });
+                    }
+                    debounceTimer = null;
+                }, 200);
+            };
+
+            addListener(input, 'input', inputHandler);
+
+            // Keyboard navigation with better UX
+            const keydownHandler = (e) => {
+                if (!dropdown || dropdown.style.display === 'none') {
+                    // Allow Tab to work normally even when dropdown is hidden
+                    return;
+                }
 
                 switch(e.key) {
                     case 'ArrowDown':
@@ -4896,8 +5071,9 @@
                         highlightItem(currentIndex);
                         break;
                     case 'Enter':
-                        if (currentIndex >= 0) {
+                        if (currentIndex >= 0 && suggestions.length > 0) {
                             e.preventDefault();
+                            e.stopPropagation();
                             selectSuggestion(currentIndex);
                         }
                         break;
@@ -4905,20 +5081,50 @@
                         e.preventDefault();
                         hideSuggestions();
                         break;
+                    case 'Tab':
+                        // Close dropdown on tab to allow normal tab navigation
+                        hideSuggestions();
+                        break;
                 }
-            });
+            };
+
+            addListener(input, 'keydown', keydownHandler);
 
             // Close on blur (with delay to allow click)
-            input.addEventListener('blur', () => {
-                setTimeout(() => hideSuggestions(), 200);
-            });
+            const blurHandler = () => {
+                setTimeout(() => {
+                    if (!input.matches(':focus')) {
+                        hideSuggestions();
+                    }
+                }, 250);
+            };
 
-            // Close when clicking outside
-            document.addEventListener('click', (e) => {
+            addListener(input, 'blur', blurHandler);
+
+            // Close when clicking outside (with proper cleanup)
+            const clickOutsideHandler = (e) => {
                 if (!input.contains(e.target) && !dropdown?.contains(e.target)) {
                     hideSuggestions();
                 }
+            };
+
+            addListener(document, 'click', clickOutsideHandler);
+
+            // Cleanup when row is removed
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.removedNodes.forEach((node) => {
+                        if (node === row) {
+                            cleanup();
+                            observer.disconnect();
+                        }
+                    });
+                });
             });
+
+            if (row.parentNode) {
+                observer.observe(row.parentNode, { childList: true });
+            }
         }
 
         function openMaterialBrowser() {
@@ -4986,49 +5192,97 @@
             });
         }
 
+        // Debounce timer for material browser filter
+        let materialFilterDebounce = null;
+
         function filterMaterials() {
-            if (!materialsDatabase) {
-                loadMaterialsDatabase();
-                if (!materialsDatabase) return;
+            // Clear previous debounce
+            if (materialFilterDebounce) {
+                clearTimeout(materialFilterDebounce);
             }
 
-            const searchTerm = document.getElementById('materialSearch').value.toLowerCase();
-            const divisionFilter = document.getElementById('materialDivisionFilter').value;
-            const categoryFilter = document.getElementById('materialCategoryFilter').value.toLowerCase();
+            // Show loading state
+            const container = document.getElementById('materialsList');
+            if (container) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;"><div class="spinner" style="margin: 0 auto 15px;"></div>Filtering materials...</div>';
+            }
 
-            filteredMaterials = [];
+            // Debounce filter operation
+            materialFilterDebounce = setTimeout(() => {
+                performFilter();
+                materialFilterDebounce = null;
+            }, 150);
+        }
 
-            Object.keys(materialsDatabase).forEach(divCode => {
-                if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
-
-                const division = materialsDatabase[divCode];
-                if (!division || !division.items) return;
-
-                // Filter by division
-                if (divisionFilter !== 'all' && divCode !== divisionFilter) return;
-
-                division.items.forEach(item => {
-                    // Filter by search term
-                    if (searchTerm && !item.description.toLowerCase().includes(searchTerm) &&
-                        !item.code.toLowerCase().includes(searchTerm) &&
-                        !(item.category && item.category.toLowerCase().includes(searchTerm))) {
+        function performFilter() {
+            try {
+                if (!materialsDatabase) {
+                    loadMaterialsDatabase();
+                    if (!materialsDatabase) {
+                        const container = document.getElementById('materialsList');
+                        if (container) {
+                            container.innerHTML = '<p style="text-align: center; padding: 20px; color: #f87171;">⚠️ Database not loaded. Please refresh the page.</p>';
+                        }
                         return;
                     }
+                }
 
-                    // Filter by category
-                    if (categoryFilter && item.category && !item.category.toLowerCase().includes(categoryFilter)) {
-                        return;
-                    }
+                const searchInput = document.getElementById('materialSearch');
+                const divisionInput = document.getElementById('materialDivisionFilter');
+                const categoryInput = document.getElementById('materialCategoryFilter');
 
-                    filteredMaterials.push({
-                        ...item,
-                        divisionCode: divCode,
-                        divisionName: division.name
+                const searchTerm = searchInput?.value?.toLowerCase()?.trim() || '';
+                const divisionFilter = divisionInput?.value || 'all';
+                const categoryFilter = categoryInput?.value?.toLowerCase()?.trim() || '';
+
+                filteredMaterials = [];
+
+                Object.keys(materialsDatabase).forEach(divCode => {
+                    if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
+
+                    const division = materialsDatabase[divCode];
+                    if (!division || !division.items || !Array.isArray(division.items)) return;
+
+                    // Filter by division early
+                    if (divisionFilter !== 'all' && divCode !== divisionFilter) return;
+
+                    division.items.forEach(item => {
+                        if (!item || !item.description) return;
+
+                        // Filter by search term
+                        if (searchTerm) {
+                            const matchesSearch =
+                                item.description.toLowerCase().includes(searchTerm) ||
+                                (item.code && item.code.toLowerCase().includes(searchTerm)) ||
+                                (item.category && item.category.toLowerCase().includes(searchTerm)) ||
+                                (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm));
+
+                            if (!matchesSearch) return;
+                        }
+
+                        // Filter by category
+                        if (categoryFilter) {
+                            if (!item.category || !item.category.toLowerCase().includes(categoryFilter)) {
+                                return;
+                            }
+                        }
+
+                        filteredMaterials.push({
+                            ...item,
+                            divisionCode: divCode,
+                            divisionName: division.name
+                        });
                     });
                 });
-            });
 
-            displayMaterials();
+                displayMaterials();
+            } catch (error) {
+                console.error('Filter error:', error);
+                const container = document.getElementById('materialsList');
+                if (container) {
+                    container.innerHTML = '<p style="text-align: center; padding: 20px; color: #f87171;">⚠️ Error filtering materials. Please try again.</p>';
+                }
+            }
         }
 
         function displayMaterials() {
@@ -5036,11 +5290,29 @@
             if (!container) return;
 
             if (filteredMaterials.length === 0) {
-                container.innerHTML = '<p style="text-align: center; padding: 20px; color: #94a3b8;">No materials found matching your criteria.</p>';
+                container.innerHTML = '<p style="text-align: center; padding: 20px; color: #94a3b8;">📭 No materials found matching your criteria. Try adjusting your filters.</p>';
                 return;
             }
 
-            let html = `
+            // Limit displayed results for performance (show first 100)
+            const displayLimit = 100;
+            const itemsToDisplay = filteredMaterials.slice(0, displayLimit);
+            const hasMore = filteredMaterials.length > displayLimit;
+
+            let html = '';
+
+            // Show result count and warning if limited
+            if (hasMore) {
+                html += `<div style="background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 6px; padding: 12px; margin-bottom: 15px; color: #fbbf24; font-size: 0.9em;">
+                    ⚡ Showing first ${displayLimit} of ${filteredMaterials.length} results. Use filters to narrow down your search.
+                </div>`;
+            } else {
+                html += `<div style="margin-bottom: 10px; color: #94a3b8; font-size: 0.9em;">
+                    Found ${filteredMaterials.length} material${filteredMaterials.length !== 1 ? 's' : ''}
+                </div>`;
+            }
+
+            html += `
                 <table class="materials-table">
                     <thead>
                         <tr>
@@ -5058,20 +5330,29 @@
                     <tbody>
             `;
 
-            filteredMaterials.forEach((item, index) => {
-                const total = (item.material || 0) + (item.labor || 0) + (item.equipment || 0);
+            itemsToDisplay.forEach((item, index) => {
+                // Sanitize text to prevent XSS
+                const safeCode = (item.code || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeDesc = (item.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeCategory = (item.category || '-').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeUnit = (item.unit || 'EA').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                const materialCost = (item.material || 0).toFixed(2);
+                const laborCost = (item.labor || 0).toFixed(2);
+                const equipmentCost = (item.equipment || 0).toFixed(2);
+
                 html += `
                     <tr>
-                        <td style="font-family: monospace; font-size: 0.85em;">${item.code}</td>
-                        <td><strong>${item.description}</strong></td>
-                        <td>Div ${item.divisionCode}</td>
-                        <td><span style="font-size: 0.85em; color: #94a3b8;">${item.category || '-'}</span></td>
-                        <td>${item.unit}</td>
-                        <td>$${item.material.toFixed(2)}</td>
-                        <td>$${item.labor.toFixed(2)}</td>
-                        <td>$${item.equipment.toFixed(2)}</td>
+                        <td style="font-family: monospace; font-size: 0.85em;">${safeCode}</td>
+                        <td><strong>${safeDesc}</strong></td>
+                        <td>Div ${item.divisionCode || '??'}</td>
+                        <td><span style="font-size: 0.85em; color: #94a3b8;">${safeCategory}</span></td>
+                        <td>${safeUnit}</td>
+                        <td>$${materialCost}</td>
+                        <td>$${laborCost}</td>
+                        <td>$${equipmentCost}</td>
                         <td>
-                            <button class="btn btn-sm btn-primary" onclick="addMaterialToLineItems(${index})">
+                            <button class="btn btn-sm btn-primary" onclick="addMaterialToLineItems(${index})" title="Add to estimate">
                                 + Add
                             </button>
                         </td>
@@ -5084,51 +5365,129 @@
         }
 
         function addMaterialToLineItems(materialIndex) {
-            // Get the material from the filtered array
-            const material = filteredMaterials[materialIndex];
-            if (!material) {
-                console.error('Material not found at index:', materialIndex);
-                return;
+            try {
+                // Get the material from the filtered array
+                const material = filteredMaterials[materialIndex];
+                if (!material) {
+                    console.error('Material not found at index:', materialIndex);
+                    alert('⚠️ Error: Material not found. Please try again.');
+                    return;
+                }
+
+                // Add a new line item with the material data
+                const row = addLineItem();
+                if (!row) {
+                    console.error('Failed to create line item row');
+                    alert('⚠️ Error: Failed to add line item. Please try again.');
+                    return;
+                }
+
+                // Populate the fields with validation
+                const descInput = row.querySelector('.item-description');
+                const qtyInput = row.querySelector('.item-quantity');
+                const unitSelect = row.querySelector('.item-unit');
+                const materialInput = row.querySelector('.item-material');
+                const laborInput = row.querySelector('.item-labor');
+                const equipmentInput = row.querySelector('.item-equipment');
+                const notesInput = row.querySelector('.item-notes');
+
+                if (descInput) descInput.value = material.description || '';
+                if (qtyInput) qtyInput.value = 1; // Default quantity
+                if (unitSelect && material.unit) unitSelect.value = material.unit;
+                if (materialInput) materialInput.value = (material.material || 0).toFixed(2);
+                if (laborInput) laborInput.value = (material.labor || 0).toFixed(2);
+                if (equipmentInput) equipmentInput.value = (material.equipment || 0).toFixed(2);
+
+                // Set notes
+                if (notesInput) {
+                    const notes = material.code ? `${material.code}` : '';
+                    const category = material.category ? ` - ${material.category}` : '';
+                    notesInput.value = notes + category;
+                }
+
+                // Auto-assign to division and create division if needed (same logic as autocomplete)
+                if (material.divisionCode) {
+                    try {
+                        // Check if division exists, if not create it
+                        if (!selectedDivisions.includes(material.divisionCode)) {
+                            // Add division to selectedDivisions array
+                            selectedDivisions.push(material.divisionCode);
+                            selectedDivisions.sort((a, b) => a.localeCompare(b));
+
+                            // Add division header
+                            addDivisionHeader(material.divisionCode);
+
+                            // Update checkbox in dropdown
+                            const checkbox = document.getElementById(`div-${material.divisionCode}`);
+                            if (checkbox) checkbox.checked = true;
+
+                            // Update UI
+                            updateSelectedDivisionsDisplay();
+                            updateDivisionDropdownText();
+                            updateFilterDivisionOptions();
+                        }
+
+                        // Assign item to division
+                        row.setAttribute('data-division', material.divisionCode);
+
+                        // Move row to correct position under division
+                        const container = document.getElementById('lineItemsContainer');
+                        if (container) {
+                            const divisionHeader = container.querySelector(`tr.division-header[data-division-code="${material.divisionCode}"]`);
+
+                            if (divisionHeader) {
+                                // Find last item in this division
+                                const divisionItems = container.querySelectorAll(`tr[data-division="${material.divisionCode}"]`);
+                                let insertAfter = divisionHeader;
+
+                                if (divisionItems.length > 0) {
+                                    // Insert after the last item in the division (excluding the current row)
+                                    const otherItems = Array.from(divisionItems).filter(item => item !== row);
+                                    if (otherItems.length > 0) {
+                                        insertAfter = otherItems[otherItems.length - 1];
+                                    }
+                                }
+
+                                // Move the row
+                                if (insertAfter && insertAfter.insertAdjacentElement) {
+                                    insertAfter.insertAdjacentElement('afterend', row);
+                                }
+                            }
+                        }
+                    } catch (divError) {
+                        console.error('Error assigning division:', divError);
+                        // Continue anyway - item is still added
+                    }
+                }
+
+                // Recalculate totals
+                try {
+                    calculateLineTotal(qtyInput);
+                    renumberLineItems();
+                } catch (calcError) {
+                    console.error('Error calculating totals:', calcError);
+                }
+
+                // Close the modal
+                closeMaterialBrowser();
+
+                // Scroll to the new item
+                setTimeout(() => {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+
+                // Flash the row to highlight it with smooth transition
+                if (row) {
+                    row.style.backgroundColor = '#38bdf8';
+                    row.style.transition = 'background-color 0.3s ease';
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Error adding material to line items:', error);
+                alert('⚠️ Error adding material. Please try again or contact support.');
             }
-
-            // Add a new line item with the material data
-            const row = addLineItem();
-
-            // Populate the fields
-            const descInput = row.querySelector('.item-description');
-            const qtyInput = row.querySelector('.item-quantity');
-            const unitSelect = row.querySelector('.item-unit');
-            const materialInput = row.querySelector('.item-material');
-            const laborInput = row.querySelector('.item-labor');
-            const equipmentInput = row.querySelector('.item-equipment');
-            const notesInput = row.querySelector('.item-notes');
-
-            if (descInput) descInput.value = material.description;
-            if (qtyInput) qtyInput.value = 1; // Default quantity
-            if (unitSelect) unitSelect.value = material.unit;
-            if (materialInput) materialInput.value = material.material.toFixed(2);
-            if (laborInput) laborInput.value = material.labor.toFixed(2);
-            if (equipmentInput) equipmentInput.value = material.equipment.toFixed(2);
-            if (notesInput) notesInput.value = `${material.code} - ${material.category || ''}`;
-
-            // If a division is selected in the project, assign the material to it
-            if (material.divisionCode && selectedDivisions.includes(material.divisionCode)) {
-                row.setAttribute('data-division', material.divisionCode);
-            }
-
-            calculateLineTotal(qtyInput);
-
-            // Close the modal
-            closeMaterialBrowser();
-
-            // Scroll to the new item
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // Flash the row to highlight it
-            row.style.backgroundColor = '#38bdf8';
-            setTimeout(() => {
-                row.style.backgroundColor = '';
-            }, 1000);
         }
 
         // Initialize on page load
