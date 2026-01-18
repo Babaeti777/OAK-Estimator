@@ -4580,6 +4580,12 @@
                 loadMaterialsDatabase();
                 populateMaterialDivisions();
                 filterMaterials();
+
+                // Focus the search input
+                setTimeout(() => {
+                    const searchInput = document.getElementById('materialSearch');
+                    if (searchInput) searchInput.focus();
+                }, 100);
             }
         }
 
@@ -4587,8 +4593,31 @@
             const modal = document.getElementById('materialBrowserModal');
             if (modal) {
                 modal.style.display = 'none';
+                // Clear search filters
+                const searchInput = document.getElementById('materialSearch');
+                const categoryInput = document.getElementById('materialCategoryFilter');
+                if (searchInput) searchInput.value = '';
+                if (categoryInput) categoryInput.value = '';
             }
         }
+
+        // Close modal when clicking outside of it
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('materialBrowserModal');
+            if (event.target === modal) {
+                closeMaterialBrowser();
+            }
+        });
+
+        // Close modal with Escape key
+        window.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('materialBrowserModal');
+                if (modal && modal.style.display === 'flex') {
+                    closeMaterialBrowser();
+                }
+            }
+        });
 
         function populateMaterialDivisions() {
             const select = document.getElementById('materialDivisionFilter');
@@ -4681,7 +4710,7 @@
                     <tbody>
             `;
 
-            filteredMaterials.forEach(item => {
+            filteredMaterials.forEach((item, index) => {
                 const total = (item.material || 0) + (item.labor || 0) + (item.equipment || 0);
                 html += `
                     <tr>
@@ -4694,7 +4723,7 @@
                         <td>$${item.labor.toFixed(2)}</td>
                         <td>$${item.equipment.toFixed(2)}</td>
                         <td>
-                            <button class="btn btn-sm btn-primary" onclick='addMaterialToLineItems(${JSON.stringify(item)})'>
+                            <button class="btn btn-sm btn-primary" onclick="addMaterialToLineItems(${index})">
                                 + Add
                             </button>
                         </td>
@@ -4706,7 +4735,14 @@
             container.innerHTML = html;
         }
 
-        function addMaterialToLineItems(material) {
+        function addMaterialToLineItems(materialIndex) {
+            // Get the material from the filtered array
+            const material = filteredMaterials[materialIndex];
+            if (!material) {
+                console.error('Material not found at index:', materialIndex);
+                return;
+            }
+
             // Add a new line item with the material data
             const row = addLineItem();
 
