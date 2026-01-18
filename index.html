@@ -406,62 +406,71 @@
         }
 
         /* Drag and Drop Styles */
-        .line-items-table tbody tr {
+        .drag-handle {
             cursor: grab;
+            color: #64748b;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.2s;
+            user-select: none;
+            padding: 8px !important;
+            background: rgba(100, 116, 139, 0.1);
         }
 
-        .line-items-table tbody tr:active {
+        .drag-handle:hover {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.2);
+        }
+
+        .drag-handle:active {
             cursor: grabbing;
         }
 
         .line-items-table tbody tr.dragging {
-            opacity: 0.5;
-            background: rgba(56, 189, 248, 0.2) !important;
+            opacity: 0.4;
+            background: rgba(56, 189, 248, 0.3) !important;
         }
 
-        .line-items-table tbody tr.drag-over {
+        /* Drop Zone Indicator */
+        .drop-zone-indicator {
+            height: 40px;
+            background: linear-gradient(to bottom, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.2));
+            border: 2px dashed #38bdf8;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin: 2px 0;
+            animation: pulse 1.5s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        .drop-zone-indicator.subtask {
+            background: linear-gradient(to right, rgba(34, 211, 238, 0.1), rgba(34, 211, 238, 0.25));
+            border-color: #22d3ee;
+            color: #22d3ee;
+            margin-left: 60px;
+            border-left-width: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Active drop target highlighting */
+        .line-items-table tbody tr.drop-target-above {
             border-top: 3px solid #38bdf8;
-            position: relative;
+            box-shadow: 0 -2px 8px rgba(56, 189, 248, 0.3);
         }
 
-        .line-items-table tbody tr.drag-over::before {
-            content: "↓ Drop here to reorder";
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #38bdf8;
-            color: #0f172a;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 0.75em;
-            font-weight: 600;
-            white-space: nowrap;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        .line-items-table tbody tr.drag-over-subtask {
-            border-bottom: 3px solid #22d3ee;
+        .line-items-table tbody tr.drop-target-subtask {
             background: rgba(34, 211, 238, 0.15) !important;
-            position: relative;
-        }
-
-        .line-items-table tbody tr.drag-over-subtask::after {
-            content: "↓ Drop here to make sub-task";
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #22d3ee;
-            color: #0f172a;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 0.75em;
-            font-weight: 600;
-            white-space: nowrap;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border-left: 4px solid #22d3ee;
+            box-shadow: 0 2px 8px rgba(34, 211, 238, 0.3);
         }
 
         .line-items-table tbody tr.drag-over-division {
@@ -478,9 +487,9 @@
             transform: translate(-50%, -50%);
             background: #2563eb;
             color: #f8fafc;
-            padding: 6px 16px;
+            padding: 8px 20px;
             border-radius: 6px;
-            font-size: 0.85em;
+            font-size: 0.9em;
             font-weight: 700;
             white-space: nowrap;
             z-index: 1000;
@@ -3175,7 +3184,12 @@
             }
 
             row.innerHTML = `
-                <td class="drag-handle" title="Drag to reorder">⋮⋮</td>
+                <td class="drag-handle" title="👆 Drag here to reorder or make sub-task">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1;">
+                        <span>⋮</span>
+                        <span>⋮</span>
+                    </div>
+                </td>
                 <td class="line-num"><span class="line-number">${lineItemCounter}</span></td>
                 <td><input type="text" class="table-input desc item-description" placeholder="Description"></td>
                 <td><input type="number" class="table-input qty item-quantity" placeholder="0" min="0" step="0.01" oninput="calculateLineTotal(this)"></td>
@@ -3230,8 +3244,9 @@
         // Drag and Drop functionality with Multi-Select
         let draggedRow = null;
         let draggedRows = []; // For multi-select drag
-        let dropMode = 'reorder'; // 'reorder', 'subtask', or 'division'
         let selectedRows = new Set(); // Track selected rows for multi-select
+        let dropZones = []; // Store active drop zones
+        let dragOverThrottle = null; // For performance
 
         function handleRowClick(e) {
             const row = e.target.closest('tr.line-item');
@@ -3279,6 +3294,12 @@
         }
 
         function handleDragStart(e) {
+            // Only allow dragging from drag handle
+            if (!e.target.closest('.drag-handle')) {
+                e.preventDefault();
+                return;
+            }
+
             draggedRow = this;
             const itemId = this.getAttribute('data-item-id');
 
@@ -3318,76 +3339,160 @@
 
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', draggedRows.length + ' items');
+
+            // Create drop zones after a short delay
+            setTimeout(() => createDropZones(), 50);
         }
 
-        function handleDragEnd(e) {
-            draggedRows.forEach(row => row.classList.remove('dragging'));
-            document.querySelectorAll('.drag-over, .drag-over-subtask, .drag-over-division').forEach(el => {
-                el.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
-            });
-            draggedRow = null;
-            draggedRows = [];
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            if (!draggedRow || draggedRows.includes(this)) return;
-
-            const rect = this.getBoundingClientRect();
-            const midY = rect.top + rect.height * 0.5;
-
-            // Remove previous classes
-            this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
-
-            // Check if this is a division header
-            if (this.classList.contains('division-header')) {
-                this.classList.add('drag-over-division');
-                dropMode = 'division';
-            } else if (e.clientY > midY && !this.classList.contains('sub-task') && draggedRows.length === 1) {
-                // If dragging to bottom half of row, make it a subtask candidate (only for single items)
-                this.classList.add('drag-over-subtask');
-                dropMode = 'subtask';
-            } else {
-                // Top half: reorder (insert before this row)
-                this.classList.add('drag-over');
-                dropMode = 'reorder';
-            }
-        }
-
-        function handleDragLeave(e) {
-            this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            if (!draggedRow || draggedRows.includes(this)) return;
-
-            this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
+        function createDropZones() {
+            if (!draggedRow) return;
 
             const container = document.getElementById('lineItemsContainer');
+            const allRows = Array.from(container.querySelectorAll('tr'));
 
-            if (dropMode === 'division' && this.classList.contains('division-header')) {
-                // Move items under a division
-                const divCode = this.getAttribute('data-division-code');
-                moveItemsToDivision(draggedRows, divCode, this);
-            } else if (dropMode === 'subtask' && !this.classList.contains('sub-task') && draggedRows.length === 1) {
-                // Make single dragged row a subtask (only for single select)
-                makeSubTask(draggedRow, this);
-            } else {
-                // Reorder: insert before this row
-                // Sort draggedRows by their current position to maintain relative order
-                const allRows = Array.from(container.querySelectorAll('tr'));
-                draggedRows.sort((a, b) => allRows.indexOf(a) - allRows.indexOf(b));
+            allRows.forEach(row => {
+                // Skip if this is one of the dragged rows
+                if (draggedRows.includes(row)) return;
 
-                draggedRows.forEach(row => {
-                    container.insertBefore(row, this);
-                });
+                // Skip if it's a sub-task (can't make sub-sub-tasks)
+                const isSubTask = row.classList.contains('sub-task');
+
+                // Create drop zone above (for reordering)
+                const dropZoneAbove = document.createElement('tr');
+                dropZoneAbove.className = 'drop-zone-indicator';
+                dropZoneAbove.innerHTML = '<td colspan="100">↓ Drop here to insert above</td>';
+                dropZoneAbove.dataset.dropType = 'above';
+                dropZoneAbove.dataset.targetId = row.getAttribute('data-item-id') || row.getAttribute('data-division-code');
+                dropZoneAbove.addEventListener('dragover', handleDropZoneDragOver);
+                dropZoneAbove.addEventListener('drop', handleDropZoneDrop);
+                row.parentNode.insertBefore(dropZoneAbove, row);
+                dropZones.push(dropZoneAbove);
+
+                // Create drop zone for sub-task (only for non-subtasks and single item drag)
+                if (!isSubTask && !row.classList.contains('division-header') && draggedRows.length === 1) {
+                    const dropZoneSubtask = document.createElement('tr');
+                    dropZoneSubtask.className = 'drop-zone-indicator subtask';
+                    dropZoneSubtask.innerHTML = '<td colspan="100">↓ Drop here to make sub-task of above item</td>';
+                    dropZoneSubtask.dataset.dropType = 'subtask';
+                    dropZoneSubtask.dataset.targetId = row.getAttribute('data-item-id');
+                    dropZoneSubtask.addEventListener('dragover', handleDropZoneDragOver);
+                    dropZoneSubtask.addEventListener('drop', handleDropZoneDrop);
+                    row.parentNode.insertBefore(dropZoneSubtask, row.nextSibling);
+                    dropZones.push(dropZoneSubtask);
+                }
+
+                // Add division drop handling
+                if (row.classList.contains('division-header')) {
+                    row.addEventListener('dragover', handleDivisionDragOver);
+                    row.addEventListener('dragleave', handleDivisionDragLeave);
+                    row.addEventListener('drop', handleDivisionDrop);
+                }
+            });
+        }
+
+        function removeDropZones() {
+            dropZones.forEach(zone => {
+                zone.remove();
+            });
+            dropZones = [];
+
+            // Remove division highlights
+            document.querySelectorAll('.drag-over-division').forEach(el => {
+                el.classList.remove('drag-over-division');
+            });
+        }
+
+        function handleDropZoneDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.opacity = '1';
+            this.style.transform = 'scale(1.02)';
+        }
+
+        function handleDropZoneDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const dropType = this.dataset.dropType;
+            const targetId = this.dataset.targetId;
+            const container = document.getElementById('lineItemsContainer');
+
+            if (dropType === 'above') {
+                // Insert before target
+                const targetRow = container.querySelector(`tr[data-item-id="${targetId}"]`) ||
+                                 container.querySelector(`tr[data-division-code="${targetId}"]`);
+
+                if (targetRow) {
+                    // Sort draggedRows by their current position to maintain relative order
+                    const allRows = Array.from(container.querySelectorAll('tr'));
+                    draggedRows.sort((a, b) => allRows.indexOf(a) - allRows.indexOf(b));
+
+                    draggedRows.forEach(row => {
+                        container.insertBefore(row, targetRow);
+                    });
+                }
+            } else if (dropType === 'subtask') {
+                // Make sub-task of target
+                const targetRow = container.querySelector(`tr[data-item-id="${targetId}"]`);
+
+                if (targetRow && draggedRows.length === 1) {
+                    makeSubTask(draggedRows[0], targetRow);
+                }
             }
 
             // Clear selection after drop
             clearSelection();
             renumberLineItems();
             debouncedCalculateEstimate({ auto: true });
+        }
+
+        function handleDivisionDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!draggedRow) return;
+            this.classList.add('drag-over-division');
+        }
+
+        function handleDivisionDragLeave(e) {
+            this.classList.remove('drag-over-division');
+        }
+
+        function handleDivisionDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!draggedRow) return;
+
+            const divCode = this.getAttribute('data-division-code');
+            moveItemsToDivision(draggedRows, divCode, this);
+
+            this.classList.remove('drag-over-division');
+
+            // Clear selection after drop
+            clearSelection();
+            renumberLineItems();
+            debouncedCalculateEstimate({ auto: true });
+        }
+
+        function handleDragEnd(e) {
+            draggedRows.forEach(row => row.classList.remove('dragging'));
+            removeDropZones();
+            draggedRow = null;
+            draggedRows = [];
+        }
+
+        function handleDragOver(e) {
+            // Simplified - zones handle everything now
+            e.preventDefault();
+        }
+
+        function handleDragLeave(e) {
+            // Not needed - zones handle everything
+        }
+
+        function handleDrop(e) {
+            // Fallback - zones handle most drops
+            e.preventDefault();
         }
 
         function moveItemsToDivision(rows, divCode, divisionHeader) {
