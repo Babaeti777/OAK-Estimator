@@ -3177,14 +3177,13 @@
             const itemId = 'item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
             row.className = 'line-item' + (parentId ? ' sub-task indent-level-1' : '');
-            row.setAttribute('draggable', 'true');
             row.setAttribute('data-item-id', itemId);
             if (parentId) {
                 row.setAttribute('data-parent-id', parentId);
             }
 
             row.innerHTML = `
-                <td class="drag-handle" title="👆 Drag here to reorder or make sub-task">
+                <td class="drag-handle" draggable="true" title="👆 Drag here to reorder or make sub-task">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1;">
                         <span>⋮</span>
                         <span>⋮</span>
@@ -3217,12 +3216,16 @@
                 </td>
             `;
 
-            // Add drag event listeners
-            row.addEventListener('dragstart', handleDragStart);
-            row.addEventListener('dragend', handleDragEnd);
-            row.addEventListener('dragover', handleDragOver);
-            row.addEventListener('dragleave', handleDragLeave);
-            row.addEventListener('drop', handleDrop);
+            // Add drag event listeners to the drag handle
+            const dragHandle = row.querySelector('.drag-handle');
+            if (dragHandle) {
+                dragHandle.addEventListener('dragstart', function(e) {
+                    handleDragStart.call(row, e);
+                });
+                dragHandle.addEventListener('dragend', function(e) {
+                    handleDragEnd.call(row, e);
+                });
+            }
 
             if (insertAfterRow) {
                 insertAfterRow.insertAdjacentElement('afterend', row);
@@ -3294,12 +3297,6 @@
         }
 
         function handleDragStart(e) {
-            // Only allow dragging from drag handle
-            if (!e.target.closest('.drag-handle')) {
-                e.preventDefault();
-                return;
-            }
-
             draggedRow = this;
             const itemId = this.getAttribute('data-item-id');
 
