@@ -421,16 +421,70 @@
 
         .line-items-table tbody tr.drag-over {
             border-top: 3px solid #38bdf8;
+            position: relative;
+        }
+
+        .line-items-table tbody tr.drag-over::before {
+            content: "↓ Drop here to reorder";
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #38bdf8;
+            color: #0f172a;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .line-items-table tbody tr.drag-over-subtask {
-            border-left: 4px solid #22d3ee;
+            border-bottom: 3px solid #22d3ee;
             background: rgba(34, 211, 238, 0.15) !important;
+            position: relative;
+        }
+
+        .line-items-table tbody tr.drag-over-subtask::after {
+            content: "↓ Drop here to make sub-task";
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #22d3ee;
+            color: #0f172a;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .line-items-table tbody tr.drag-over-division {
             background: rgba(37, 99, 235, 0.4) !important;
             box-shadow: inset 0 0 0 2px #2563eb;
+            position: relative;
+        }
+
+        .line-items-table tbody tr.drag-over-division::after {
+            content: "↓ Drop here to move to this division";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2563eb;
+            color: #f8fafc;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 700;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
 
         /* Multi-select Styles */
@@ -629,6 +683,48 @@
         .indent-level-1 td:nth-child(2)::before {
             content: "└ ";
             color: #475569;
+        }
+
+        /* Collapse/Expand Styles */
+        .collapse-toggle {
+            cursor: pointer;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 18px;
+            text-align: center;
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid #38bdf8;
+            border-radius: 4px;
+            color: #38bdf8;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 6px;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .collapse-toggle:hover {
+            background: rgba(56, 189, 248, 0.4);
+            transform: scale(1.1);
+        }
+
+        .collapse-toggle.collapsed {
+            background: rgba(100, 116, 139, 0.2);
+            border-color: #64748b;
+            color: #64748b;
+        }
+
+        tr.sub-task.hidden {
+            display: none;
+        }
+
+        tr.has-subtasks {
+            font-weight: 500;
+        }
+
+        tr.has-subtasks .line-num {
+            font-weight: 600;
         }
 
         .make-subtask-btn, .make-parent-btn {
@@ -3184,16 +3280,36 @@
 
         function handleDragStart(e) {
             draggedRow = this;
+            const itemId = this.getAttribute('data-item-id');
 
             // Check if dragging a selected row (multi-select drag)
             if (selectedRows.has(this) && selectedRows.size > 1) {
-                // Multi-select drag: include all selected rows
+                // Multi-select drag: include all selected rows and their subtasks
                 draggedRows = Array.from(selectedRows);
+
+                // Add subtasks of selected parents
+                const rowsWithSubtasks = [];
+                draggedRows.forEach(row => {
+                    rowsWithSubtasks.push(row);
+                    const rowId = row.getAttribute('data-item-id');
+                    const subtasks = document.querySelectorAll(`tr[data-parent-id="${rowId}"]`);
+                    subtasks.forEach(subtask => {
+                        if (!rowsWithSubtasks.includes(subtask)) {
+                            rowsWithSubtasks.push(subtask);
+                        }
+                    });
+                });
+
+                draggedRows = rowsWithSubtasks;
                 draggedRows.forEach(row => row.classList.add('dragging'));
             } else {
-                // Single row drag
+                // Single row drag: include its subtasks if it's a parent
                 draggedRows = [this];
-                this.classList.add('dragging');
+                const subtasks = document.querySelectorAll(`tr[data-parent-id="${itemId}"]`);
+                subtasks.forEach(subtask => draggedRows.push(subtask));
+
+                draggedRows.forEach(row => row.classList.add('dragging'));
+
                 // Clear selection if dragging unselected row
                 if (!selectedRows.has(this)) {
                     clearSelection();
@@ -3218,7 +3334,7 @@
             if (!draggedRow || draggedRows.includes(this)) return;
 
             const rect = this.getBoundingClientRect();
-            const quarterX = rect.left + rect.width * 0.25;
+            const midY = rect.top + rect.height * 0.5;
 
             // Remove previous classes
             this.classList.remove('drag-over', 'drag-over-subtask', 'drag-over-division');
@@ -3227,11 +3343,12 @@
             if (this.classList.contains('division-header')) {
                 this.classList.add('drag-over-division');
                 dropMode = 'division';
-            } else if (e.clientX > quarterX && !this.classList.contains('sub-task')) {
-                // If dragging to right side of row (past 25%), make it a subtask candidate
+            } else if (e.clientY > midY && !this.classList.contains('sub-task') && draggedRows.length === 1) {
+                // If dragging to bottom half of row, make it a subtask candidate (only for single items)
                 this.classList.add('drag-over-subtask');
                 dropMode = 'subtask';
             } else {
+                // Top half: reorder (insert before this row)
                 this.classList.add('drag-over');
                 dropMode = 'reorder';
             }
@@ -3346,8 +3463,24 @@
 
         function removeLineItem(btn) {
             const container = document.getElementById('lineItemsContainer');
+            const row = btn.closest('tr');
+            const itemId = row.getAttribute('data-item-id');
+
+            // Check if this is a parent with subtasks
+            const subtasks = document.querySelectorAll(`tr[data-parent-id="${itemId}"]`);
+
             if (container.children.length > 1) {
-                btn.closest('tr').remove();
+                // If parent has subtasks, ask for confirmation
+                if (subtasks.length > 0) {
+                    const confirmMsg = `This item has ${subtasks.length} sub-task${subtasks.length > 1 ? 's' : ''}. Delete all?`;
+                    if (!confirm(confirmMsg)) {
+                        return;
+                    }
+                    // Remove all subtasks
+                    subtasks.forEach(subtask => subtask.remove());
+                }
+
+                row.remove();
                 renumberLineItems();
                 debouncedCalculateEstimate({ auto: true });
             } else {
@@ -3361,6 +3494,17 @@
             let subNum = 0;
             let lastParentId = null;
             let lineItemCount = 0;
+
+            // First pass: identify parents with subtasks
+            const parentIds = new Set();
+            items.forEach((item) => {
+                if (item.classList.contains('line-item') && item.classList.contains('sub-task')) {
+                    const parentId = item.getAttribute('data-parent-id');
+                    if (parentId) {
+                        parentIds.add(parentId);
+                    }
+                }
+            });
 
             items.forEach((item) => {
                 // Skip division headers
@@ -3376,6 +3520,7 @@
                 lineItemCount++;
                 const isSubTask = item.classList.contains('sub-task');
                 const parentId = item.getAttribute('data-parent-id');
+                const itemId = item.getAttribute('data-item-id');
 
                 if (isSubTask && parentId) {
                     // It's a sub-task
@@ -3385,16 +3530,73 @@
                     } else {
                         subNum++;
                     }
-                    item.querySelector('.line-number').textContent = parentNum + '.' + subNum;
+                    const lineNumSpan = item.querySelector('.line-number');
+                    lineNumSpan.textContent = parentNum + '.' + subNum;
                 } else {
                     // It's a parent item
                     parentNum++;
                     subNum = 0;
-                    lastParentId = item.getAttribute('data-item-id');
-                    item.querySelector('.line-number').textContent = parentNum;
+                    lastParentId = itemId;
+
+                    const lineNumCell = item.querySelector('.line-num');
+                    const lineNumSpan = item.querySelector('.line-number');
+
+                    // Check if this parent has subtasks
+                    if (parentIds.has(itemId)) {
+                        item.classList.add('has-subtasks');
+
+                        // Add collapse toggle if not already present
+                        if (!lineNumCell.querySelector('.collapse-toggle')) {
+                            const toggle = document.createElement('span');
+                            toggle.className = 'collapse-toggle';
+                            toggle.textContent = '−';
+                            toggle.title = 'Click to collapse/expand sub-tasks';
+                            toggle.onclick = (e) => {
+                                e.stopPropagation();
+                                toggleSubTasks(itemId);
+                            };
+                            lineNumCell.insertBefore(toggle, lineNumSpan);
+                        }
+                    } else {
+                        item.classList.remove('has-subtasks');
+                        // Remove collapse toggle if present
+                        const existingToggle = lineNumCell.querySelector('.collapse-toggle');
+                        if (existingToggle) {
+                            existingToggle.remove();
+                        }
+                    }
+
+                    lineNumSpan.textContent = parentNum;
                 }
             });
             lineItemCounter = lineItemCount;
+        }
+
+        function toggleSubTasks(parentId) {
+            const toggle = document.querySelector(`tr[data-item-id="${parentId}"] .collapse-toggle`);
+            const subtasks = document.querySelectorAll(`tr[data-parent-id="${parentId}"]`);
+
+            if (toggle && subtasks.length > 0) {
+                const isCollapsed = toggle.classList.contains('collapsed');
+
+                subtasks.forEach(subtask => {
+                    if (isCollapsed) {
+                        subtask.classList.remove('hidden');
+                    } else {
+                        subtask.classList.add('hidden');
+                    }
+                });
+
+                if (isCollapsed) {
+                    toggle.classList.remove('collapsed');
+                    toggle.textContent = '−';
+                    toggle.title = 'Click to collapse sub-tasks';
+                } else {
+                    toggle.classList.add('collapsed');
+                    toggle.textContent = '+';
+                    toggle.title = 'Click to expand sub-tasks';
+                }
+            }
         }
 
         function calculateLineTotal(input) {
