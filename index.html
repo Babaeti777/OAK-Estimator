@@ -1435,6 +1435,78 @@
                 padding: 8px 10px;
             }
         }
+
+        /* Autocomplete Styles */
+        .autocomplete-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            z-index: 1000;
+            background: #1e293b;
+            border: 1px solid #38bdf8;
+            border-radius: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            margin-top: 2px;
+        }
+
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #334155;
+            transition: background-color 0.2s;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background-color: rgba(56, 189, 248, 0.2);
+        }
+
+        .autocomplete-item-title {
+            color: #f8fafc;
+            font-weight: 600;
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+
+        .autocomplete-item-details {
+            color: #94a3b8;
+            font-size: 0.85em;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .autocomplete-item-code {
+            font-family: monospace;
+            color: #38bdf8;
+        }
+
+        .autocomplete-no-results {
+            padding: 15px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9em;
+        }
+
+        .autocomplete-footer {
+            padding: 8px 12px;
+            background: rgba(30, 41, 59, 0.5);
+            border-top: 1px solid #334155;
+            text-align: center;
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -3022,6 +3094,12 @@
                 container.appendChild(row);
             }
 
+            // Initialize autocomplete on the description field
+            const descInput = row.querySelector('.item-description');
+            if (descInput) {
+                initializeAutocomplete(descInput, row);
+            }
+
             renumberLineItems();
             debouncedCalculateEstimate({ auto: true });
             return row;
@@ -4571,6 +4649,229 @@
                 materialsDatabase = MaterialsDatabase;
                 console.log('Materials database loaded successfully');
             }
+        }
+
+        // ========================================
+        // AUTOCOMPLETE FUNCTIONALITY
+        // ========================================
+
+        function initializeAutocomplete(input, row) {
+            let dropdown = null;
+            let currentIndex = -1;
+            let suggestions = [];
+
+            // Create dropdown element
+            function createDropdown() {
+                if (dropdown) return dropdown;
+
+                dropdown = document.createElement('div');
+                dropdown.className = 'autocomplete-dropdown';
+                dropdown.style.display = 'none';
+
+                // Position relative to input
+                const td = input.closest('td');
+                if (td) {
+                    td.style.position = 'relative';
+                    td.appendChild(dropdown);
+                }
+
+                return dropdown;
+            }
+
+            // Search materials database
+            function searchMaterials(query) {
+                loadMaterialsDatabase();
+                if (!materialsDatabase || !query || query.length < 2) return [];
+
+                const searchTerm = query.toLowerCase().trim();
+                const results = [];
+
+                Object.keys(materialsDatabase).forEach(divCode => {
+                    if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
+
+                    const division = materialsDatabase[divCode];
+                    if (!division || !division.items) return;
+
+                    division.items.forEach(item => {
+                        const matches =
+                            item.description.toLowerCase().includes(searchTerm) ||
+                            item.code.toLowerCase().includes(searchTerm) ||
+                            (item.category && item.category.toLowerCase().includes(searchTerm)) ||
+                            (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm));
+
+                        if (matches) {
+                            results.push({
+                                ...item,
+                                divisionCode: divCode,
+                                divisionName: division.name
+                            });
+                        }
+                    });
+                });
+
+                // Sort by relevance (exact matches first)
+                return results.sort((a, b) => {
+                    const aExact = a.description.toLowerCase().startsWith(searchTerm);
+                    const bExact = b.description.toLowerCase().startsWith(searchTerm);
+                    if (aExact && !bExact) return -1;
+                    if (!aExact && bExact) return 1;
+                    return 0;
+                }).slice(0, 10); // Limit to 10 results
+            }
+
+            // Display suggestions
+            function showSuggestions(results) {
+                const dropdownEl = createDropdown();
+                suggestions = results;
+                currentIndex = -1;
+
+                if (results.length === 0) {
+                    dropdownEl.innerHTML = `
+                        <div class="autocomplete-no-results">
+                            No materials found. Type custom description or click 📚 Browse Database.
+                        </div>
+                    `;
+                    dropdownEl.style.display = 'block';
+                    return;
+                }
+
+                let html = '';
+                results.forEach((item, index) => {
+                    html += `
+                        <div class="autocomplete-item" data-index="${index}">
+                            <div class="autocomplete-item-title">${item.description}</div>
+                            <div class="autocomplete-item-details">
+                                <span class="autocomplete-item-code">${item.code}</span>
+                                <span>Div ${item.divisionCode}</span>
+                                <span>${item.category || ''}</span>
+                                <span>$${(item.material + item.labor + item.equipment).toFixed(2)}/${item.unit}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div class="autocomplete-footer">
+                        ↑↓ Navigate • Enter to select • Esc to close
+                    </div>
+                `;
+
+                dropdownEl.innerHTML = html;
+                dropdownEl.style.display = 'block';
+
+                // Add click handlers
+                dropdownEl.querySelectorAll('.autocomplete-item').forEach((el, index) => {
+                    el.addEventListener('click', () => selectSuggestion(index));
+                });
+            }
+
+            // Hide suggestions
+            function hideSuggestions() {
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                }
+                currentIndex = -1;
+            }
+
+            // Select suggestion
+            function selectSuggestion(index) {
+                if (index < 0 || index >= suggestions.length) return;
+
+                const material = suggestions[index];
+
+                // Populate all fields
+                input.value = material.description;
+
+                const qtyInput = row.querySelector('.item-quantity');
+                const unitSelect = row.querySelector('.item-unit');
+                const materialInput = row.querySelector('.item-material');
+                const laborInput = row.querySelector('.item-labor');
+                const equipmentInput = row.querySelector('.item-equipment');
+                const notesInput = row.querySelector('.item-notes');
+
+                if (qtyInput && !qtyInput.value) qtyInput.value = 1;
+                if (unitSelect) unitSelect.value = material.unit;
+                if (materialInput) materialInput.value = material.material.toFixed(2);
+                if (laborInput) laborInput.value = material.labor.toFixed(2);
+                if (equipmentInput) equipmentInput.value = material.equipment.toFixed(2);
+                if (notesInput) notesInput.value = `${material.code} - ${material.category || ''}`;
+
+                // Recalculate totals
+                calculateLineTotal(qtyInput || input);
+
+                hideSuggestions();
+
+                // Flash the row
+                row.style.backgroundColor = '#38bdf8';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 800);
+            }
+
+            // Highlight item
+            function highlightItem(index) {
+                if (!dropdown) return;
+
+                dropdown.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+                    if (i === index) {
+                        el.classList.add('active');
+                        el.scrollIntoView({ block: 'nearest' });
+                    } else {
+                        el.classList.remove('active');
+                    }
+                });
+            }
+
+            // Input event
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.length >= 2) {
+                    const results = searchMaterials(value);
+                    showSuggestions(results);
+                } else {
+                    hideSuggestions();
+                }
+            });
+
+            // Keyboard navigation
+            input.addEventListener('keydown', (e) => {
+                if (!dropdown || dropdown.style.display === 'none') return;
+
+                switch(e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        currentIndex = Math.min(currentIndex + 1, suggestions.length - 1);
+                        highlightItem(currentIndex);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        currentIndex = Math.max(currentIndex - 1, -1);
+                        highlightItem(currentIndex);
+                        break;
+                    case 'Enter':
+                        if (currentIndex >= 0) {
+                            e.preventDefault();
+                            selectSuggestion(currentIndex);
+                        }
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        hideSuggestions();
+                        break;
+                }
+            });
+
+            // Close on blur (with delay to allow click)
+            input.addEventListener('blur', () => {
+                setTimeout(() => hideSuggestions(), 200);
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !dropdown?.contains(e.target)) {
+                    hideSuggestions();
+                }
+            });
         }
 
         function openMaterialBrowser() {
