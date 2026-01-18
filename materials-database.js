@@ -3,7 +3,7 @@
 // Organized by CSI MasterFormat divisions
 
 const MaterialsDatabase = {
-  version: "1.0.0",
+  version: "2.0.0",
   lastUpdated: "2026-01-18",
   currency: "USD",
 
@@ -121,6 +121,61 @@ const MaterialsDatabase = {
         equipment: 0,
         category: "Temporary Facilities",
         subcategory: "Sanitary"
+      },
+      {
+        id: "01-011",
+        code: "01-41-26.16",
+        description: "Temporary Lighting - String Lights",
+        unit: "month",
+        material: 125,
+        labor: 85,
+        equipment: 0,
+        category: "Temporary Facilities",
+        subcategory: "Lighting"
+      },
+      {
+        id: "01-012",
+        code: "01-52-13.20",
+        description: "Construction Fence - 8' Wood Privacy",
+        unit: "lf",
+        material: 18.50,
+        labor: 12.25,
+        equipment: 1.50,
+        category: "Temporary Barriers",
+        subcategory: "Fencing"
+      },
+      {
+        id: "01-013",
+        code: "01-56-13.10",
+        description: "Temporary Stairs - Metal",
+        unit: "flight",
+        material: 450,
+        labor: 285,
+        equipment: 45,
+        category: "Temporary Facilities",
+        subcategory: "Access"
+      },
+      {
+        id: "01-014",
+        code: "01-56-26.10",
+        description: "Temporary Scaffolding - Frame Type",
+        unit: "csf",
+        material: 185,
+        labor: 125,
+        equipment: 25,
+        category: "Temporary Facilities",
+        subcategory: "Scaffolding"
+      },
+      {
+        id: "01-015",
+        code: "01-74-19.10",
+        description: "Waste Disposal - Dumpster 30 CY",
+        unit: "month",
+        material: 425,
+        labor: 0,
+        equipment: 0,
+        category: "Waste Management",
+        subcategory: "Disposal"
       }
     ]
   },
@@ -238,6 +293,61 @@ const MaterialsDatabase = {
         equipment: 1250,
         category: "Site Clearing",
         subcategory: "Vegetation"
+      },
+      {
+        id: "02-011",
+        code: "02-41-13.17",
+        description: "Tree Removal - 36\" Diameter",
+        unit: "ea",
+        material: 0,
+        labor: 1250,
+        equipment: 850,
+        category: "Site Clearing",
+        subcategory: "Trees"
+      },
+      {
+        id: "02-012",
+        code: "02-41-13.27",
+        description: "Stump Removal - 24\" Diameter",
+        unit: "ea",
+        material: 0,
+        labor: 325,
+        equipment: 275,
+        category: "Site Clearing",
+        subcategory: "Trees"
+      },
+      {
+        id: "02-013",
+        code: "02-32-13.30",
+        description: "Concrete Pavement Removal - 6\"",
+        unit: "sqft",
+        material: 0,
+        labor: 2.85,
+        equipment: 3.75,
+        category: "Demolition",
+        subcategory: "Paving"
+      },
+      {
+        id: "02-014",
+        code: "02-41-13.33",
+        description: "Hydroseeding",
+        unit: "acre",
+        material: 1850,
+        labor: 425,
+        equipment: 325,
+        category: "Site Clearing",
+        subcategory: "Erosion Control"
+      },
+      {
+        id: "02-015",
+        code: "02-21-13.25",
+        description: "Interior Demolition - Selective",
+        unit: "sqft",
+        material: 0,
+        labor: 2.25,
+        equipment: 0.85,
+        category: "Demolition",
+        subcategory: "Interior"
       }
     ]
   },
@@ -465,6 +575,83 @@ const MaterialsDatabase = {
         equipment: 0.10,
         category: "Finishing",
         subcategory: "Floors"
+      },
+      {
+        id: "03-021",
+        code: "03-15-05.80",
+        description: "Rebar - #10 Bar (1-1/4\")",
+        unit: "lb",
+        material: 0.74,
+        labor: 0.72,
+        equipment: 0.06,
+        category: "Reinforcing",
+        subcategory: "Rebar"
+      },
+      {
+        id: "03-022",
+        code: "03-30-53.70",
+        description: "Concrete - 6000 PSI, Ready Mix",
+        unit: "cy",
+        material: 175,
+        labor: 0,
+        equipment: 0,
+        category: "Concrete",
+        subcategory: "Ready Mix"
+      },
+      {
+        id: "03-023",
+        code: "03-31-13.85",
+        description: "Concrete Placement - Beams",
+        unit: "cy",
+        material: 0,
+        labor: 85,
+        equipment: 32,
+        category: "Placement",
+        subcategory: "Beams"
+      },
+      {
+        id: "03-024",
+        code: "03-15-19.10",
+        description: "Post-Tensioning Tendons",
+        unit: "lb",
+        material: 2.85,
+        labor: 1.95,
+        equipment: 0.45,
+        category: "Reinforcing",
+        subcategory: "Post-Tension"
+      },
+      {
+        id: "03-025",
+        code: "03-39-13.10",
+        description: "Concrete Curing Compound",
+        unit: "sqft",
+        material: 0.15,
+        labor: 0.12,
+        equipment: 0.02,
+        category: "Finishing",
+        subcategory: "Curing"
+      },
+      {
+        id: "03-026",
+        code: "03-41-13.10",
+        description: "Precast Concrete Plank - 8\"",
+        unit: "sqft",
+        material: 12.50,
+        labor: 4.85,
+        equipment: 2.25,
+        category: "Precast",
+        subcategory: "Planks"
+      },
+      {
+        id: "03-027",
+        code: "03-47-13.10",
+        description: "Tilt-Up Concrete Panel - 7\"",
+        unit: "sqft",
+        material: 8.95,
+        labor: 6.50,
+        equipment: 3.25,
+        category: "Precast",
+        subcategory: "Tilt-Up"
       }
     ]
   },
@@ -582,6 +769,61 @@ const MaterialsDatabase = {
         equipment: 1.25,
         category: "Stone",
         subcategory: "Veneer"
+      },
+      {
+        id: "04-011",
+        code: "04-21-13.17",
+        description: "Brick - Glazed, Running Bond",
+        unit: "sqft",
+        material: 15.75,
+        labor: 16.25,
+        equipment: 1.05,
+        category: "Unit Masonry",
+        subcategory: "Brick"
+      },
+      {
+        id: "04-012",
+        code: "04-22-10.27",
+        description: "CMU Block - 6\" Standard, Hollow",
+        unit: "sqft",
+        material: 3.75,
+        labor: 7.25,
+        equipment: 0.55,
+        category: "Unit Masonry",
+        subcategory: "CMU"
+      },
+      {
+        id: "04-013",
+        code: "04-22-10.33",
+        description: "CMU Block - 10\" Standard, Hollow",
+        unit: "sqft",
+        material: 5.25,
+        labor: 8.50,
+        equipment: 0.70,
+        category: "Unit Masonry",
+        subcategory: "CMU"
+      },
+      {
+        id: "04-014",
+        code: "04-43-13.20",
+        description: "Stone Veneer - Manufactured",
+        unit: "sqft",
+        material: 12.85,
+        labor: 14.50,
+        equipment: 1.05,
+        category: "Stone",
+        subcategory: "Veneer"
+      },
+      {
+        id: "04-015",
+        code: "04-21-29.10",
+        description: "Glass Block - 8\"x8\"x4\"",
+        unit: "sqft",
+        material: 24.50,
+        labor: 18.75,
+        equipment: 1.45,
+        category: "Glass Masonry",
+        subcategory: "Block"
       }
     ]
   },
@@ -721,6 +963,61 @@ const MaterialsDatabase = {
         equipment: 1.50,
         category: "Railings",
         subcategory: "Aluminum"
+      },
+      {
+        id: "05-013",
+        code: "05-12-23.85",
+        description: "Structural Steel - W18x76 Beam",
+        unit: "lb",
+        material: 1.65,
+        labor: 1.00,
+        equipment: 0.37,
+        category: "Structural Steel",
+        subcategory: "Wide Flange"
+      },
+      {
+        id: "05-014",
+        code: "05-44-13.10",
+        description: "Steel Stair - Prefabricated",
+        unit: "flight",
+        material: 3850,
+        labor: 1250,
+        equipment: 285,
+        category: "Metal Stairs",
+        subcategory: "Prefab"
+      },
+      {
+        id: "05-015",
+        code: "05-50-13.25",
+        description: "Steel Plate - 1/4\" Thick",
+        unit: "lb",
+        material: 2.25,
+        labor: 1.75,
+        equipment: 0.35,
+        category: "Miscellaneous Metals",
+        subcategory: "Plates"
+      },
+      {
+        id: "05-016",
+        code: "05-51-13.10",
+        description: "Metal Grating - Galvanized",
+        unit: "sqft",
+        material: 18.50,
+        labor: 12.25,
+        equipment: 1.25,
+        category: "Miscellaneous Metals",
+        subcategory: "Grating"
+      },
+      {
+        id: "05-017",
+        code: "05-21-13.35",
+        description: "Steel Joist - 30K10, 50 PSF",
+        unit: "lb",
+        material: 1.38,
+        labor: 0.78,
+        equipment: 0.28,
+        category: "Steel Joists",
+        subcategory: "K-Series"
       }
     ]
   },
@@ -860,6 +1157,72 @@ const MaterialsDatabase = {
         equipment: 0.12,
         category: "Finish Carpentry",
         subcategory: "Trim"
+      },
+      {
+        id: "06-013",
+        code: "06-11-10.60",
+        description: "Wood Framing - LVL Beam, 1-3/4\"x11-7/8\"",
+        unit: "lf",
+        material: 12.85,
+        labor: 4.25,
+        equipment: 0.35,
+        category: "Rough Carpentry",
+        subcategory: "Engineered Lumber"
+      },
+      {
+        id: "06-014",
+        code: "06-11-10.70",
+        description: "Wood Framing - Glulam Beam, 5-1/8\"x12\"",
+        unit: "lf",
+        material: 24.50,
+        labor: 6.85,
+        equipment: 0.95,
+        category: "Rough Carpentry",
+        subcategory: "Engineered Lumber"
+      },
+      {
+        id: "06-015",
+        code: "06-16-23.60",
+        description: "Sheathing - 5/8\" OSB",
+        unit: "sqft",
+        material: 1.15,
+        labor: 0.95,
+        equipment: 0.10,
+        category: "Sheathing",
+        subcategory: "OSB"
+      },
+      {
+        id: "06-016",
+        code: "06-16-23.70",
+        description: "Sheathing - 3/4\" OSB",
+        unit: "sqft",
+        material: 1.45,
+        labor: 1.05,
+        equipment: 0.12,
+        category: "Sheathing",
+        subcategory: "OSB"
+      },
+      {
+        id: "06-017",
+        code: "06-42-13.10",
+        description: "Wood Paneling - Hardwood, 3/4\"",
+        unit: "sqft",
+        material: 8.95,
+        labor: 5.25,
+        equipment: 0.45,
+        category: "Interior Wood",
+        subcategory: "Paneling"
+      },
+      {
+        id: "06-018",
+        code: "06-64-23.10",
+        description: "Plastic Laminate Countertop",
+        unit: "lf",
+        material: 28.50,
+        labor: 18.75,
+        equipment: 1.25,
+        category: "Plastics",
+        subcategory: "Countertops"
       }
     ]
   },
@@ -1321,6 +1684,481 @@ const MaterialsDatabase = {
         equipment: 0.08,
         category: "Painting",
         subcategory: "Exterior"
+      },
+      {
+        id: "09-014",
+        code: "09-64-16.10",
+        description: "Wood Flooring - Oak Strip, 3/4\"",
+        unit: "sqft",
+        material: 6.85,
+        labor: 4.25,
+        equipment: 0.45,
+        category: "Flooring",
+        subcategory: "Wood"
+      },
+      {
+        id: "09-015",
+        code: "09-65-19.10",
+        description: "Resilient Sheet Flooring - Commercial",
+        unit: "sqft",
+        material: 4.25,
+        labor: 3.50,
+        equipment: 0.35,
+        category: "Flooring",
+        subcategory: "Resilient"
+      },
+      {
+        id: "09-016",
+        code: "09-68-13.30",
+        description: "Porcelain Tile - Floor, 12\"x24\"",
+        unit: "sqft",
+        material: 8.50,
+        labor: 9.25,
+        equipment: 0.75,
+        category: "Flooring",
+        subcategory: "Tile"
+      },
+      {
+        id: "09-017",
+        code: "09-91-13.30",
+        description: "Stain & Varnish - Wood Trim",
+        unit: "sqft",
+        material: 0.65,
+        labor: 1.25,
+        equipment: 0.08,
+        category: "Painting",
+        subcategory: "Interior"
+      },
+      {
+        id: "09-018",
+        code: "09-29-00.20",
+        description: "Joint Compound - Level 5 Finish",
+        unit: "sqft",
+        material: 0.25,
+        labor: 1.05,
+        equipment: 0.08,
+        category: "Drywall",
+        subcategory: "Finishing"
+      }
+    ]
+  },
+
+  // Division 10 - Specialties
+  "10": {
+    name: "Specialties",
+    items: [
+      {
+        id: "10-001",
+        code: "10-14-13.10",
+        description: "Toilet Partition - Powder Coated Steel",
+        unit: "ea",
+        material: 425,
+        labor: 185,
+        equipment: 15,
+        category: "Partitions",
+        subcategory: "Toilet"
+      },
+      {
+        id: "10-002",
+        code: "10-14-13.20",
+        description: "Toilet Partition - Solid Plastic",
+        unit: "ea",
+        material: 685,
+        labor: 215,
+        equipment: 18,
+        category: "Partitions",
+        subcategory: "Toilet"
+      },
+      {
+        id: "10-003",
+        code: "10-21-13.10",
+        description: "Toilet Accessories - Paper Holder",
+        unit: "ea",
+        material: 45,
+        labor: 35,
+        equipment: 0,
+        category: "Accessories",
+        subcategory: "Toilet"
+      },
+      {
+        id: "10-004",
+        code: "10-21-13.20",
+        description: "Toilet Accessories - Grab Bar, 36\"",
+        unit: "ea",
+        material: 85,
+        labor: 65,
+        equipment: 5,
+        category: "Accessories",
+        subcategory: "Toilet"
+      },
+      {
+        id: "10-005",
+        code: "10-21-13.30",
+        description: "Mirror - Wall Mounted, 24\"x36\"",
+        unit: "ea",
+        material: 125,
+        labor: 85,
+        equipment: 8,
+        category: "Accessories",
+        subcategory: "Mirrors"
+      },
+      {
+        id: "10-006",
+        code: "10-28-13.10",
+        description: "Fire Extinguisher - 5 lb ABC",
+        unit: "ea",
+        material: 55,
+        labor: 35,
+        equipment: 3,
+        category: "Safety Equipment",
+        subcategory: "Fire"
+      },
+      {
+        id: "10-007",
+        code: "10-44-13.10",
+        description: "Directory Board - Aluminum Frame",
+        unit: "sqft",
+        material: 48.50,
+        labor: 28.75,
+        equipment: 2.25,
+        category: "Signage",
+        subcategory: "Directories"
+      },
+      {
+        id: "10-008",
+        code: "10-51-13.10",
+        description: "Metal Lockers - Single Tier",
+        unit: "ea",
+        material: 285,
+        labor: 95,
+        equipment: 12,
+        category: "Storage",
+        subcategory: "Lockers"
+      },
+      {
+        id: "10-009",
+        code: "10-73-13.10",
+        description: "Flagpole - Aluminum, 25'",
+        unit: "ea",
+        material: 1850,
+        labor: 625,
+        equipment: 125,
+        category: "Exterior Specialties",
+        subcategory: "Flagpoles"
+      },
+      {
+        id: "10-010",
+        code: "10-22-13.10",
+        description: "Folding Partition - Acoustic",
+        unit: "sqft",
+        material: 38.50,
+        labor: 18.75,
+        equipment: 2.25,
+        category: "Partitions",
+        subcategory: "Movable"
+      }
+    ]
+  },
+
+  // Division 11 - Equipment
+  "11": {
+    name: "Equipment",
+    items: [
+      {
+        id: "11-001",
+        code: "11-41-13.10",
+        description: "Commercial Range - 6 Burner",
+        unit: "ea",
+        material: 3850,
+        labor: 625,
+        equipment: 125,
+        category: "Kitchen Equipment",
+        subcategory: "Cooking"
+      },
+      {
+        id: "11-002",
+        code: "11-41-13.20",
+        description: "Commercial Oven - Convection",
+        unit: "ea",
+        material: 4250,
+        labor: 725,
+        equipment: 145,
+        category: "Kitchen Equipment",
+        subcategory: "Cooking"
+      },
+      {
+        id: "11-003",
+        code: "11-41-13.30",
+        description: "Commercial Refrigerator - Reach-In",
+        unit: "ea",
+        material: 2850,
+        labor: 485,
+        equipment: 95,
+        category: "Kitchen Equipment",
+        subcategory: "Refrigeration"
+      },
+      {
+        id: "11-004",
+        code: "11-41-13.40",
+        description: "Commercial Dishwasher - Undercounter",
+        unit: "ea",
+        material: 3250,
+        labor: 585,
+        equipment: 115,
+        category: "Kitchen Equipment",
+        subcategory: "Cleaning"
+      },
+      {
+        id: "11-005",
+        code: "11-52-13.10",
+        description: "Washer/Dryer - Commercial, Stacked",
+        unit: "ea",
+        material: 2450,
+        labor: 425,
+        equipment: 85,
+        category: "Laundry Equipment",
+        subcategory: "Commercial"
+      },
+      {
+        id: "11-006",
+        code: "11-61-13.10",
+        description: "Laboratory Casework - Base Cabinet",
+        unit: "lf",
+        material: 285,
+        labor: 125,
+        equipment: 15,
+        category: "Laboratory Equipment",
+        subcategory: "Casework"
+      },
+      {
+        id: "11-007",
+        code: "11-66-13.10",
+        description: "Athletic Equipment - Basketball Hoop",
+        unit: "ea",
+        material: 1850,
+        labor: 425,
+        equipment: 85,
+        category: "Athletic Equipment",
+        subcategory: "Court"
+      },
+      {
+        id: "11-008",
+        code: "11-71-13.10",
+        description: "Medical Exam Table",
+        unit: "ea",
+        material: 1450,
+        labor: 225,
+        equipment: 25,
+        category: "Medical Equipment",
+        subcategory: "Examination"
+      }
+    ]
+  },
+
+  // Division 12 - Furnishings
+  "12": {
+    name: "Furnishings",
+    items: [
+      {
+        id: "12-001",
+        code: "12-21-13.10",
+        description: "Window Blinds - Aluminum, 1\"",
+        unit: "sqft",
+        material: 4.85,
+        labor: 2.25,
+        equipment: 0.15,
+        category: "Window Treatments",
+        subcategory: "Blinds"
+      },
+      {
+        id: "12-002",
+        code: "12-21-13.20",
+        description: "Window Shades - Roller, Blackout",
+        unit: "sqft",
+        material: 6.25,
+        labor: 2.85,
+        equipment: 0.18,
+        category: "Window Treatments",
+        subcategory: "Shades"
+      },
+      {
+        id: "12-003",
+        code: "12-32-13.10",
+        description: "Office Desk - Metal, Standard",
+        unit: "ea",
+        material: 485,
+        labor: 85,
+        equipment: 12,
+        category: "Furniture",
+        subcategory: "Office"
+      },
+      {
+        id: "12-004",
+        code: "12-32-13.20",
+        description: "Office Chair - Ergonomic",
+        unit: "ea",
+        material: 325,
+        labor: 25,
+        equipment: 0,
+        category: "Furniture",
+        subcategory: "Seating"
+      },
+      {
+        id: "12-005",
+        code: "12-36-61.10",
+        description: "Classroom Seating - Student Desk",
+        unit: "ea",
+        material: 185,
+        labor: 35,
+        equipment: 5,
+        category: "Furniture",
+        subcategory: "Educational"
+      },
+      {
+        id: "12-006",
+        code: "12-48-13.10",
+        description: "Area Rugs - Commercial Grade",
+        unit: "sqft",
+        material: 12.50,
+        labor: 2.85,
+        equipment: 0.25,
+        category: "Furnishings",
+        subcategory: "Rugs"
+      },
+      {
+        id: "12-007",
+        code: "12-51-13.10",
+        description: "Auditorium Seating - Fixed",
+        unit: "ea",
+        material: 425,
+        labor: 125,
+        equipment: 18,
+        category: "Furniture",
+        subcategory: "Assembly"
+      }
+    ]
+  },
+
+  // Division 13 - Special Construction
+  "13": {
+    name: "Special Construction",
+    items: [
+      {
+        id: "13-001",
+        code: "13-11-13.10",
+        description: "Pre-Engineered Building - 40'x60'",
+        unit: "sqft",
+        material: 18.50,
+        labor: 12.25,
+        equipment: 3.75,
+        category: "Pre-Engineered",
+        subcategory: "Metal Building"
+      },
+      {
+        id: "13-002",
+        code: "13-12-13.10",
+        description: "Greenhouse - Commercial Grade",
+        unit: "sqft",
+        material: 28.50,
+        labor: 16.75,
+        equipment: 2.85,
+        category: "Special Structures",
+        subcategory: "Greenhouse"
+      },
+      {
+        id: "13-003",
+        code: "13-24-13.10",
+        description: "Fabric Structure - Tensile",
+        unit: "sqft",
+        material: 45.00,
+        labor: 28.50,
+        equipment: 4.25,
+        category: "Special Structures",
+        subcategory: "Fabric"
+      },
+      {
+        id: "13-004",
+        code: "13-34-13.10",
+        description: "Storage Tank - Steel, 10,000 Gal",
+        unit: "ea",
+        material: 12500,
+        labor: 3850,
+        equipment: 1250,
+        category: "Storage",
+        subcategory: "Tanks"
+      },
+      {
+        id: "13-005",
+        code: "13-49-13.10",
+        description: "Radiation Shielding - Lead, 1/8\"",
+        unit: "sqft",
+        material: 48.50,
+        labor: 28.75,
+        equipment: 3.25,
+        category: "Special Construction",
+        subcategory: "Shielding"
+      }
+    ]
+  },
+
+  // Division 14 - Conveying Equipment
+  "14": {
+    name: "Conveying Equipment",
+    items: [
+      {
+        id: "14-001",
+        code: "14-21-13.10",
+        description: "Hydraulic Elevator - 2500 lb, 4 Stop",
+        unit: "ea",
+        material: 65000,
+        labor: 22500,
+        equipment: 4850,
+        category: "Elevators",
+        subcategory: "Hydraulic"
+      },
+      {
+        id: "14-002",
+        code: "14-21-23.10",
+        description: "Traction Elevator - 3500 lb, 6 Stop",
+        unit: "ea",
+        material: 95000,
+        labor: 32500,
+        equipment: 6850,
+        category: "Elevators",
+        subcategory: "Traction"
+      },
+      {
+        id: "14-003",
+        code: "14-31-13.10",
+        description: "Escalator - 32\" Wide, 12' Rise",
+        unit: "ea",
+        material: 125000,
+        labor: 38500,
+        equipment: 8250,
+        category: "Escalators",
+        subcategory: "Moving Walkways"
+      },
+      {
+        id: "14-004",
+        code: "14-42-13.10",
+        description: "Wheelchair Lift - Vertical",
+        unit: "ea",
+        material: 18500,
+        labor: 4250,
+        equipment: 850,
+        category: "Lifts",
+        subcategory: "Accessibility"
+      },
+      {
+        id: "14-005",
+        code: "14-91-13.10",
+        description: "Material Lift - Construction Hoist",
+        unit: "month",
+        material: 4850,
+        labor: 1250,
+        equipment: 625,
+        category: "Lifts",
+        subcategory: "Material"
       }
     ]
   },
@@ -1500,6 +2338,61 @@ const MaterialsDatabase = {
         equipment: 65,
         category: "Equipment",
         subcategory: "Water Heaters"
+      },
+      {
+        id: "22-011",
+        code: "22-11-16.43",
+        description: "Copper Pipe - Type L, 2\"",
+        unit: "lf",
+        material: 16.50,
+        labor: 12.25,
+        equipment: 1.05,
+        category: "Piping",
+        subcategory: "Copper"
+      },
+      {
+        id: "22-012",
+        code: "22-11-19.33",
+        description: "PVC Pipe - Schedule 40, 6\"",
+        unit: "lf",
+        material: 8.25,
+        labor: 9.50,
+        equipment: 0.85,
+        category: "Piping",
+        subcategory: "PVC"
+      },
+      {
+        id: "22-013",
+        code: "22-40-13.10",
+        description: "Plumbing Fixture - Urinal, Wall Hung",
+        unit: "ea",
+        material: 425,
+        labor: 325,
+        equipment: 28,
+        category: "Fixtures",
+        subcategory: "Urinals"
+      },
+      {
+        id: "22-014",
+        code: "22-41-13.10",
+        description: "Drinking Fountain - Wall Mount",
+        unit: "ea",
+        material: 585,
+        labor: 285,
+        equipment: 25,
+        category: "Fixtures",
+        subcategory: "Fountains"
+      },
+      {
+        id: "22-015",
+        code: "22-42-39.10",
+        description: "Shower - Fiberglass, One Piece",
+        unit: "ea",
+        material: 685,
+        labor: 425,
+        equipment: 45,
+        category: "Fixtures",
+        subcategory: "Showers"
       }
     ]
   },
@@ -1606,6 +2499,61 @@ const MaterialsDatabase = {
         equipment: 95,
         category: "Heating Equipment",
         subcategory: "Furnaces"
+      },
+      {
+        id: "23-010",
+        code: "23-33-13.30",
+        description: "Heat Pump - 4 Ton, Split System",
+        unit: "ea",
+        material: 3650,
+        labor: 1425,
+        equipment: 215,
+        category: "Air Conditioning",
+        subcategory: "Heat Pumps"
+      },
+      {
+        id: "23-011",
+        code: "23-34-23.10",
+        description: "Air Handler - 5 Ton",
+        unit: "ea",
+        material: 2450,
+        labor: 825,
+        equipment: 125,
+        category: "Air Distribution",
+        subcategory: "Air Handlers"
+      },
+      {
+        id: "23-012",
+        code: "23-31-13.20",
+        description: "Ductwork Insulation - Fiberglass, 2\"",
+        unit: "sqft",
+        material: 1.85,
+        labor: 1.25,
+        equipment: 0.12,
+        category: "Ductwork",
+        subcategory: "Insulation"
+      },
+      {
+        id: "23-013",
+        code: "23-37-13.50",
+        description: "VAV Box - Variable Air Volume",
+        unit: "ea",
+        material: 1250,
+        labor: 425,
+        equipment: 65,
+        category: "Air Distribution",
+        subcategory: "Controls"
+      },
+      {
+        id: "23-014",
+        code: "23-23-13.10",
+        description: "Refrigeration Unit - Walk-In Cooler",
+        unit: "ea",
+        material: 8500,
+        labor: 2850,
+        equipment: 625,
+        category: "Refrigeration",
+        subcategory: "Walk-In"
       }
     ]
   },
@@ -1723,6 +2671,94 @@ const MaterialsDatabase = {
         equipment: 6,
         category: "Lighting",
         subcategory: "Emergency"
+      },
+      {
+        id: "26-011",
+        code: "26-05-33.33",
+        description: "Wire - THHN/THWN, #8 AWG",
+        unit: "lf",
+        material: 0.75,
+        labor: 0.32,
+        equipment: 0.03,
+        category: "Wire",
+        subcategory: "Building Wire"
+      },
+      {
+        id: "26-012",
+        code: "26-05-33.43",
+        description: "Wire - THHN/THWN, #6 AWG",
+        unit: "lf",
+        material: 1.15,
+        labor: 0.38,
+        equipment: 0.04,
+        category: "Wire",
+        subcategory: "Building Wire"
+      },
+      {
+        id: "26-013",
+        code: "26-05-19.40",
+        description: "EMT Conduit - 2\"",
+        unit: "lf",
+        material: 6.50,
+        labor: 6.85,
+        equipment: 0.55,
+        category: "Conduit",
+        subcategory: "EMT"
+      },
+      {
+        id: "26-014",
+        code: "26-27-13.30",
+        description: "GFCI Receptacle - 20A, 120V",
+        unit: "ea",
+        material: 18.50,
+        labor: 32.00,
+        equipment: 2.50,
+        category: "Devices",
+        subcategory: "Receptacles"
+      },
+      {
+        id: "26-015",
+        code: "26-27-13.40",
+        description: "Dimmer Switch - 600W",
+        unit: "ea",
+        material: 28.50,
+        labor: 35.00,
+        equipment: 2.75,
+        category: "Devices",
+        subcategory: "Switches"
+      },
+      {
+        id: "26-016",
+        code: "26-51-13.20",
+        description: "LED High Bay - 150W",
+        unit: "ea",
+        material: 185,
+        labor: 125,
+        equipment: 12,
+        category: "Lighting",
+        subcategory: "Industrial"
+      },
+      {
+        id: "26-017",
+        code: "26-52-13.10",
+        description: "Exterior LED Wall Pack - 60W",
+        unit: "ea",
+        material: 145,
+        labor: 95,
+        equipment: 10,
+        category: "Lighting",
+        subcategory: "Exterior"
+      },
+      {
+        id: "26-018",
+        code: "26-41-13.10",
+        description: "Generator - Diesel, 100kW",
+        unit: "ea",
+        material: 28500,
+        labor: 8500,
+        equipment: 2250,
+        category: "Power Generation",
+        subcategory: "Generators"
       }
     ]
   },
@@ -1909,6 +2945,61 @@ const MaterialsDatabase = {
         equipment: 0.03,
         category: "Soil Treatment",
         subcategory: "Fabric"
+      },
+      {
+        id: "31-008",
+        code: "31-23-16.43",
+        description: "Excavation - Trench, 4' Wide",
+        unit: "cy",
+        material: 0,
+        labor: 6.85,
+        equipment: 8.50,
+        category: "Excavation",
+        subcategory: "Trench"
+      },
+      {
+        id: "31-009",
+        code: "31-25-13.20",
+        description: "Grading - Rough, by Grader",
+        unit: "cy",
+        material: 0,
+        labor: 1.25,
+        equipment: 1.85,
+        category: "Grading",
+        subcategory: "Rough"
+      },
+      {
+        id: "31-010",
+        code: "31-23-23.33",
+        description: "Sand Fill - Compacted",
+        unit: "cy",
+        material: 25.00,
+        labor: 4.85,
+        equipment: 6.25,
+        category: "Fill",
+        subcategory: "Sand"
+      },
+      {
+        id: "31-011",
+        code: "31-23-33.10",
+        description: "Rock Excavation - Blasting Required",
+        unit: "cy",
+        material: 8.50,
+        labor: 12.25,
+        equipment: 18.75,
+        category: "Excavation",
+        subcategory: "Rock"
+      },
+      {
+        id: "31-012",
+        code: "31-37-13.10",
+        description: "Riprap - 12\" Stone",
+        unit: "cy",
+        material: 65.00,
+        labor: 18.50,
+        equipment: 12.25,
+        category: "Erosion Control",
+        subcategory: "Riprap"
       }
     ]
   },
@@ -2048,6 +3139,72 @@ const MaterialsDatabase = {
         equipment: 45,
         category: "Landscaping",
         subcategory: "Plants"
+      },
+      {
+        id: "32-013",
+        code: "32-14-13.10",
+        description: "Paver Patio - Concrete Pavers",
+        unit: "sqft",
+        material: 5.85,
+        labor: 8.25,
+        equipment: 1.25,
+        category: "Paving",
+        subcategory: "Pavers"
+      },
+      {
+        id: "32-014",
+        code: "32-31-13.30",
+        description: "Wood Fence - 6' High, Cedar",
+        unit: "lf",
+        material: 32.50,
+        labor: 18.75,
+        equipment: 2.45,
+        category: "Fencing",
+        subcategory: "Wood"
+      },
+      {
+        id: "32-015",
+        code: "32-31-13.40",
+        description: "Ornamental Iron Fence - 4' High",
+        unit: "lf",
+        material: 48.50,
+        labor: 28.75,
+        equipment: 3.25,
+        category: "Fencing",
+        subcategory: "Ornamental"
+      },
+      {
+        id: "32-016",
+        code: "32-17-23.10",
+        description: "Concrete Curb - 6\" x 18\"",
+        unit: "lf",
+        material: 8.50,
+        labor: 12.25,
+        equipment: 2.85,
+        category: "Paving",
+        subcategory: "Curbs"
+      },
+      {
+        id: "32-017",
+        code: "32-92-13.20",
+        description: "Mulch - Shredded Bark, 3\" Deep",
+        unit: "sqft",
+        material: 0.85,
+        labor: 0.65,
+        equipment: 0.15,
+        category: "Landscaping",
+        subcategory: "Mulch"
+      },
+      {
+        id: "32-018",
+        code: "32-84-13.10",
+        description: "Irrigation System - Spray Heads",
+        unit: "sqft",
+        material: 1.85,
+        labor: 2.25,
+        equipment: 0.35,
+        category: "Landscaping",
+        subcategory: "Irrigation"
       }
     ]
   },
@@ -2143,6 +3300,83 @@ const MaterialsDatabase = {
         equipment: 485,
         category: "Water Distribution",
         subcategory: "Hydrants"
+      },
+      {
+        id: "33-009",
+        code: "33-31-13.30",
+        description: "Sanitary Sewer - PVC, 12\"",
+        unit: "lf",
+        material: 28.50,
+        labor: 35.00,
+        equipment: 16.25,
+        category: "Sanitary Sewer",
+        subcategory: "Pipe"
+      },
+      {
+        id: "33-010",
+        code: "33-41-13.30",
+        description: "Storm Drain - RCP, 24\"",
+        unit: "lf",
+        material: 42.50,
+        labor: 48.50,
+        equipment: 28.75,
+        category: "Storm Drainage",
+        subcategory: "Pipe"
+      },
+      {
+        id: "33-011",
+        code: "33-44-13.10",
+        description: "Manhole - Precast, 4' Diameter",
+        unit: "ea",
+        material: 1850,
+        labor: 1250,
+        equipment: 625,
+        category: "Storm Drainage",
+        subcategory: "Structures"
+      },
+      {
+        id: "33-012",
+        code: "33-11-13.30",
+        description: "Water Main - Ductile Iron, 12\"",
+        unit: "lf",
+        material: 58.50,
+        labor: 65.00,
+        equipment: 32.50,
+        category: "Water Distribution",
+        subcategory: "Pipe"
+      },
+      {
+        id: "33-013",
+        code: "33-71-13.10",
+        description: "Water Meter - 2\" Turbine",
+        unit: "ea",
+        material: 1250,
+        labor: 425,
+        equipment: 85,
+        category: "Water Distribution",
+        subcategory: "Metering"
+      },
+      {
+        id: "33-014",
+        code: "33-46-13.10",
+        description: "Septic Tank - Concrete, 1000 Gal",
+        unit: "ea",
+        material: 1850,
+        labor: 1425,
+        equipment: 625,
+        category: "Sanitary Sewer",
+        subcategory: "On-Site"
+      },
+      {
+        id: "33-015",
+        code: "33-49-13.10",
+        description: "Leach Field - Gravel, 100 LF",
+        unit: "sqft",
+        material: 3.85,
+        labor: 4.25,
+        equipment: 1.85,
+        category: "Sanitary Sewer",
+        subcategory: "On-Site"
       }
     ]
   }
