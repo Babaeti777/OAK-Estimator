@@ -1260,6 +1260,181 @@
                 width: auto;
             }
         }
+
+        /* Material Browser Modal Styles */
+        .material-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .material-modal-content {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 12px;
+            width: 95%;
+            max-width: 1400px;
+            max-height: 90vh;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .material-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 2px solid #334155;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .material-modal-header h2 {
+            margin: 0;
+            color: #f8fafc;
+            font-size: 1.5em;
+        }
+
+        .close-modal-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: color 0.2s;
+        }
+
+        .close-modal-btn:hover {
+            color: #ef4444;
+        }
+
+        .material-modal-body {
+            padding: 20px 25px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .material-filters {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            color: #94a3b8;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .material-filter-input,
+        .material-filter-select {
+            padding: 10px 12px;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+
+        .material-filter-input:focus,
+        .material-filter-select:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .materials-list-container {
+            overflow-x: auto;
+            max-height: calc(90vh - 300px);
+        }
+
+        .materials-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .materials-table thead {
+            background: #1e293b;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .materials-table th {
+            padding: 12px 15px;
+            text-align: left;
+            color: #f8fafc;
+            font-weight: 600;
+            border-bottom: 2px solid #334155;
+            font-size: 0.9em;
+        }
+
+        .materials-table tbody tr {
+            border-bottom: 1px solid #334155;
+            transition: background-color 0.2s;
+        }
+
+        .materials-table tbody tr:hover {
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        .materials-table td {
+            padding: 10px 15px;
+            color: #e2e8f0;
+            font-size: 0.9em;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        @media (max-width: 768px) {
+            .material-modal-content {
+                width: 100%;
+                max-height: 95vh;
+            }
+
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+
+            .materials-table {
+                font-size: 0.85em;
+            }
+
+            .materials-table th,
+            .materials-table td {
+                padding: 8px 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1496,7 +1671,10 @@
                                 </tbody>
                             </table>
                         </div>
-                        <button class="btn btn-primary btn-full" onclick="addLineItem()">+ Add Line Item</button>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn btn-primary" style="flex: 1;" onclick="addLineItem()">+ Add Line Item</button>
+                            <button class="btn btn-secondary" style="flex: 1;" onclick="openMaterialBrowser()">📚 Browse Material Database</button>
+                        </div>
                     </div>
 
                     <!-- Summary -->
@@ -1629,6 +1807,53 @@
                     <button class="calc-btn" onclick="appendEngineeringValue('%')">%</button>
                     <button class="calc-btn primary" onclick="appendEngineeringValue('+')">+</button>
                     <button class="calc-btn accent" onclick="engineeringEquals()">=</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Browser Modal -->
+    <div id="materialBrowserModal" class="material-modal">
+        <div class="material-modal-content">
+            <div class="material-modal-header">
+                <h2>📚 Material Database Browser</h2>
+                <button class="close-modal-btn" onclick="closeMaterialBrowser()">✕</button>
+            </div>
+
+            <div class="material-modal-body">
+                <div class="material-filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="materialSearch">Search:</label>
+                            <input
+                                type="text"
+                                id="materialSearch"
+                                placeholder="Search by code, description, or category..."
+                                oninput="filterMaterials()"
+                                class="material-filter-input"
+                            >
+                        </div>
+                        <div class="filter-group">
+                            <label for="materialDivisionFilter">Division:</label>
+                            <select id="materialDivisionFilter" onchange="filterMaterials()" class="material-filter-select">
+                                <option value="all">All Divisions</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="materialCategoryFilter">Category:</label>
+                            <input
+                                type="text"
+                                id="materialCategoryFilter"
+                                placeholder="Filter by category..."
+                                oninput="filterMaterials()"
+                                class="material-filter-input"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div id="materialsList" class="materials-list-container">
+                    <!-- Materials will be populated here -->
                 </div>
             </div>
         </div>
@@ -4331,6 +4556,204 @@
         function toRadians(value) {
             return (value * Math.PI) / 180;
         }
+
+        // ========================================
+        // MATERIALS DATABASE FUNCTIONALITY
+        // ========================================
+
+        let materialsDatabase = null;
+        let filteredMaterials = [];
+        let currentMaterialDivision = 'all';
+
+        // Load materials database
+        function loadMaterialsDatabase() {
+            if (!materialsDatabase && typeof MaterialsDatabase !== 'undefined') {
+                materialsDatabase = MaterialsDatabase;
+                console.log('Materials database loaded successfully');
+            }
+        }
+
+        function openMaterialBrowser() {
+            const modal = document.getElementById('materialBrowserModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                loadMaterialsDatabase();
+                populateMaterialDivisions();
+                filterMaterials();
+            }
+        }
+
+        function closeMaterialBrowser() {
+            const modal = document.getElementById('materialBrowserModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function populateMaterialDivisions() {
+            const select = document.getElementById('materialDivisionFilter');
+            if (!select || !materialsDatabase) return;
+
+            select.innerHTML = '<option value="all">All Divisions</option>';
+
+            // Add divisions that have items
+            Object.keys(materialsDatabase).forEach(divCode => {
+                if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
+                const division = materialsDatabase[divCode];
+                if (division && division.name && division.items && division.items.length > 0) {
+                    const option = document.createElement('option');
+                    option.value = divCode;
+                    option.textContent = `Division ${divCode} - ${division.name}`;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        function filterMaterials() {
+            if (!materialsDatabase) {
+                loadMaterialsDatabase();
+                if (!materialsDatabase) return;
+            }
+
+            const searchTerm = document.getElementById('materialSearch').value.toLowerCase();
+            const divisionFilter = document.getElementById('materialDivisionFilter').value;
+            const categoryFilter = document.getElementById('materialCategoryFilter').value.toLowerCase();
+
+            filteredMaterials = [];
+
+            Object.keys(materialsDatabase).forEach(divCode => {
+                if (divCode === 'version' || divCode === 'lastUpdated' || divCode === 'currency') return;
+
+                const division = materialsDatabase[divCode];
+                if (!division || !division.items) return;
+
+                // Filter by division
+                if (divisionFilter !== 'all' && divCode !== divisionFilter) return;
+
+                division.items.forEach(item => {
+                    // Filter by search term
+                    if (searchTerm && !item.description.toLowerCase().includes(searchTerm) &&
+                        !item.code.toLowerCase().includes(searchTerm) &&
+                        !(item.category && item.category.toLowerCase().includes(searchTerm))) {
+                        return;
+                    }
+
+                    // Filter by category
+                    if (categoryFilter && item.category && !item.category.toLowerCase().includes(categoryFilter)) {
+                        return;
+                    }
+
+                    filteredMaterials.push({
+                        ...item,
+                        divisionCode: divCode,
+                        divisionName: division.name
+                    });
+                });
+            });
+
+            displayMaterials();
+        }
+
+        function displayMaterials() {
+            const container = document.getElementById('materialsList');
+            if (!container) return;
+
+            if (filteredMaterials.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 20px; color: #94a3b8;">No materials found matching your criteria.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="materials-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Division</th>
+                            <th>Category</th>
+                            <th>Unit</th>
+                            <th>Material</th>
+                            <th>Labor</th>
+                            <th>Equipment</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filteredMaterials.forEach(item => {
+                const total = (item.material || 0) + (item.labor || 0) + (item.equipment || 0);
+                html += `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.85em;">${item.code}</td>
+                        <td><strong>${item.description}</strong></td>
+                        <td>Div ${item.divisionCode}</td>
+                        <td><span style="font-size: 0.85em; color: #94a3b8;">${item.category || '-'}</span></td>
+                        <td>${item.unit}</td>
+                        <td>$${item.material.toFixed(2)}</td>
+                        <td>$${item.labor.toFixed(2)}</td>
+                        <td>$${item.equipment.toFixed(2)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick='addMaterialToLineItems(${JSON.stringify(item)})'>
+                                + Add
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function addMaterialToLineItems(material) {
+            // Add a new line item with the material data
+            const row = addLineItem();
+
+            // Populate the fields
+            const descInput = row.querySelector('.item-description');
+            const qtyInput = row.querySelector('.item-quantity');
+            const unitSelect = row.querySelector('.item-unit');
+            const materialInput = row.querySelector('.item-material');
+            const laborInput = row.querySelector('.item-labor');
+            const equipmentInput = row.querySelector('.item-equipment');
+            const notesInput = row.querySelector('.item-notes');
+
+            if (descInput) descInput.value = material.description;
+            if (qtyInput) qtyInput.value = 1; // Default quantity
+            if (unitSelect) unitSelect.value = material.unit;
+            if (materialInput) materialInput.value = material.material.toFixed(2);
+            if (laborInput) laborInput.value = material.labor.toFixed(2);
+            if (equipmentInput) equipmentInput.value = material.equipment.toFixed(2);
+            if (notesInput) notesInput.value = `${material.code} - ${material.category || ''}`;
+
+            // If a division is selected in the project, assign the material to it
+            if (material.divisionCode && selectedDivisions.includes(material.divisionCode)) {
+                row.setAttribute('data-division', material.divisionCode);
+            }
+
+            calculateLineTotal(qtyInput);
+
+            // Close the modal
+            closeMaterialBrowser();
+
+            // Scroll to the new item
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Flash the row to highlight it
+            row.style.backgroundColor = '#38bdf8';
+            setTimeout(() => {
+                row.style.backgroundColor = '';
+            }, 1000);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadMaterialsDatabase();
+        });
     </script>
+
+    <!-- Materials Database Script -->
+    <script src="materials-database.js"></script>
 </body>
 </html>
