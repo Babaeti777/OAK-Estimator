@@ -1877,6 +1877,7 @@
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button class="btn btn-primary" style="flex: 1;" onclick="addLineItem()">+ Add Line Item</button>
                             <button class="btn btn-secondary" style="flex: 1;" onclick="openMaterialBrowser()">📚 Browse Material Database</button>
+                            <button class="btn" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600;" onclick="runAIAnalysis()">🤖 AI Gap Analysis</button>
                         </div>
                     </div>
 
@@ -2057,6 +2058,25 @@
 
                 <div id="materialsList" class="materials-list-container">
                     <!-- Materials will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Gap Analysis Modal -->
+    <div id="aiAnalysisModal" class="material-modal">
+        <div class="material-modal-content" style="max-width: 900px;">
+            <div class="material-modal-header">
+                <h2>🤖 AI Gap Analysis & Suggestions</h2>
+                <button class="close-modal-btn" onclick="closeAIAnalysis()">✕</button>
+            </div>
+            <div class="material-modal-body">
+                <div id="aiAnalysisLoading" style="text-align: center; padding: 40px;">
+                    <div class="spinner" style="margin: 0 auto 20px;"></div>
+                    <p style="color: #94a3b8;">Analyzing your estimate...</p>
+                </div>
+                <div id="aiAnalysisResults" style="display: none;">
+                    <!-- Results will be populated here -->
                 </div>
             </div>
         </div>
@@ -5792,6 +5812,332 @@
                 console.error('Error adding material to line items:', error);
                 alert('⚠️ Error adding material. Please try again or contact support.');
             }
+        }
+
+        // AI Gap Analysis Functions
+        function runAIAnalysis() {
+            const modal = document.getElementById('aiAnalysisModal');
+            const loading = document.getElementById('aiAnalysisLoading');
+            const results = document.getElementById('aiAnalysisResults');
+
+            // Show modal with loading state
+            modal.style.display = 'block';
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            // Run analysis after a brief delay for UI smoothness
+            setTimeout(() => {
+                const analysis = analyzeEstimate();
+                displayAIResults(analysis);
+                loading.style.display = 'none';
+                results.style.display = 'block';
+            }, 800);
+        }
+
+        function closeAIAnalysis() {
+            document.getElementById('aiAnalysisModal').style.display = 'none';
+        }
+
+        function analyzeEstimate() {
+            const lineItemsTable = document.getElementById('lineItemsTable');
+            const rows = Array.from(lineItemsTable.querySelectorAll('tr.line-item'));
+
+            const analysis = {
+                gaps: [],
+                warnings: [],
+                suggestions: [],
+                inconsistencies: [],
+                stats: {
+                    totalItems: rows.length,
+                    zeroQuantity: 0,
+                    totalValue: 0
+                }
+            };
+
+            // Build a map of items by description keywords for pattern matching
+            const itemsByKeyword = {};
+            rows.forEach(row => {
+                const descInput = row.querySelector('input[placeholder="Description"]');
+                if (descInput && descInput.value) {
+                    const desc = descInput.value.toLowerCase();
+                    const qtyInput = row.querySelector('input[placeholder="Quantity"]');
+                    const qty = parseFloat(qtyInput?.value || 0);
+                    const priceInput = row.querySelector('input[placeholder="Price/Unit"]');
+                    const price = parseFloat(priceInput?.value || 0);
+
+                    itemsByKeyword[desc] = { desc: descInput.value, qty, price, row };
+
+                    // Track stats
+                    if (qty === 0) analysis.stats.zeroQuantity++;
+                    analysis.stats.totalValue += qty * price;
+                }
+            });
+
+            const descriptions = Object.keys(itemsByKeyword);
+
+            // Critical Gap 1: Walls without drywall
+            const hasWalls = descriptions.some(d =>
+                (d.includes('wall') || d.includes('partition')) &&
+                (d.includes('stud') || d.includes('framing') || d.includes('assembly'))
+            );
+            const hasDrywall = descriptions.some(d => d.includes('drywall') || d.includes('gypsum'));
+            if (hasWalls && !hasDrywall) {
+                analysis.gaps.push({
+                    title: 'Missing Drywall/Gypsum Board',
+                    description: 'You have wall framing but no drywall. Most walls require gypsum board on both sides.',
+                    suggestion: 'Add: Drywall 5/8" Type X (fire-rated) or 1/2" regular',
+                    severity: 'critical'
+                });
+            }
+
+            // Critical Gap 2: Walls without insulation
+            const hasInsulation = descriptions.some(d => d.includes('insulation') || d.includes('batt'));
+            if (hasWalls && !hasInsulation) {
+                analysis.gaps.push({
+                    title: 'Missing Wall Insulation',
+                    description: 'Wall assemblies typically require insulation for energy code compliance.',
+                    suggestion: 'Add: Batt insulation R-13 or R-19 for exterior walls',
+                    severity: 'critical'
+                });
+            }
+
+            // Critical Gap 3: Fire Stopping (CODE REQUIREMENT)
+            const hasMEP = descriptions.some(d =>
+                d.includes('electrical') || d.includes('plumbing') ||
+                d.includes('duct') || d.includes('pipe') || d.includes('conduit')
+            );
+            const hasFireStopping = descriptions.some(d => d.includes('fire stop') || d.includes('firestop'));
+            if (hasMEP && !hasFireStopping) {
+                analysis.gaps.push({
+                    title: '⚠️ Missing Fire Stopping (Code Violation)',
+                    description: 'MEP penetrations through fire-rated assemblies MUST be fire stopped per IBC/IRC requirements.',
+                    suggestion: 'Add: Fire stopping caulk and fire rated collars for all penetrations',
+                    severity: 'critical'
+                });
+            }
+
+            // Warning 1: Drywall without paint
+            const hasPaint = descriptions.some(d => d.includes('paint'));
+            if (hasDrywall && !hasPaint) {
+                analysis.warnings.push({
+                    title: 'Drywall Without Paint/Finish',
+                    description: 'Most projects require painted or finished drywall.',
+                    suggestion: 'Add: Interior paint (2 coats primer + finish) or wall covering',
+                    severity: 'warning'
+                });
+            }
+
+            // Warning 2: Doors without hardware
+            const hasDoors = descriptions.some(d => d.includes('door') && !d.includes('hardware'));
+            const hasHardware = descriptions.some(d => d.includes('hardware') || d.includes('lockset') || d.includes('hinge'));
+            if (hasDoors && !hasHardware) {
+                analysis.warnings.push({
+                    title: 'Doors Without Hardware',
+                    description: 'Door assemblies require hinges, locksets, and closers.',
+                    suggestion: 'Add: Door hardware sets (hinges, locksets, closers)',
+                    severity: 'warning'
+                });
+            }
+
+            // Warning 3: Roofing without underlayment
+            const hasRoofing = descriptions.some(d =>
+                (d.includes('roof') || d.includes('shingle')) &&
+                !d.includes('underlayment')
+            );
+            const hasUnderlayment = descriptions.some(d => d.includes('underlayment') || d.includes('felt'));
+            if (hasRoofing && !hasUnderlayment) {
+                analysis.warnings.push({
+                    title: 'Roofing Without Underlayment',
+                    description: 'Roofing systems require underlayment (felt or synthetic).',
+                    suggestion: 'Add: Roofing underlayment 30# felt or synthetic',
+                    severity: 'warning'
+                });
+            }
+
+            // Warning 4: Electrical without fixtures
+            const hasElectrical = descriptions.some(d =>
+                (d.includes('electrical') || d.includes('wire') || d.includes('panel')) &&
+                !d.includes('fixture') && !d.includes('light')
+            );
+            const hasFixtures = descriptions.some(d => d.includes('fixture') || d.includes('light'));
+            if (hasElectrical && !hasFixtures) {
+                analysis.warnings.push({
+                    title: 'Electrical Without Fixtures',
+                    description: 'Electrical rough-in typically needs fixtures and devices.',
+                    suggestion: 'Add: Light fixtures, receptacles, and switches',
+                    severity: 'warning'
+                });
+            }
+
+            // Warning 5: Plumbing without fixtures
+            const hasPlumbing = descriptions.some(d =>
+                (d.includes('plumb') || d.includes('water') || d.includes('drain')) &&
+                !d.includes('fixture') && !d.includes('toilet') && !d.includes('sink')
+            );
+            const hasPlumbingFixtures = descriptions.some(d =>
+                d.includes('toilet') || d.includes('sink') || d.includes('faucet') || d.includes('lavatory')
+            );
+            if (hasPlumbing && !hasPlumbingFixtures) {
+                analysis.warnings.push({
+                    title: 'Plumbing Without Fixtures',
+                    description: 'Plumbing rough-in requires fixtures to be functional.',
+                    suggestion: 'Add: Toilets, sinks, faucets, and other plumbing fixtures',
+                    severity: 'warning'
+                });
+            }
+
+            // Suggestion 1: Concrete without reinforcing
+            const hasConcrete = descriptions.some(d => d.includes('concrete') && !d.includes('reinfor'));
+            const hasRebar = descriptions.some(d => d.includes('rebar') || d.includes('reinfor') || d.includes('mesh'));
+            if (hasConcrete && !hasRebar) {
+                analysis.suggestions.push({
+                    title: 'Concrete Without Reinforcing',
+                    description: 'Most concrete slabs and foundations require rebar or welded wire mesh.',
+                    suggestion: 'Consider: Rebar #4 @ 18" o.c. or 6x6 WWM',
+                    severity: 'suggestion'
+                });
+            }
+
+            // Suggestion 2: Concrete without vapor barrier
+            const hasVaporBarrier = descriptions.some(d => d.includes('vapor') || d.includes('poly'));
+            if (hasConcrete && !hasVaporBarrier) {
+                analysis.suggestions.push({
+                    title: 'Concrete Slab Without Vapor Barrier',
+                    description: 'Concrete slabs on grade typically need a vapor barrier underneath.',
+                    suggestion: 'Consider: 6 mil polyethylene vapor barrier',
+                    severity: 'suggestion'
+                });
+            }
+
+            // Suggestion 3: Flooring without base trim
+            const hasFlooring = descriptions.some(d =>
+                (d.includes('floor') || d.includes('carpet') || d.includes('tile') || d.includes('vinyl')) &&
+                !d.includes('base')
+            );
+            const hasBaseTrim = descriptions.some(d => d.includes('base') && (d.includes('trim') || d.includes('molding')));
+            if (hasFlooring && !hasBaseTrim) {
+                analysis.suggestions.push({
+                    title: 'Flooring Without Base Trim',
+                    description: 'Most flooring installations include base molding for a finished look.',
+                    suggestion: 'Consider: Base molding/trim to match flooring',
+                    severity: 'suggestion'
+                });
+            }
+
+            // Inconsistency Check: Zero quantity items
+            Object.values(itemsByKeyword).forEach(item => {
+                if (item.qty === 0 && item.price > 0) {
+                    analysis.inconsistencies.push({
+                        title: `Zero Quantity: ${item.desc}`,
+                        description: 'This item has a price but zero quantity, which will result in $0 cost.',
+                        suggestion: 'Update the quantity or remove this item',
+                        severity: 'inconsistency'
+                    });
+                }
+            });
+
+            return analysis;
+        }
+
+        function displayAIResults(analysis) {
+            const resultsDiv = document.getElementById('aiAnalysisResults');
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 20px;">';
+
+            // Summary Stats Card
+            html += `
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 15px 0; font-size: 18px;">📊 Analysis Summary</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div>
+                            <div style="font-size: 24px; font-weight: bold;">${analysis.stats.totalItems}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Total Line Items</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 24px; font-weight: bold;">$${analysis.stats.totalValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Estimate Total</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 24px; font-weight: bold;">${analysis.gaps.length + analysis.warnings.length}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Issues Found</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Critical Gaps Section
+            if (analysis.gaps.length > 0) {
+                html += '<div><h3 style="color: #dc2626; margin: 0 0 10px 0;">🚨 Critical Gaps</h3>';
+                analysis.gaps.forEach(gap => {
+                    html += `
+                        <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 10px; border-radius: 4px;">
+                            <h4 style="margin: 0 0 8px 0; color: #991b1b;">${gap.title}</h4>
+                            <p style="margin: 0 0 8px 0; color: #7f1d1d;">${gap.description}</p>
+                            <p style="margin: 0; color: #059669; font-weight: 600;">💡 ${gap.suggestion}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // Warnings Section
+            if (analysis.warnings.length > 0) {
+                html += '<div><h3 style="color: #f59e0b; margin: 0 0 10px 0;">⚠️ Warnings</h3>';
+                analysis.warnings.forEach(warning => {
+                    html += `
+                        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 10px; border-radius: 4px;">
+                            <h4 style="margin: 0 0 8px 0; color: #92400e;">${warning.title}</h4>
+                            <p style="margin: 0 0 8px 0; color: #78350f;">${warning.description}</p>
+                            <p style="margin: 0; color: #059669; font-weight: 600;">💡 ${warning.suggestion}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // Suggestions Section
+            if (analysis.suggestions.length > 0) {
+                html += '<div><h3 style="color: #3b82f6; margin: 0 0 10px 0;">💡 Suggestions</h3>';
+                analysis.suggestions.forEach(suggestion => {
+                    html += `
+                        <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin-bottom: 10px; border-radius: 4px;">
+                            <h4 style="margin: 0 0 8px 0; color: #1e40af;">${suggestion.title}</h4>
+                            <p style="margin: 0 0 8px 0; color: #1e3a8a;">${suggestion.description}</p>
+                            <p style="margin: 0; color: #059669; font-weight: 600;">💡 ${suggestion.suggestion}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // Inconsistencies Section
+            if (analysis.inconsistencies.length > 0) {
+                html += '<div><h3 style="color: #8b5cf6; margin: 0 0 10px 0;">🔍 Inconsistencies</h3>';
+                analysis.inconsistencies.forEach(issue => {
+                    html += `
+                        <div style="background: #ede9fe; border-left: 4px solid #8b5cf6; padding: 15px; margin-bottom: 10px; border-radius: 4px;">
+                            <h4 style="margin: 0 0 8px 0; color: #5b21b6;">${issue.title}</h4>
+                            <p style="margin: 0 0 8px 0; color: #4c1d95;">${issue.description}</p>
+                            <p style="margin: 0; color: #059669; font-weight: 600;">💡 ${issue.suggestion}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // All Clear Message
+            if (analysis.gaps.length === 0 && analysis.warnings.length === 0 &&
+                analysis.suggestions.length === 0 && analysis.inconsistencies.length === 0) {
+                html += `
+                    <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 20px; border-radius: 4px; text-align: center;">
+                        <h3 style="color: #065f46; margin: 0 0 10px 0;">✅ Looking Good!</h3>
+                        <p style="color: #047857; margin: 0;">No critical gaps or issues detected in your estimate.</p>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
         }
 
         // Initialize on page load
