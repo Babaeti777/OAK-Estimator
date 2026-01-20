@@ -99,7 +99,7 @@ When you run the app, if an index is missing, Firestore will show an error with 
 
 **Solution**: Deploy the indexes using one of the methods above, or click the auto-create link in the error message.
 
-### Error: "Invalid property path '__name_^'"
+### Error: "Invalid property path '__name_^'" OR "The query requires an index"
 
 This error can occur if:
 
@@ -110,11 +110,18 @@ This error can occur if:
    - Solution: Deploy indexes using the methods above
    - Or: Wait for auto-create from error link
 
-3. **Rules have syntax errors**
+3. **Index is currently building** ⏳
+   - Error message: "That index is currently building and cannot be used yet"
+   - This is NORMAL! Firebase is creating your index
+   - **Solution: Just wait 2-10 minutes for the build to complete**
+   - You can check status by clicking the link in the error message
+   - Refresh the page after a few minutes and the error will be gone
+
+4. **Rules have syntax errors**
    - Solution: Verify `firebase/firestore.rules` matches the template
    - Check for typos in field names
 
-4. **Browser cache issues**
+5. **Browser cache issues**
    - Solution: Clear browser cache and reload
    - Or: Try in incognito/private window
 
