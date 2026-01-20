@@ -62,24 +62,28 @@ service cloud.firestore {
       return request.resource.size() < 1000000; // 1MB limit
     }
 
-    // User Projects Collection
-    // Each user has a single document containing all their projects
-    match /userProjects/{userId} {
+    // Projects Collection
+    // Each project is a separate document with a userId field
+    match /projects/{projectId} {
       // Read: User can only read their own projects
-      allow read: if isOwner(userId);
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
 
-      // Create: User can create their own document
-      allow create: if isOwner(userId) &&
-                       hasValidProjects(request.resource.data) &&
+      // Create: User can create projects with their own userId
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       isValidProject(request.resource.data) &&
                        isReasonableSize();
 
-      // Update: User can update their own document with valid data
-      allow update: if isOwner(userId) &&
-                       hasValidProjects(request.resource.data) &&
+      // Update: User can update their own projects
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == request.auth.uid &&
                        isReasonableSize();
 
-      // Delete: User can delete their own document
-      allow delete: if isOwner(userId);
+      // Delete: User can delete their own projects
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
     }
 
     // User Settings Collection (optional - for future use)
