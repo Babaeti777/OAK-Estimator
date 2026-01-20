@@ -14,6 +14,7 @@ import { Select } from "@/components/ui/select"
 import { useProject } from "@/contexts/ProjectContext"
 import { Plus, Search, Package } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import type { LineItem } from "@/types"
 
 const ALL_DIVISIONS = [
@@ -53,6 +54,7 @@ export function AddLineItemDialog() {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'division' | 'method' | 'custom'>('division')
   const [selectedDivision, setSelectedDivision] = useState('')
+  const [materialBrowserOpen, setMaterialBrowserOpen] = useState(false)
 
   // Custom line item form state
   const [description, setDescription] = useState('')
@@ -109,19 +111,21 @@ export function AddLineItemDialog() {
   const selectedDivisionName = ALL_DIVISIONS.find(d => d.code === selectedDivision)?.name
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen)
-      if (!isOpen) {
-        // Reset on close
-        setStep('division')
-        setSelectedDivision('')
-        setDescription('')
-        setType('material')
-        setQuantity(1)
-        setUnit('EA')
-        setUnitCost(0)
-      }
-    }}>
+    <>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen)
+        if (!isOpen) {
+          // Reset on close
+          setStep('division')
+          setSelectedDivision('')
+          setDescription('')
+          setType('material')
+          setQuantity(1)
+          setUnit('EA')
+          setUnitCost(0)
+          setMaterialBrowserOpen(false)
+        }
+      }}>
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="w-4 h-4 mr-2" />
@@ -169,18 +173,14 @@ export function AddLineItemDialog() {
               variant="outline"
               className="w-full h-24 flex-col gap-2"
               onClick={() => {
-                // TODO: Open materials browser filtered by division
-                toast({
-                  title: "Materials browser",
-                  description: "Browse materials from division " + selectedDivision,
-                })
+                setMaterialBrowserOpen(true)
               }}
             >
               <Search className="w-6 h-6" />
               <div className="text-center">
                 <p className="font-semibold">Browse Materials Database</p>
                 <p className="text-xs text-muted-foreground">
-                  Select from pre-defined materials in this division
+                  Select from pre-defined materials in Division {selectedDivision}
                 </p>
               </div>
             </Button>
@@ -306,5 +306,19 @@ export function AddLineItemDialog() {
         )}
       </DialogContent>
     </Dialog>
+
+      {/* MaterialBrowser Dialog - controlled externally */}
+      <MaterialBrowser
+        open={materialBrowserOpen}
+        onOpenChange={(isOpen) => {
+          setMaterialBrowserOpen(isOpen)
+          // Close the AddLineItemDialog when a material is added
+          if (!isOpen && materialBrowserOpen) {
+            setOpen(false)
+          }
+        }}
+        initialDivision={selectedDivision}
+      />
+    </>
   )
 }

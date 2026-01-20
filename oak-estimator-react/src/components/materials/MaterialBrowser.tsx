@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,13 +68,33 @@ const DIVISIONS = [
 
 interface MaterialBrowserProps {
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  initialDivision?: string
 }
 
-export function MaterialBrowser({ trigger }: MaterialBrowserProps) {
+export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, initialDivision }: MaterialBrowserProps) {
   const { addLineItem } = useProject()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedDivision, setSelectedDivision] = useState("")
+  const [selectedDivision, setSelectedDivision] = useState(initialDivision || "")
+
+  // Sync internal state with external control
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(newOpen)
+    } else {
+      setInternalOpen(newOpen)
+    }
+  }
+
+  // Reset division filter when initialDivision changes
+  useEffect(() => {
+    if (initialDivision !== undefined) {
+      setSelectedDivision(initialDivision)
+    }
+  }, [initialDivision])
 
   const filteredMaterials = MOCK_MATERIALS.filter(material => {
     const matchesSearch = material.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,7 +122,7 @@ export function MaterialBrowser({ trigger }: MaterialBrowserProps) {
         description: `${material.description} has been added to your project`,
       })
 
-      setOpen(false)
+      handleOpenChange(false)
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -113,7 +133,7 @@ export function MaterialBrowser({ trigger }: MaterialBrowserProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline">
