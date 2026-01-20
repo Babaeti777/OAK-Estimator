@@ -10,13 +10,13 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { useProject } from "@/contexts/ProjectContext"
 import { useTheme } from "@/contexts/ThemeContext"
-import { Building2, LogOut, User, FolderOpen, Plus, Moon, Sun, Check, Trash2 } from "lucide-react"
+import { Building2, LogOut, User, FolderOpen, Plus, Moon, Sun, Check, Trash2, RotateCcw } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useState } from "react"
 
 export function Header() {
   const { user, signOut } = useAuth()
-  const { currentProject, projects, trashedProjects, loadProject, createProject, trashProject } = useProject()
+  const { currentProject, projects, trashedProjects, loadProject, createProject, trashProject, restoreProject, deleteProjectPermanently } = useProject()
   const { theme, toggleTheme } = useTheme()
   const [showTrash, setShowTrash] = useState(false)
 
@@ -75,6 +75,34 @@ export function Header() {
                               <p className="text-xs text-muted-foreground">
                                 {daysLeft} days left
                               </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  restoreProject(project.id)
+                                }}
+                                title="Restore project"
+                              >
+                                <RotateCcw className="h-4 w-4 text-primary" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (confirm('Are you sure you want to permanently delete this project? This action cannot be undone.')) {
+                                    deleteProjectPermanently(project.id)
+                                  }
+                                }}
+                                title="Delete forever"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
                             </div>
                           </DropdownMenuItem>
                         )
@@ -169,8 +197,8 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <img
-                    src={user.photoURL || defaultAvatar}
-                    alt={user.displayName || "User"}
+                    src={currentProject?.companySettings.logoUrl || user.photoURL || defaultAvatar}
+                    alt={currentProject?.companySettings.companyName || user.displayName || "User"}
                     className="h-10 w-10 rounded-full object-cover"
                   />
                 </Button>

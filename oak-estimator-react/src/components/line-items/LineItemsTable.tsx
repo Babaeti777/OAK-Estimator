@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
+import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
 import type { LineItem } from "@/types"
-import { Plus, Trash2, Table, Search } from "lucide-react"
+import { Trash2, Table, Search } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
-import { toast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
@@ -33,7 +33,7 @@ const DIVISIONS = [
 ]
 
 export function LineItemsTable() {
-  const { currentProject, addLineItem, updateLineItem, deleteLineItem } = useProject()
+  const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
 
   if (!currentProject) {
@@ -44,26 +44,6 @@ export function LineItemsTable() {
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.division.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
-  const handleAddItem = async () => {
-    try {
-      await addLineItem({
-        division: '03',
-        description: 'New Line Item',
-        type: 'material',
-        quantity: 1,
-        unit: 'EA',
-        unitCost: 0,
-        totalCost: 0,
-      })
-      toast({
-        title: "Line item added",
-        description: "A new line item has been added to the project.",
-      })
-    } catch (error: any) {
-      console.error('Failed to add line item:', error)
-    }
-  }
 
   const handleUpdateItem = async (itemId: string, updates: Partial<LineItem>) => {
     try {
@@ -109,10 +89,7 @@ export function LineItemsTable() {
             </div>
             <div className="flex items-center gap-2">
               <MaterialBrowser />
-              <Button onClick={handleAddItem} size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Item
-              </Button>
+              <AddLineItemDialog />
             </div>
           </div>
         </CardHeader>
