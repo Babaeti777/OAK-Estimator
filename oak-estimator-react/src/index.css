@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@layer theme {
+  :root {
+    --color-background: 224 71% 4%;
+    --color-foreground: 213 31% 91%;
+    --color-primary: 210 40% 98%;
+    --color-primary-foreground: 222.2 47.4% 11.2%;
+    --color-secondary: 222.2 47.4% 11.2%;
+    --color-secondary-foreground: 210 40% 98%;
+    --color-muted: 223 47% 11%;
+    --color-muted-foreground: 215.4 16.3% 56.9%;
+    --color-accent: 216 34% 17%;
+    --color-accent-foreground: 210 40% 98%;
+    --color-destructive: 0 63% 31%;
+    --color-destructive-foreground: 210 40% 98%;
+    --color-border: 216 34% 17%;
+    --color-input: 216 34% 17%;
+    --color-ring: 216 34% 17%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .glass {
+    background-color: hsl(var(--color-background) / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--color-border) / 0.5);
+  }
+
+  .card-hover {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 10px 15px -3px hsl(var(--color-primary) / 0.05);
+    transform: translateY(-2px);
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--color-border));
+  }
+
+  body {
+    background-color: hsl(var(--color-background));
+    color: hsl(var(--color-foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: hsl(var(--color-muted) / 0.2);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--color-muted));
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--color-muted-foreground) / 0.5);
+  }
+}
