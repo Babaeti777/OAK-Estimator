@@ -3065,10 +3065,59 @@
 
         function persistProjectsLocally() {
             try {
-                localStorage.setItem(getStorageKeyForCurrentUser(), JSON.stringify(projectsCache));
+                const storageKey = getStorageKeyForCurrentUser();
+                const projectData = JSON.stringify(projectsCache);
+
+                // Check storage size before saving
+                const sizeInMB = new Blob([projectData]).size / (1024 * 1024);
+
+                // Warn if approaching 5MB limit (leaving 0.5MB buffer)
+                if (sizeInMB > 4.5) {
+                    console.warn(`⚠️ LocalStorage approaching limit: ${sizeInMB.toFixed(2)}MB / ~5MB`);
+                    const continueWithLocalSave = confirm(
+                        `⚠️ Your projects are taking up ${sizeInMB.toFixed(2)}MB of local storage.\n\n` +
+                        `You're approaching the browser limit (~5MB).\n\n` +
+                        `Would you like to:\n` +
+                        `• Continue saving locally (may fail soon)\n` +
+                        `• Sign in to save to cloud instead\n\n` +
+                        `Click OK to continue locally, or Cancel to sign in to cloud.`
+                    );
+
+                    if (!continueWithLocalSave && !currentUser) {
+                        // User chose to sign in
+                        const authScreen = document.getElementById('authScreen');
+                        if (authScreen) {
+                            authScreen.style.display = 'flex';
+                        }
+                        throw new Error('USER_CHOSE_CLOUD_SYNC');
+                    }
+                }
+
+                localStorage.setItem(storageKey, projectData);
             } catch (error) {
-                console.error('Unable to save projects locally:', error);
-                throw error;
+                if (error.name === 'QuotaExceededError' || error.message === 'QuotaExceededError') {
+                    console.error('❌ LocalStorage quota exceeded');
+                    alert(
+                        '❌ Storage Limit Reached!\n\n' +
+                        'Your browser\'s local storage is full.\n\n' +
+                        'Options:\n' +
+                        '1. Sign in to save projects to cloud\n' +
+                        '2. Delete old projects to free up space\n' +
+                        '3. Export important projects before deletion'
+                    );
+
+                    // Show auth screen if not logged in
+                    if (!currentUser) {
+                        const authScreen = document.getElementById('authScreen');
+                        if (authScreen) {
+                            authScreen.style.display = 'flex';
+                        }
+                    }
+                    throw error;
+                } else if (error.message !== 'USER_CHOSE_CLOUD_SYNC') {
+                    console.error('Unable to save projects locally:', error);
+                    throw error;
+                }
             }
         }
 
@@ -6147,6 +6196,84 @@
     </script>
 
     <!-- Materials Database Script -->
-    <script src="materials-database.js"></script>
+    <script>
+        // Database load error handler
+        let databaseLoadAttempts = 0;
+        const MAX_DB_LOAD_ATTEMPTS = 3;
+
+        function handleDatabaseLoadError(error) {
+            console.error('Failed to load materials database:', error);
+            databaseLoadAttempts++;
+
+            if (databaseLoadAttempts < MAX_DB_LOAD_ATTEMPTS) {
+                console.log(`Retrying database load (attempt ${databaseLoadAttempts + 1}/${MAX_DB_LOAD_ATTEMPTS})...`);
+                setTimeout(() => {
+                    const script = document.createElement('script');
+                    script.src = 'materials-database.js?retry=' + databaseLoadAttempts;
+                    script.onerror = handleDatabaseLoadError;
+                    document.body.appendChild(script);
+                }, 1000 * databaseLoadAttempts); // Exponential backoff
+                return;
+            }
+
+            // Show error overlay after max attempts
+            showDatabaseLoadError();
+        }
+
+        function showDatabaseLoadError() {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.95);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+            overlay.innerHTML = `
+                <div style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);padding:40px;border-radius:15px;text-align:center;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid #334155;">
+                    <div style="font-size:64px;margin-bottom:20px;">⚠️</div>
+                    <h2 style="color:#f87171;margin:0 0 15px 0;font-size:24px;">Database Load Error</h2>
+                    <p style="color:#94a3b8;margin:0 0 25px 0;line-height:1.6;">
+                        Failed to load the materials database after ${MAX_DB_LOAD_ATTEMPTS} attempts.
+                        <br><br>
+                        This could be due to:
+                        <br>• Slow internet connection
+                        <br>• Browser cache issues
+                        <br>• File access problems
+                    </p>
+                    <div style="display:flex;gap:10px;justify-content:center;">
+                        <button onclick="location.reload()" style="padding:12px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s;">
+                            🔄 Refresh Page
+                        </button>
+                        <button onclick="clearCacheAndReload()" style="padding:12px 24px;background:#6366f1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s;">
+                            🗑️ Clear Cache & Reload
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function clearCacheAndReload() {
+            // Clear service worker cache if exists
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            // Hard reload
+            location.reload(true);
+        }
+
+        // Check for database load on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (typeof MaterialsDatabase === 'undefined') {
+                    console.warn('Materials database not loaded after page load');
+                    // Don't show error immediately - might still be loading on slow connection
+                    setTimeout(() => {
+                        if (typeof MaterialsDatabase === 'undefined') {
+                            handleDatabaseLoadError(new Error('Database timeout'));
+                        }
+                    }, 5000); // Wait 5 more seconds
+                }
+            }, 1000);
+        });
+    </script>
+    <script src="materials-database.js" onerror="handleDatabaseLoadError(event)"></script>
 </body>
 </html>
