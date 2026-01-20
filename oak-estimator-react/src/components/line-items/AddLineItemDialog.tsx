@@ -12,9 +12,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { useProject } from "@/contexts/ProjectContext"
-import { Plus, Search, Package } from "lucide-react"
+import { Plus } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import type { LineItem } from "@/types"
 
 const ALL_DIVISIONS = [
@@ -52,23 +51,14 @@ const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
 export function AddLineItemDialog() {
   const { addLineItem } = useProject()
   const [open, setOpen] = useState(false)
-  const [step, setStep] = useState<'division' | 'method' | 'custom'>('division')
-  const [selectedDivision, setSelectedDivision] = useState('')
-  const [materialBrowserOpen, setMaterialBrowserOpen] = useState(false)
-
-  // Custom line item form state
+  const [division, setDivision] = useState('03')
   const [description, setDescription] = useState('')
   const [type, setType] = useState<LineItem['type']>('material')
   const [quantity, setQuantity] = useState(1)
   const [unit, setUnit] = useState('EA')
   const [unitCost, setUnitCost] = useState(0)
 
-  const handleDivisionSelect = (divisionCode: string) => {
-    setSelectedDivision(divisionCode)
-    setStep('method')
-  }
-
-  const handleCustomCreate = async () => {
+  const handleCreate = async () => {
     if (!description.trim()) {
       toast({
         variant: "destructive",
@@ -80,7 +70,7 @@ export function AddLineItemDialog() {
 
     try {
       await addLineItem({
-        division: selectedDivision,
+        division,
         description: description.trim(),
         type,
         quantity,
@@ -91,13 +81,12 @@ export function AddLineItemDialog() {
 
       toast({
         title: "Line item added",
-        description: "Your custom line item has been added successfully",
+        description: "Your line item has been added successfully",
       })
 
       // Reset form
       setOpen(false)
-      setStep('division')
-      setSelectedDivision('')
+      setDivision('03')
       setDescription('')
       setType('material')
       setQuantity(1)
@@ -108,217 +97,140 @@ export function AddLineItemDialog() {
     }
   }
 
-  const selectedDivisionName = ALL_DIVISIONS.find(d => d.code === selectedDivision)?.name
-
   return (
-    <>
-      <Dialog open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen)
-        if (!isOpen) {
-          // Reset on close
-          setStep('division')
-          setSelectedDivision('')
-          setDescription('')
-          setType('material')
-          setQuantity(1)
-          setUnit('EA')
-          setUnitCost(0)
-          setMaterialBrowserOpen(false)
-        }
-      }}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen)
+      if (!isOpen) {
+        // Reset on close
+        setDivision('03')
+        setDescription('')
+        setType('material')
+        setQuantity(1)
+        setUnit('EA')
+        setUnitCost(0)
+      }
+    }}>
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="w-4 h-4 mr-2" />
           Add Item
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {step === 'division' && 'Select Division'}
-            {step === 'method' && `Add Item - Division ${selectedDivision}`}
-            {step === 'custom' && 'Create Custom Line Item'}
-          </DialogTitle>
+          <DialogTitle>Add New Line Item</DialogTitle>
           <DialogDescription>
-            {step === 'division' && 'Choose the CSI MasterFormat division for this line item'}
-            {step === 'method' && `${selectedDivisionName}`}
-            {step === 'custom' && `Division ${selectedDivision} - ${selectedDivisionName}`}
+            Enter the details for your new line item
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1: Division Selection */}
-        {step === 'division' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-            {ALL_DIVISIONS.map((division) => (
-              <Button
-                key={division.code}
-                variant="outline"
-                className="h-auto py-3 justify-start text-left"
-                onClick={() => handleDivisionSelect(division.code)}
-              >
-                <div>
-                  <div className="font-semibold">
-                    {division.code} - {division.name}
-                  </div>
-                </div>
-              </Button>
-            ))}
+        <form className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="division">Division</Label>
+            <Select
+              id="division"
+              value={division}
+              onChange={(e) => setDivision(e.target.value)}
+            >
+              {ALL_DIVISIONS.map((div) => (
+                <option key={div.code} value={div.code}>
+                  {div.code} - {div.name}
+                </option>
+              ))}
+            </Select>
           </div>
-        )}
 
-        {/* Step 2: Method Selection */}
-        {step === 'method' && (
-          <div className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full h-24 flex-col gap-2"
-              onClick={() => {
-                setMaterialBrowserOpen(true)
-              }}
-            >
-              <Search className="w-6 h-6" />
-              <div className="text-center">
-                <p className="font-semibold">Browse Materials Database</p>
-                <p className="text-xs text-muted-foreground">
-                  Select from pre-defined materials in Division {selectedDivision}
-                </p>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full h-24 flex-col gap-2"
-              onClick={() => setStep('custom')}
-            >
-              <Package className="w-6 h-6" />
-              <div className="text-center">
-                <p className="font-semibold">Create Custom Line Item</p>
-                <p className="text-xs text-muted-foreground">
-                  Manually enter a custom item for this division
-                </p>
-              </div>
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="w-full"
-              onClick={() => {
-                setStep('division')
-                setSelectedDivision('')
-              }}
-            >
-              ← Back to Division Selection
-            </Button>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description *</Label>
+            <Input
+              id="description"
+              placeholder="e.g., Concrete Slab on Grade, 4 inch"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              autoFocus
+            />
           </div>
-        )}
 
-        {/* Step 3: Custom Line Item Form */}
-        {step === 'custom' && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="type">Type</Label>
+              <Select
+                id="type"
+                value={type}
+                onChange={(e) => setType(e.target.value as LineItem['type'])}
+              >
+                {ITEM_TYPES.map((itemType) => (
+                  <option key={itemType.value} value={itemType.value}>
+                    {itemType.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit">Unit</Label>
               <Input
-                id="description"
-                placeholder="e.g., Concrete Slab on Grade, 4 inch"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                autoFocus
+                id="unit"
+                placeholder="EA, SF, CY, etc."
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="0"
+                step="0.01"
+                value={quantity}
+                onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
-                <Select
-                  id="type"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as LineItem['type'])}
-                >
-                  {ITEM_TYPES.map((itemType) => (
-                    <option key={itemType.value} value={itemType.value}>
-                      {itemType.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="unit">Unit</Label>
-                <Input
-                  id="unit"
-                  placeholder="EA, SF, CY, etc."
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="unitCost">Unit Cost ($)</Label>
-                <Input
-                  id="unitCost"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={unitCost}
-                  onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-
-            <div className="bg-muted p-3 rounded-lg">
-              <p className="text-sm font-medium">
-                Total Cost: ${(quantity * unitCost).toFixed(2)}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setStep('method')}
-              >
-                ← Back
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleCustomCreate}
-                disabled={!description.trim()}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Line Item
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="unitCost">Unit Cost ($)</Label>
+              <Input
+                id="unitCost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={unitCost}
+                onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
+              />
             </div>
           </div>
-        )}
+
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="text-sm font-semibold text-foreground">
+              Total Cost: ${(quantity * unitCost).toFixed(2)}
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              onClick={handleCreate}
+              disabled={!description.trim()}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Line Item
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
-
-      {/* MaterialBrowser Dialog - controlled externally */}
-      <MaterialBrowser
-        open={materialBrowserOpen}
-        onOpenChange={(isOpen) => {
-          setMaterialBrowserOpen(isOpen)
-          // Close the AddLineItemDialog when a material is added
-          if (!isOpen && materialBrowserOpen) {
-            setOpen(false)
-          }
-        }}
-        initialDivision={selectedDivision}
-      />
-    </>
   )
 }
