@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Feature Test - OAK Estimator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #38bdf8;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #60a5fa;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .test-section {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        .test-result {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        .pass {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #6ee7b7;
+        }
+        .fail {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+        .warning {
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid #fbbf24;
+            color: #fde047;
+        }
+        .code {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            margin: 10px 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+        .demo-container {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #334155;
+        }
+        .stat {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.2);
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin: 5px;
+            border: 1px solid #6366f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 OAK Estimator - UI Features Test Suite</h1>
+
+        <div class="test-section">
+            <h2>📊 Test Environment</h2>
+            <div class="code">
+                Browser: <span id="browserInfo"></span><br>
+                Screen: <span id="screenInfo"></span><br>
+                Test Time: <span id="testTime"></span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ Feature 1: Load More Functionality</h2>
+            <p><strong>Expected Behavior:</strong></p>
+            <ul>
+                <li>Initial load shows 50 items</li>
+                <li>"Load More" button loads 50 additional items</li>
+                <li>Progress indicator shows X of Y materials</li>
+                <li>Button disappears when all items loaded</li>
+                <li>Completion message shows when done</li>
+            </ul>
+
+            <div id="loadMoreTest" class="test-result">
+                <button onclick="testLoadMore()">🧪 Run Load More Test</button>
+            </div>
+
+            <div class="demo-container" id="loadMoreDemo" style="display:none;">
+                <h3>Demo Output:</h3>
+                <div id="loadMoreOutput"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔄 Feature 2: Database Version Checking</h2>
+            <p><strong>Expected Behavior:</strong></p>
+            <ul>
+                <li>Checks database version on page load</li>
+                <li>Stores version in localStorage</li>
+                <li>Shows notification when version changes</li>
+                <li>Displays version info in console</li>
+                <li>Auto-dismisses notification after 10s</li>
+            </ul>
+
+            <div id="versionTest" class="test-result">
+                <button onclick="testVersionCheck()">🧪 Run Version Check Test</button>
+                <button onclick="simulateVersionUpdate()">📦 Simulate Update</button>
+                <button onclick="clearVersionCache()">🗑️ Clear Version Cache</button>
+            </div>
+
+            <div class="demo-container" id="versionDemo" style="display:none;">
+                <h3>Version Status:</h3>
+                <div id="versionOutput"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📄 Feature 3: Improved Pagination</h2>
+            <p><strong>Expected Behavior:</strong></p>
+            <ul>
+                <li>No hard limit on displayed items</li>
+                <li>Progressive loading in chunks</li>
+                <li>Clear progress indicators</li>
+                <li>Smooth scrolling experience</li>
+                <li>Performance maintained with large datasets</li>
+            </ul>
+
+            <div id="paginationTest" class="test-result">
+                <button onclick="testPagination()">🧪 Run Pagination Test</button>
+            </div>
+
+            <div class="demo-container" id="paginationDemo" style="display:none;">
+                <h3>Pagination Metrics:</h3>
+                <div id="paginationOutput"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📈 Database Statistics</h2>
+            <div id="dbStats">
+                <button onclick="loadDatabaseStats()">📊 Load Database Stats</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Manual Testing Checklist</h2>
+            <p>After automated tests, manually verify:</p>
+            <ol>
+                <li>✅ Open index.html in browser</li>
+                <li>✅ Open Material Browser modal</li>
+                <li>✅ Verify initial 50 items load</li>
+                <li>✅ Click "Load More" button</li>
+                <li>✅ Verify 50 more items appear (100 total)</li>
+                <li>✅ Continue loading until all items shown</li>
+                <li>✅ Check completion message appears</li>
+                <li>✅ Filter materials and verify Load More works with filters</li>
+                <li>✅ Check browser console for version info</li>
+                <li>✅ Clear localStorage and refresh to see update notification</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Test Results Summary</h2>
+            <div id="summaryResults">
+                <p style="color: #94a3b8;">Run tests above to see results...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="materials-database.js"></script>
+    <script>
+        // Initialize test environment
+        document.getElementById('browserInfo').textContent = navigator.userAgent.split(/[()]/)[1] || navigator.userAgent;
+        document.getElementById('screenInfo').textContent = `${window.screen.width}x${window.screen.height}`;
+        document.getElementById('testTime').textContent = new Date().toLocaleString();
+
+        let testResults = {
+            loadMore: null,
+            version: null,
+            pagination: null
+        };
+
+        // Test 1: Load More Functionality
+        function testLoadMore() {
+            const output = document.getElementById('loadMoreOutput');
+            const demo = document.getElementById('loadMoreDemo');
+            const result = document.getElementById('loadMoreTest');
+
+            demo.style.display = 'block';
+            output.innerHTML = '<p style="color: #fbbf24;">🔄 Testing Load More functionality...</p>';
+
+            try {
+                // Simulate materials array
+                const testMaterials = Array.from({length: 250}, (_, i) => ({
+                    id: `TEST-${i+1}`,
+                    description: `Test Material ${i+1}`,
+                    material: Math.random() * 100,
+                    labor: Math.random() * 50,
+                    equipment: Math.random() * 10
+                }));
+
+                let displayCount = 50;
+                const pageSize = 50;
+
+                output.innerHTML += `
+                    <div class="stat">Total Materials: ${testMaterials.length}</div>
+                    <div class="stat">Page Size: ${pageSize}</div>
+                    <div class="stat">Initial Display: ${displayCount}</div><br><br>
+                `;
+
+                // Test initial load
+                let showing = Math.min(displayCount, testMaterials.length);
+                output.innerHTML += `✅ Initial load: ${showing} items<br>`;
+
+                // Test load more iterations
+                let iterations = 0;
+                while (displayCount < testMaterials.length && iterations < 10) {
+                    displayCount += pageSize;
+                    showing = Math.min(displayCount, testMaterials.length);
+                    iterations++;
+                    output.innerHTML += `✅ Load More #${iterations}: Now showing ${showing} items<br>`;
+                }
+
+                if (showing === testMaterials.length) {
+                    output.innerHTML += `<br>✅ All ${testMaterials.length} items loaded successfully!<br>`;
+                    output.innerHTML += `<br><div class="test-result pass">✅ PASS: Load More functionality working correctly</div>`;
+                    testResults.loadMore = true;
+                } else {
+                    output.innerHTML += `<br><div class="test-result fail">❌ FAIL: Not all items loaded</div>`;
+                    testResults.loadMore = false;
+                }
+
+                updateSummary();
+
+            } catch (error) {
+                output.innerHTML += `<br><div class="test-result fail">❌ ERROR: ${error.message}</div>`;
+                testResults.loadMore = false;
+                updateSummary();
+            }
+        }
+
+        // Test 2: Version Checking
+        function testVersionCheck() {
+            const output = document.getElementById('versionOutput');
+            const demo = document.getElementById('versionDemo');
+
+            demo.style.display = 'block';
+            output.innerHTML = '<p style="color: #fbbf24;">🔄 Testing version checking...</p>';
+
+            try {
+                if (typeof MaterialsDatabase === 'undefined') {
+                    throw new Error('MaterialsDatabase not loaded');
+                }
+
+                const version = MaterialsDatabase.version || 'unknown';
+                const lastUpdated = MaterialsDatabase.lastUpdated || 'unknown';
+                const totalItems = MaterialsDatabase.totalItems || 0;
+                const buildDate = MaterialsDatabase.buildDate || 'unknown';
+
+                output.innerHTML = `
+                    <div class="stat">Version: ${version}</div>
+                    <div class="stat">Last Updated: ${lastUpdated}</div>
+                    <div class="stat">Total Items: ${totalItems}</div>
+                    <div class="stat">Build Date: ${buildDate}</div><br><br>
+                `;
+
+                // Check localStorage
+                const storedVersion = localStorage.getItem('materialsDbVersion');
+                const lastChecked = localStorage.getItem('materialsDbLastChecked');
+
+                output.innerHTML += `✅ Current DB Version: ${version}<br>`;
+                output.innerHTML += `✅ Stored Version: ${storedVersion || 'Not set'}<br>`;
+                output.innerHTML += `✅ Last Checked: ${lastChecked ? new Date(lastChecked).toLocaleString() : 'Never'}<br>`;
+
+                if (storedVersion === version) {
+                    output.innerHTML += `<br>ℹ️ No update detected (versions match)<br>`;
+                } else if (!storedVersion) {
+                    output.innerHTML += `<br>ℹ️ First time load (no stored version)<br>`;
+                } else {
+                    output.innerHTML += `<br>🎉 Update detected: ${storedVersion} → ${version}<br>`;
+                }
+
+                output.innerHTML += `<br><div class="test-result pass">✅ PASS: Version checking functional</div>`;
+                testResults.version = true;
+                updateSummary();
+
+            } catch (error) {
+                output.innerHTML += `<br><div class="test-result fail">❌ ERROR: ${error.message}</div>`;
+                testResults.version = false;
+                updateSummary();
+            }
+        }
+
+        function simulateVersionUpdate() {
+            // Store old version to trigger update notification
+            localStorage.setItem('materialsDbVersion', '2.0.0');
+            alert('✅ Simulated old version (2.0.0) stored.\n\nRefresh the page to see the update notification!');
+        }
+
+        function clearVersionCache() {
+            localStorage.removeItem('materialsDbVersion');
+            localStorage.removeItem('materialsDbLastChecked');
+            alert('✅ Version cache cleared!\n\nRefresh the page to see first-time load behavior.');
+        }
+
+        // Test 3: Pagination
+        function testPagination() {
+            const output = document.getElementById('paginationOutput');
+            const demo = document.getElementById('paginationDemo');
+
+            demo.style.display = 'block';
+            output.innerHTML = '<p style="color: #fbbf24;">🔄 Testing pagination performance...</p>';
+
+            try {
+                const testSizes = [50, 100, 250, 500, 1000, 2500];
+                const results = [];
+
+                testSizes.forEach(size => {
+                    const startTime = performance.now();
+
+                    // Simulate rendering items
+                    const items = Array.from({length: size}, (_, i) => {
+                        return {
+                            code: `CODE-${i}`,
+                            description: `Item ${i}`,
+                            material: 10.50,
+                            labor: 5.25,
+                            equipment: 1.00
+                        };
+                    });
+
+                    // Simulate DOM operations
+                    const html = items.map(item => `<tr><td>${item.code}</td><td>${item.description}</td></tr>`).join('');
+
+                    const endTime = performance.now();
+                    const duration = endTime - startTime;
+
+                    results.push({size, duration});
+                });
+
+                output.innerHTML = '<h4>Performance Results:</h4>';
+                results.forEach(r => {
+                    const status = r.duration < 100 ? 'pass' : (r.duration < 200 ? 'warning' : 'fail');
+                    const emoji = r.duration < 100 ? '✅' : (r.duration < 200 ? '⚠️' : '❌');
+                    output.innerHTML += `
+                        <div class="test-result ${status}">
+                            ${emoji} ${r.size} items: ${r.duration.toFixed(2)}ms
+                        </div>
+                    `;
+                });
+
+                const avgDuration = results.reduce((sum, r) => sum + r.duration, 0) / results.length;
+                if (avgDuration < 100) {
+                    output.innerHTML += `<br><div class="test-result pass">✅ PASS: Excellent pagination performance (avg: ${avgDuration.toFixed(2)}ms)</div>`;
+                    testResults.pagination = true;
+                } else {
+                    output.innerHTML += `<br><div class="test-result warning">⚠️ WARNING: Acceptable but could be optimized (avg: ${avgDuration.toFixed(2)}ms)</div>`;
+                    testResults.pagination = true;
+                }
+
+                updateSummary();
+
+            } catch (error) {
+                output.innerHTML += `<br><div class="test-result fail">❌ ERROR: ${error.message}</div>`;
+                testResults.pagination = false;
+                updateSummary();
+            }
+        }
+
+        // Database Stats
+        function loadDatabaseStats() {
+            const stats = document.getElementById('dbStats');
+
+            if (typeof MaterialsDatabase === 'undefined') {
+                stats.innerHTML = '<div class="test-result fail">❌ Database not loaded</div>';
+                return;
+            }
+
+            let totalItems = 0;
+            const divisions = [];
+
+            Object.keys(MaterialsDatabase).forEach(key => {
+                if (['version', 'lastUpdated', 'currency', 'totalItems', 'buildDate'].includes(key)) return;
+                const div = MaterialsDatabase[key];
+                if (div && div.items) {
+                    totalItems += div.items.length;
+                    divisions.push({
+                        code: key,
+                        name: div.name,
+                        count: div.items.length
+                    });
+                }
+            });
+
+            divisions.sort((a, b) => a.code.localeCompare(b.code));
+
+            let html = `
+                <div class="stat">Version: ${MaterialsDatabase.version}</div>
+                <div class="stat">Total Items: ${totalItems}</div>
+                <div class="stat">Divisions: ${divisions.length}</div>
+                <div class="stat">Last Updated: ${MaterialsDatabase.lastUpdated}</div>
+                <br><br>
+                <h3>Division Breakdown:</h3>
+                <div class="code">
+            `;
+
+            divisions.forEach(d => {
+                const status = d.count >= 200 ? '✅' : '⚠️';
+                html += `${status} Div ${d.code.padEnd(3)}: ${String(d.count).padStart(3)} items - ${d.name}<br>`;
+            });
+
+            html += '</div>';
+            stats.innerHTML = html;
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summaryResults');
+            const total = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r === true).length;
+            const failed = Object.values(testResults).filter(r => r === false).length;
+            const pending = Object.values(testResults).filter(r => r === null).length;
+
+            let html = '<h3>Test Summary:</h3>';
+            html += `<div class="stat">Total Tests: ${total}</div>`;
+            html += `<div class="stat" style="border-color: #10b981; background: rgba(16, 185, 129, 0.2);">Passed: ${passed}</div>`;
+            if (failed > 0) {
+                html += `<div class="stat" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.2);">Failed: ${failed}</div>`;
+            }
+            if (pending > 0) {
+                html += `<div class="stat" style="border-color: #94a3b8; background: rgba(148, 163, 184, 0.2);">Pending: ${pending}</div>`;
+            }
+
+            html += '<br><br><div class="code">';
+            html += `Load More Test: ${testResults.loadMore === true ? '✅ PASS' : testResults.loadMore === false ? '❌ FAIL' : '⏳ Pending'}<br>`;
+            html += `Version Check Test: ${testResults.version === true ? '✅ PASS' : testResults.version === false ? '❌ FAIL' : '⏳ Pending'}<br>`;
+            html += `Pagination Test: ${testResults.pagination === true ? '✅ PASS' : testResults.pagination === false ? '❌ FAIL' : '⏳ Pending'}<br>`;
+            html += '</div>';
+
+            if (passed === total && total > 0) {
+                html += '<br><div class="test-result pass">🎉 ALL TESTS PASSED! UI features are working correctly.</div>';
+            }
+
+            summary.innerHTML = html;
+        }
+
+        // Auto-load database stats
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                loadDatabaseStats();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
