@@ -2,7 +2,6 @@ import { Header } from "./layout/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { useProject } from "@/contexts/ProjectContext"
-import { CompanySettingsForm } from "./projects/CompanySettingsForm"
 import { ProjectSettingsForm } from "./projects/ProjectSettingsForm"
 import { SummaryCard } from "./projects/SummaryCard"
 import { LineItemsTable } from "./line-items/LineItemsTable"
@@ -49,39 +48,40 @@ export function EstimatorApp() {
           </div>
         ) : currentProject ? (
           <div className="space-y-6">
-            {/* Project Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">
-                  {currentProject.projectSettings.projectName}
-                </h2>
-                <p className="text-muted-foreground">
-                  {currentProject.projectSettings.projectNumber
-                    ? `Project #${currentProject.projectSettings.projectNumber}`
-                    : "Enter a project number in settings"}
-                </p>
-              </div>
-              <Button onClick={createProject} disabled={isLoading} variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
-            </div>
-
-            {/* Main Content Grid */}
+            {/* Project Header with Logo and Settings */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Forms */}
-              <div className="lg:col-span-2 space-y-6">
-                <CompanySettingsForm />
-                <ProjectSettingsForm />
-                <LineItemsTable />
+              {/* Left - Logo and Project Info */}
+              <div className="lg:col-span-2">
+                <div className="flex items-start gap-6">
+                  {/* Company Logo */}
+                  {currentProject.companySettings.logoUrl && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={currentProject.companySettings.logoUrl}
+                        alt={currentProject.companySettings.companyName}
+                        className="w-32 h-32 object-contain rounded-lg border-2 border-border bg-muted p-2"
+                      />
+                    </div>
+                  )}
+
+                  {/* Project Settings */}
+                  <div className="flex-1">
+                    <ProjectSettingsForm />
+                  </div>
+                </div>
               </div>
 
-              {/* Right Column - Summary */}
+              {/* Right - Summary */}
               <div className="lg:col-span-1">
                 <div className="sticky top-24">
                   <SummaryCard />
                 </div>
               </div>
+            </div>
+
+            {/* Line Items Table - Full Width */}
+            <div>
+              <LineItemsTable />
             </div>
           </div>
         ) : (
