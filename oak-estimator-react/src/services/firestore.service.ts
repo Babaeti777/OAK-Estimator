@@ -17,7 +17,7 @@ import type { Project } from '@/types'
 const PROJECTS_COLLECTION = 'projects'
 
 /**
- * Get all projects for a user
+ * Get all projects for a user (excluding trashed)
  */
 export async function getUserProjects(userId: string): Promise<Project[]> {
   try {
@@ -28,10 +28,13 @@ export async function getUserProjects(userId: string): Promise<Project[]> {
     )
 
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
+    const projects = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     } as Project))
+
+    // Filter out trashed projects
+    return projects.filter(p => !p.trashedAt)
   } catch (error: any) {
     console.error('Error getting user projects:', error)
 
@@ -105,7 +108,64 @@ export async function updateProject(projectId: string, updates: Partial<Project>
 }
 
 /**
- * Delete a project
+ * Move project to trash (soft delete)
+ */
+export async function trashProject(projectId: string): Promise<void> {
+  try {
+    const docRef = doc(db, PROJECTS_COLLECTION, projectId)
+    await updateDoc(docRef, {
+      trashedAt: Date.now(),
+      updatedAt: Date.now(),
+    })
+  } catch (error: any) {
+    console.error('Error trashing project:', error)
+    throw new Error(error.message || 'Failed to move project to trash')
+  }
+}
+
+/**
+ * Restore project from trash
+ */
+export async function restoreProject(projectId: string): Promise<void> {
+  try {
+    const docRef = doc(db, PROJECTS_COLLECTION, projectId)
+    await updateDoc(docRef, {
+      trashedAt: null,
+      updatedAt: Date.now(),
+    })
+  } catch (error: any) {
+    console.error('Error restoring project:', error)
+    throw new Error(error.message || 'Failed to restore project')
+  }
+}
+
+/**
+ * Get trashed projects
+ */
+export async function getTrashedProjects(userId: string): Promise<Project[]> {
+  try {
+    const q = query(
+      collection(db, PROJECTS_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc')
+    )
+
+    const snapshot = await getDocs(q)
+    const projects = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    } as Project))
+
+    // Filter for trashed projects only
+    return projects.filter(p => p.trashedAt)
+  } catch (error: any) {
+    console.error('Error getting trashed projects:', error)
+    throw new Error(error.message || 'Failed to load trashed projects')
+  }
+}
+
+/**
+ * Permanently delete a project
  */
 export async function deleteProject(projectId: string): Promise<void> {
   try {
@@ -146,7 +206,7 @@ export function subscribeToProject(
 }
 
 /**
- * Subscribe to all user projects
+ * Subscribe to all user projects (excluding trashed)
  */
 export function subscribeToUserProjects(
   userId: string,
@@ -165,7 +225,8 @@ export function subscribeToUserProjects(
         id: doc.id,
         ...doc.data(),
       } as Project))
-      callback(projects)
+      // Filter out trashed projects
+      callback(projects.filter(p => !p.trashedAt))
     },
     (error) => {
       console.error('Error in projects subscription:', error)

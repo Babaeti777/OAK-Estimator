@@ -63,6 +63,8 @@ export interface Project {
   createdAt: number
   updatedAt: number
   lastSyncedAt?: number
+  trashedAt?: number  // Timestamp when moved to trash
+  deletedAt?: number  // Timestamp when permanently deleted (30 days after trashedAt)
 }
 
 export interface Summary {
