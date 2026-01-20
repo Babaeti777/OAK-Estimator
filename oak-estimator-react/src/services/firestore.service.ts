@@ -34,6 +34,13 @@ export async function getUserProjects(userId: string): Promise<Project[]> {
     } as Project))
   } catch (error: any) {
     console.error('Error getting user projects:', error)
+
+    // Check for index-related errors
+    if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+      console.error('Firestore index required. Please create the composite index in Firebase Console.')
+      console.error('Required index: Collection: projects, Fields: userId (ASC), updatedAt (DESC)')
+    }
+
     throw new Error(error.message || 'Failed to load projects')
   }
 }
@@ -162,6 +169,13 @@ export function subscribeToUserProjects(
     },
     (error) => {
       console.error('Error in projects subscription:', error)
+
+      // Check for index-related errors
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.error('Firestore index required. Please create the composite index in Firebase Console.')
+        console.error('Required index: Collection: projects, Fields: userId (ASC), updatedAt (DESC)')
+      }
+
       callback([])
     }
   )
