@@ -38,21 +38,13 @@ service cloud.firestore {
      * Validate project object structure
      */
     function isValidProject(project) {
-      return project.keys().hasAll(['id', 'name', 'type', 'updatedAt']) &&
-             project.id is string &&
-             project.name is string &&
-             project.type is string &&
-             project.updatedAt is string &&
-             project.lineItems is list;
-    }
-
-    /**
-     * Validate projects array
-     */
-    function hasValidProjects(data) {
-      return data.keys().hasAll(['projects', 'updatedAt']) &&
-             data.projects is list &&
-             data.updatedAt is string;
+      return project.keys().hasAll(['userId', 'companySettings', 'projectSettings', 'lineItems', 'createdAt', 'updatedAt']) &&
+             project.userId is string &&
+             project.companySettings is map &&
+             project.projectSettings is map &&
+             project.lineItems is list &&
+             project.createdAt is number &&
+             project.updatedAt is number;
     }
 
     /**
