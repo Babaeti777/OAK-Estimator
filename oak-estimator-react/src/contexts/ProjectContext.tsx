@@ -5,6 +5,9 @@ import {
   createProject as createFirestoreProject,
   updateProject as updateFirestoreProject,
   deleteProject as deleteFirestoreProject,
+  trashProject as trashFirestoreProject,
+  restoreProject as restoreFirestoreProject,
+  getTrashedProjects,
   subscribeToProject,
   subscribeToUserProjects,
 } from '@/services/firestore.service'
@@ -14,6 +17,7 @@ import { toast } from '@/hooks/use-toast'
 interface ProjectContextType {
   currentProject: Project | null
   projects: Project[]
+  trashedProjects: Project[]
   summary: Summary
   isLoading: boolean
   createProject: () => Promise<void>
@@ -23,7 +27,10 @@ interface ProjectContextType {
   addLineItem: (item: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => Promise<void>
   updateLineItem: (itemId: string, updates: Partial<LineItem>) => Promise<void>
   deleteLineItem: (itemId: string) => Promise<void>
-  deleteProject: (projectId: string) => Promise<void>
+  trashProject: (projectId: string) => Promise<void>
+  restoreProject: (projectId: string) => Promise<void>
+  deleteProjectPermanently: (projectId: string) => Promise<void>
+  loadTrashedProjects: () => Promise<void>
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
@@ -32,6 +39,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
+  const [trashedProjects, setTrashedProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   // Calculate summary from line items
@@ -309,7 +317,52 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentProject])
 
-  const deleteProject = useCallback(async (projectId: string) => {
+  const trashProject = useCallback(async (projectId: string) => {
+    try {
+      await trashFirestoreProject(projectId)
+
+      if (currentProject?.id === projectId) {
+        setCurrentProject(null)
+      }
+
+      toast({
+        title: "Project moved to trash",
+        description: "Project will be permanently deleted in 30 days",
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to trash project",
+        description: error.message,
+      })
+      throw error
+    }
+  }, [currentProject])
+
+  const restoreProject = useCallback(async (projectId: string) => {
+    if (!user) return
+
+    try {
+      await restoreFirestoreProject(projectId)
+
+      toast({
+        title: "Project restored",
+        description: "Project has been restored successfully",
+      })
+
+      // Reload trashed projects
+      await loadTrashedProjects()
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to restore project",
+        description: error.message,
+      })
+      throw error
+    }
+  }, [user])
+
+  const deleteProjectPermanently = useCallback(async (projectId: string) => {
     try {
       await deleteFirestoreProject(projectId)
 
@@ -318,9 +371,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
 
       toast({
-        title: "Project deleted",
-        description: "The project has been deleted successfully",
+        title: "Project permanently deleted",
+        description: "The project has been permanently deleted",
       })
+
+      // Reload trashed projects
+      if (user) {
+        await loadTrashedProjects()
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -329,13 +387,32 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })
       throw error
     }
-  }, [currentProject])
+  }, [currentProject, user])
+
+  const loadTrashedProjects = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const trashed = await getTrashedProjects(user.uid)
+      setTrashedProjects(trashed)
+    } catch (error: any) {
+      console.error('Failed to load trashed projects:', error)
+    }
+  }, [user])
+
+  // Load trashed projects when user changes
+  useEffect(() => {
+    if (user) {
+      loadTrashedProjects()
+    }
+  }, [user, loadTrashedProjects])
 
   return (
     <ProjectContext.Provider
       value={{
         currentProject,
         projects,
+        trashedProjects,
         summary,
         isLoading,
         createProject,
@@ -345,7 +422,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         addLineItem,
         updateLineItem,
         deleteLineItem,
-        deleteProject,
+        trashProject,
+        restoreProject,
+        deleteProjectPermanently,
+        loadTrashedProjects,
       }}
     >
       {children}
