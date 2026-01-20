@@ -7,7 +7,7 @@
     --color-foreground: 222.2 84% 4.9%;
     --color-card: 0 0% 100%;
     --color-card-foreground: 222.2 84% 4.9%;
-    --color-popover: 0 0% 98%;
+    --color-popover: 0 0% 100%;
     --color-popover-foreground: 222.2 84% 4.9%;
     --color-primary: 29 100% 53%;
     --color-primary-foreground: 0 0% 100%;
@@ -15,7 +15,7 @@
     --color-secondary-foreground: 222.2 47.4% 11.2%;
     --color-muted: 210 40% 96.1%;
     --color-muted-foreground: 215.4 16.3% 46.9%;
-    --color-accent: 210 40% 94%;
+    --color-accent: 210 40% 96%;
     --color-accent-foreground: 222.2 47.4% 11.2%;
     --color-destructive: 0 84.2% 60.2%;
     --color-destructive-foreground: 0 0% 100%;
@@ -29,9 +29,9 @@
   :root.dark {
     --color-background: 222.2 84% 4.9%;
     --color-foreground: 210 40% 98%;
-    --color-card: 222.2 84% 6%;
+    --color-card: 222.2 84% 7%;
     --color-card-foreground: 210 40% 98%;
-    --color-popover: 222.2 84% 8%;
+    --color-popover: 222.2 84% 7%;
     --color-popover-foreground: 210 40% 98%;
     --color-primary: 29 100% 58%;
     --color-primary-foreground: 222.2 47.4% 11.2%;
@@ -39,11 +39,11 @@
     --color-secondary-foreground: 210 40% 98%;
     --color-muted: 217.2 32.6% 17.5%;
     --color-muted-foreground: 215 20.2% 70%;
-    --color-accent: 217.2 32.6% 20%;
+    --color-accent: 217.2 32.6% 22%;
     --color-accent-foreground: 210 40% 98%;
-    --color-destructive: 0 72% 50%;
+    --color-destructive: 0 72% 55%;
     --color-destructive-foreground: 210 40% 98%;
-    --color-border: 217.2 32.6% 17.5%;
+    --color-border: 217.2 32.6% 20%;
     --color-input: 217.2 32.6% 17.5%;
     --color-ring: 29 100% 58%;
     --radius: 0.5rem;
@@ -53,21 +53,21 @@
   :root {
     --color-background: 222.2 84% 4.9%;
     --color-foreground: 210 40% 98%;
-    --color-card: 222.2 84% 4.9%;
+    --color-card: 222.2 84% 7%;
     --color-card-foreground: 210 40% 98%;
-    --color-popover: 222.2 84% 4.9%;
+    --color-popover: 222.2 84% 7%;
     --color-popover-foreground: 210 40% 98%;
     --color-primary: 29 100% 58%;
     --color-primary-foreground: 222.2 47.4% 11.2%;
     --color-secondary: 217.2 32.6% 17.5%;
     --color-secondary-foreground: 210 40% 98%;
     --color-muted: 217.2 32.6% 17.5%;
-    --color-muted-foreground: 215 20.2% 65.1%;
-    --color-accent: 217.2 32.6% 17.5%;
+    --color-muted-foreground: 215 20.2% 70%;
+    --color-accent: 217.2 32.6% 22%;
     --color-accent-foreground: 210 40% 98%;
-    --color-destructive: 0 62.8% 30.6%;
+    --color-destructive: 0 72% 55%;
     --color-destructive-foreground: 210 40% 98%;
-    --color-border: 217.2 32.6% 17.5%;
+    --color-border: 217.2 32.6% 20%;
     --color-input: 217.2 32.6% 17.5%;
     --color-ring: 29 100% 58%;
     --radius: 0.5rem;

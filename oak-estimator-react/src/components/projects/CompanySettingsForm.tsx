@@ -1,22 +1,18 @@
 import { useState, useRef } from "react"
 import { useForm } from "react-hook-form"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useProject } from "@/contexts/ProjectContext"
 import { useAuth } from "@/contexts/AuthContext"
 import type { CompanySettings } from "@/types"
-import { Building2, Save, ChevronDown, ChevronUp, Upload, X, Image } from "lucide-react"
+import { Save, Upload, X, Image } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { motion } from "framer-motion"
 import { uploadCompanyLogo, deleteCompanyLogo } from "@/services/storage.service"
 
 export function CompanySettingsForm() {
   const { user } = useAuth()
   const { currentProject, updateCompanySettings } = useProject()
-  const [isOpen, setIsOpen] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -123,44 +119,8 @@ export function CompanySettingsForm() {
     return null
   }
 
-  const hasData = currentProject.companySettings.companyName ||
-                  currentProject.companySettings.email ||
-                  currentProject.companySettings.phone ||
-                  currentProject.companySettings.address
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <Card>
-          <CardHeader className="pb-3">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
-                <div className="flex items-center gap-2 text-left">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  <div>
-                    <CardTitle className="text-base">Company Information</CardTitle>
-                    {hasData && !isOpen && (
-                      <CardDescription className="text-xs mt-1">
-                        {currentProject.companySettings.companyName || "Not set"}
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
-                {isOpen ? (
-                  <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent className="pt-0">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 {/* Logo Upload Section */}
                 <div className="space-y-2">
                   <Label htmlFor="logo">Company Logo</Label>
@@ -262,11 +222,6 @@ export function CompanySettingsForm() {
                     {isUploading ? "Uploading..." : isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
-              </form>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-    </motion.div>
+    </form>
   )
 }

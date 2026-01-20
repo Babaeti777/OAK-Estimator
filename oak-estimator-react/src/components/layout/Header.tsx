@@ -10,15 +10,18 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { useProject } from "@/contexts/ProjectContext"
 import { useTheme } from "@/contexts/ThemeContext"
-import { Building2, LogOut, User, FolderOpen, Plus, Moon, Sun, Check, Trash2, RotateCcw } from "lucide-react"
+import { Building2, LogOut, FolderOpen, Plus, Moon, Sun, Check, Trash2, RotateCcw } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { CompanySettingsForm } from "@/components/projects/CompanySettingsForm"
 
 export function Header() {
   const { user, signOut } = useAuth()
   const { currentProject, projects, trashedProjects, loadProject, createProject, trashProject, restoreProject, deleteProjectPermanently } = useProject()
   const { theme, toggleTheme } = useTheme()
   const [showTrash, setShowTrash] = useState(false)
+  const [companySettingsOpen, setCompanySettingsOpen] = useState(false)
 
   const defaultAvatar = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23667eea"/></svg>'
 
@@ -215,11 +218,15 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {currentProject && (
+                  <>
+                    <DropdownMenuItem onClick={() => setCompanySettingsOpen(true)}>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      <span>Company Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
@@ -229,6 +236,22 @@ export function Header() {
           )}
         </div>
       </div>
+
+      {/* Company Settings Dialog */}
+      <Dialog open={companySettingsOpen} onOpenChange={setCompanySettingsOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Company Settings
+            </DialogTitle>
+            <DialogDescription>
+              Manage your company information and logo
+            </DialogDescription>
+          </DialogHeader>
+          {currentProject && <CompanySettingsForm />}
+        </DialogContent>
+      </Dialog>
     </header>
   )
 }
