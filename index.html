@@ -5041,6 +5041,8 @@
         let materialsDatabase = null;
         let filteredMaterials = [];
         let currentMaterialDivision = 'all';
+        let materialsDisplayCount = 50; // Start with 50 items
+        const MATERIALS_PAGE_SIZE = 50; // Load 50 more at a time
 
         // Load materials database
         function loadMaterialsDatabase() {
@@ -5658,32 +5660,40 @@
             }
         }
 
-        function displayMaterials() {
+        function displayMaterials(resetCount = true) {
             const container = document.getElementById('materialsList');
             if (!container) return;
+
+            if (resetCount) {
+                materialsDisplayCount = MATERIALS_PAGE_SIZE; // Reset to initial page size
+            }
 
             if (filteredMaterials.length === 0) {
                 container.innerHTML = '<p style="text-align: center; padding: 20px; color: #94a3b8;">📭 No materials found matching your criteria. Try adjusting your filters.</p>';
                 return;
             }
 
-            // Limit displayed results for performance (show first 100)
-            const displayLimit = 100;
-            const itemsToDisplay = filteredMaterials.slice(0, displayLimit);
-            const hasMore = filteredMaterials.length > displayLimit;
+            const itemsToDisplay = filteredMaterials.slice(0, materialsDisplayCount);
+            const hasMore = filteredMaterials.length > materialsDisplayCount;
+            const showing = itemsToDisplay.length;
+            const total = filteredMaterials.length;
 
             let html = '';
 
-            // Show result count and warning if limited
-            if (hasMore) {
-                html += `<div style="background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 6px; padding: 12px; margin-bottom: 15px; color: #fbbf24; font-size: 0.9em;">
-                    ⚡ Showing first ${displayLimit} of ${filteredMaterials.length} results. Use filters to narrow down your search.
-                </div>`;
-            } else {
-                html += `<div style="margin-bottom: 10px; color: #94a3b8; font-size: 0.9em;">
-                    Found ${filteredMaterials.length} material${filteredMaterials.length !== 1 ? 's' : ''}
-                </div>`;
-            }
+            // Show result count and progress
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 12px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    <div style="color: #e0e7ff; font-size: 0.95em;">
+                        <strong>📊 Showing ${showing} of ${total} materials</strong>
+                        ${hasMore ? ` <span style="color: #a5b4fc;">(${total - showing} more available)</span>` : ''}
+                    </div>
+                    ${hasMore ? `
+                        <button onclick="loadMoreMaterials()" class="btn btn-sm" style="background: #6366f1; color: white; padding: 6px 16px;">
+                            ⬇️ Load ${Math.min(MATERIALS_PAGE_SIZE, total - showing)} More
+                        </button>
+                    ` : ''}
+                </div>
+            `;
 
             html += `
                 <table class="materials-table">
@@ -5734,7 +5744,33 @@
             });
 
             html += '</tbody></table>';
+
+            // Add load more button at bottom if needed
+            if (hasMore) {
+                html += `
+                    <div style="text-align: center; padding: 20px;">
+                        <button onclick="loadMoreMaterials()" class="btn" style="background: #6366f1; color: white; padding: 12px 24px; font-size: 1em;">
+                            ⬇️ Load ${Math.min(MATERIALS_PAGE_SIZE, total - showing)} More Materials
+                        </button>
+                        <p style="color: #94a3b8; font-size: 0.85em; margin-top: 10px;">
+                            Showing ${showing} of ${total} • ${total - showing} remaining
+                        </p>
+                    </div>
+                `;
+            } else if (total > MATERIALS_PAGE_SIZE) {
+                html += `
+                    <div style="text-align: center; padding: 20px; color: #10b981; font-weight: 600;">
+                        ✅ All ${total} materials loaded
+                    </div>
+                `;
+            }
+
             container.innerHTML = html;
+        }
+
+        function loadMoreMaterials() {
+            materialsDisplayCount += MATERIALS_PAGE_SIZE;
+            displayMaterials(false); // Don't reset count
         }
 
         function addMaterialToLineItems(materialIndex) {
@@ -6259,6 +6295,115 @@
             location.reload(true);
         }
 
+        // Database Version Checking
+        const EXPECTED_DB_VERSION = '3.0.0';
+        const DB_VERSION_KEY = 'materialsDbVersion';
+        const DB_LAST_CHECKED = 'materialsDbLastChecked';
+
+        function checkDatabaseVersion() {
+            if (typeof MaterialsDatabase === 'undefined') return;
+
+            const dbVersion = MaterialsDatabase.version || 'unknown';
+            const dbLastUpdated = MaterialsDatabase.lastUpdated || 'unknown';
+            const dbTotalItems = MaterialsDatabase.totalItems || 0;
+
+            console.log(`📚 Materials Database v${dbVersion} (${dbLastUpdated}) - ${dbTotalItems} items`);
+
+            // Check if version has changed
+            const storedVersion = localStorage.getItem(DB_VERSION_KEY);
+            if (storedVersion && storedVersion !== dbVersion) {
+                showDatabaseUpdateNotification(storedVersion, dbVersion, dbLastUpdated, dbTotalItems);
+            }
+
+            // Store current version
+            localStorage.setItem(DB_VERSION_KEY, dbVersion);
+            localStorage.setItem(DB_LAST_CHECKED, new Date().toISOString());
+        }
+
+        function showDatabaseUpdateNotification(oldVersion, newVersion, lastUpdated, totalItems) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                padding: 20px 24px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                z-index: 9999;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease-out;
+                border: 2px solid rgba(255,255,255,0.3);
+            `;
+
+            notification.innerHTML = `
+                <div style="display: flex; align-items: start; gap: 12px;">
+                    <div style="font-size: 32px;">🎉</div>
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700;">
+                            Database Updated!
+                        </h3>
+                        <p style="margin: 0 0 4px 0; font-size: 13px; opacity: 0.95; line-height: 1.4;">
+                            Materials database updated from v${oldVersion} to v${newVersion}
+                        </p>
+                        <p style="margin: 0 0 8px 0; font-size: 13px; opacity: 0.95; line-height: 1.4;">
+                            📅 ${lastUpdated} • ${totalItems.toLocaleString()} items
+                        </p>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                            background: rgba(255,255,255,0.2);
+                            border: 1px solid rgba(255,255,255,0.4);
+                            color: white;
+                            padding: 6px 12px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            font-weight: 600;
+                        ">
+                            Got it!
+                        </button>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        background: none;
+                        border: none;
+                        color: white;
+                        font-size: 20px;
+                        cursor: pointer;
+                        padding: 0;
+                        width: 24px;
+                        height: 24px;
+                        opacity: 0.7;
+                    ">×</button>
+                </div>
+            `;
+
+            // Add animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+
+            document.body.appendChild(notification);
+
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => {
+                notification.style.transition = 'opacity 0.5s, transform 0.5s';
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => notification.remove(), 500);
+            }, 10000);
+        }
+
         // Check for database load on page load
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -6268,8 +6413,12 @@
                     setTimeout(() => {
                         if (typeof MaterialsDatabase === 'undefined') {
                             handleDatabaseLoadError(new Error('Database timeout'));
+                        } else {
+                            checkDatabaseVersion(); // Check version if loaded late
                         }
                     }, 5000); // Wait 5 more seconds
+                } else {
+                    checkDatabaseVersion(); // Check version immediately
                 }
             }, 1000);
         });
