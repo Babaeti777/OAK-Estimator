@@ -114,7 +114,8 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
 
   const handleAddToProject = async (material: MaterialItem) => {
     try {
-      await addLineItem({
+      // Build line item data, excluding undefined values (Firestore doesn't accept undefined)
+      const lineItemData: Parameters<typeof addLineItem>[0] = {
         division: material.division,
         description: material.description,
         type: 'material',
@@ -122,9 +123,13 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
         unit: material.unit,
         unitCost: material.unitCost,
         totalCost: material.unitCost,
-        materialId: material.id,
-        notes: material.notes,
-      })
+      }
+
+      // Only add optional fields if they have values
+      if (material.id) lineItemData.materialId = material.id
+      if (material.notes) lineItemData.notes = material.notes
+
+      await addLineItem(lineItemData)
 
       toast({
         title: "Material added",

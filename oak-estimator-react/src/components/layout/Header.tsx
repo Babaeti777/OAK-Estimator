@@ -39,8 +39,8 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Projects Dropdown */}
-          {projects.length > 0 && (
+          {/* Projects Dropdown - show if there are any projects OR any trashed projects */}
+          {(projects.length > 0 || trashedProjects.length > 0) && (
             <DropdownMenu onOpenChange={(open) => { if (!open) setShowTrash(false) }}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
@@ -115,7 +115,7 @@ export function Header() {
                         No projects in trash
                       </div>
                     )
-                  ) : (
+                  ) : projects.length > 0 ? (
                     projects.map((project) => (
                       <DropdownMenuItem
                         key={project.id}
@@ -159,6 +159,10 @@ export function Header() {
                         </Button>
                       </DropdownMenuItem>
                     ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No active projects. Check trash or create a new one.
+                    </div>
                   )}
                 </div>
                 <DropdownMenuSeparator />
