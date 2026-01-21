@@ -173,7 +173,7 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+  }, []) // Empty dependency array - subscribe once on mount, cleanup on unmount
 
   return {
     ...state,

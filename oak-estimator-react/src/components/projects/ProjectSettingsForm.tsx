@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,7 +15,7 @@ export function ProjectSettingsForm() {
   const { currentProject, updateProjectSettings } = useProject()
   const [isOpen, setIsOpen] = useState(false)
 
-  const { register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm<ProjectSettings>({
+  const { register, handleSubmit, reset, formState: { isDirty, isSubmitting } } = useForm<ProjectSettings>({
     defaultValues: currentProject?.projectSettings || {
       projectName: '',
       projectNumber: '',
@@ -25,6 +25,13 @@ export function ProjectSettingsForm() {
       date: new Date().toISOString().split('T')[0],
     },
   })
+
+  // Reset form when project changes
+  useEffect(() => {
+    if (currentProject?.projectSettings) {
+      reset(currentProject.projectSettings)
+    }
+  }, [currentProject?.id, currentProject?.projectSettings, reset])
 
   const onSubmit = async (data: ProjectSettings) => {
     try {

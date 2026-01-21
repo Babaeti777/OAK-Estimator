@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import type { LineItem } from "@/types"
 import { Trash2, Table, Search } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "@/hooks/use-toast"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -36,6 +37,48 @@ export function LineItemsTable() {
   const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
 
+  // Debounce timers for each item's fields
+  const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Debounced update function to prevent excessive Firestore writes
+  const debouncedUpdate = useCallback((itemId: string, updates: Partial<LineItem>) => {
+    const key = `${itemId}-${Object.keys(updates).join('-')}`
+
+    // Clear existing timer for this item/field combination
+    const existingTimer = debounceTimers.current.get(key)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+    }
+
+    // Set new timer
+    const timer = setTimeout(async () => {
+      debounceTimers.current.delete(key)
+
+      if (!currentProject) return
+
+      try {
+        // Recalculate total if quantity or unit cost changed
+        const item = currentProject.lineItems.find(i => i.id === itemId)
+        if (item) {
+          const quantity = updates.quantity ?? item.quantity
+          const unitCost = updates.unitCost ?? item.unitCost
+          const totalCost = quantity * unitCost
+
+          await updateLineItem(itemId, { ...updates, totalCost })
+        }
+      } catch (error: any) {
+        console.error('Failed to update line item:', error)
+        toast({
+          variant: "destructive",
+          title: "Failed to update line item",
+          description: error.message || "An error occurred while saving changes",
+        })
+      }
+    }, 500) // 500ms debounce delay
+
+    debounceTimers.current.set(key, timer)
+  }, [currentProject, updateLineItem])
+
   if (!currentProject) {
     return null
   }
@@ -45,20 +88,8 @@ export function LineItemsTable() {
     item.division.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleUpdateItem = async (itemId: string, updates: Partial<LineItem>) => {
-    try {
-      // Recalculate total if quantity or unit cost changed
-      const item = currentProject.lineItems.find(i => i.id === itemId)
-      if (item) {
-        const quantity = updates.quantity ?? item.quantity
-        const unitCost = updates.unitCost ?? item.unitCost
-        const totalCost = quantity * unitCost
-
-        await updateLineItem(itemId, { ...updates, totalCost })
-      }
-    } catch (error: any) {
-      console.error('Failed to update line item:', error)
-    }
+  const handleUpdateItem = (itemId: string, updates: Partial<LineItem>) => {
+    debouncedUpdate(itemId, updates)
   }
 
   const handleDeleteItem = async (itemId: string) => {
@@ -66,6 +97,11 @@ export function LineItemsTable() {
       await deleteLineItem(itemId)
     } catch (error: any) {
       console.error('Failed to delete line item:', error)
+      toast({
+        variant: "destructive",
+        title: "Failed to delete line item",
+        description: error.message || "An error occurred while deleting the item",
+      })
     }
   }
 

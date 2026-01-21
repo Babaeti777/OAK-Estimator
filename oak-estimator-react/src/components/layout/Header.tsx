@@ -41,7 +41,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           {/* Projects Dropdown */}
           {projects.length > 0 && (
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={(open) => { if (!open) setShowTrash(false) }}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
                   <FolderOpen className="w-4 h-4" />

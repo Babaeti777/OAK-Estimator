@@ -58,7 +58,7 @@ export function EstimatorApp() {
                     <div className="flex-shrink-0">
                       <img
                         src={currentProject.companySettings.logoUrl}
-                        alt={currentProject.companySettings.companyName}
+                        alt={currentProject.companySettings.companyName || "Company logo"}
                         className="w-32 h-32 object-contain rounded-lg border-2 border-border bg-muted p-2"
                       />
                     </div>

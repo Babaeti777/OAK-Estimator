@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,7 +18,7 @@ export function CompanySettingsForm() {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { register, handleSubmit, formState: { isDirty, isSubmitting } } = useForm<CompanySettings>({
+  const { register, handleSubmit, reset, formState: { isDirty, isSubmitting } } = useForm<CompanySettings>({
     defaultValues: currentProject?.companySettings || {
       companyName: '',
       address: '',
@@ -27,6 +27,19 @@ export function CompanySettingsForm() {
       logoUrl: '',
     },
   })
+
+  // Reset form when project changes
+  useEffect(() => {
+    if (currentProject?.companySettings) {
+      reset(currentProject.companySettings)
+      // Also reset logo preview when project changes
+      setLogoFile(null)
+      setLogoPreview(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }, [currentProject?.id, currentProject?.companySettings, reset])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
