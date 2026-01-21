@@ -8,54 +8,30 @@ rules_version = '2';
  * 2. Copy and paste these rules
  * 3. Click "Publish"
  *
- * These rules ensure:
- * - Users can only access their own data
- * - All operations require authentication
- * - Data validation for writes
- * - Rate limiting considerations
+ * ALSO REQUIRED - Create Composite Index:
+ * 1. Go to Firebase Console > Firestore Database > Indexes
+ * 2. Click "Add Index"
+ * 3. Collection ID: projects
+ * 4. Field 1: userId (Ascending)
+ * 5. Field 2: updatedAt (Descending)
+ * 6. Query scope: Collection
+ * 7. Click "Create"
  */
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-
-    /**
-     * Check if user is authenticated
-     */
+    // Helper: Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    /**
-     * Check if user owns the document
-     */
+    // Helper: Check if user owns this document
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    /**
-     * Validate project object structure
-     */
-    function isValidProject(project) {
-      return project.keys().hasAll(['userId', 'companySettings', 'projectSettings', 'lineItems', 'createdAt', 'updatedAt']) &&
-             project.userId is string &&
-             project.companySettings is map &&
-             project.projectSettings is map &&
-             project.lineItems is list &&
-             project.createdAt is number &&
-             project.updatedAt is number;
-    }
-
-    /**
-     * Check if write is not too large (prevent abuse)
-     */
-    function isReasonableSize() {
-      return request.resource.size() < 1000000; // 1MB limit
-    }
-
     // Projects Collection
-    // Each project is a separate document with a userId field
     match /projects/{projectId} {
       // Read: User can only read their own projects
       allow read: if isAuthenticated() &&
@@ -63,39 +39,26 @@ service cloud.firestore {
 
       // Create: User can create projects with their own userId
       allow create: if isAuthenticated() &&
-                       request.resource.data.userId == request.auth.uid &&
-                       isValidProject(request.resource.data) &&
-                       isReasonableSize();
+                       request.resource.data.userId == request.auth.uid;
 
       // Update: User can update their own projects
       allow update: if isAuthenticated() &&
                        resource.data.userId == request.auth.uid &&
-                       request.resource.data.userId == request.auth.uid &&
-                       isReasonableSize();
+                       request.resource.data.userId == request.auth.uid;
 
       // Delete: User can delete their own projects
       allow delete: if isAuthenticated() &&
                        resource.data.userId == request.auth.uid;
     }
 
-    // User Settings Collection (optional - for future use)
-    // Store user preferences, app settings, etc.
+    // User Settings Collection (for future use)
     match /userSettings/{userId} {
-      // Read: User can only read their own settings
-      allow read: if isOwner(userId);
-
-      // Write: User can write their own settings
-      allow write: if isOwner(userId) && isReasonableSize();
+      allow read, write: if isOwner(userId);
     }
 
-    // Sync Metadata Collection (optional - for future use)
-    // Store sync timestamps, device info, etc.
+    // Sync Metadata Collection (for future use)
     match /syncMetadata/{userId} {
-      // Read: User can only read their own metadata
-      allow read: if isOwner(userId);
-
-      // Write: User can write their own metadata
-      allow write: if isOwner(userId) && isReasonableSize();
+      allow read, write: if isOwner(userId);
     }
 
     // Deny all other collections by default
