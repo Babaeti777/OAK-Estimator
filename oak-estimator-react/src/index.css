@@ -1,108 +1,85 @@
 @import "tailwindcss";
 
-@layer theme {
+@layer base {
   /* Light Theme */
   :root.light {
-    --color-background: 0 0% 100%;
-    --color-foreground: 222.2 84% 4.9%;
-    --color-card: 0 0% 100%;
-    --color-card-foreground: 222.2 84% 4.9%;
-    --color-popover: 0 0% 100%;
-    --color-popover-foreground: 222.2 84% 4.9%;
-    --color-primary: 29 100% 53%;
-    --color-primary-foreground: 0 0% 100%;
-    --color-secondary: 210 40% 96.1%;
-    --color-secondary-foreground: 222.2 47.4% 11.2%;
-    --color-muted: 210 40% 96.1%;
-    --color-muted-foreground: 215.4 16.3% 46.9%;
-    --color-accent: 210 40% 96%;
-    --color-accent-foreground: 222.2 47.4% 11.2%;
-    --color-destructive: 0 84.2% 60.2%;
-    --color-destructive-foreground: 0 0% 100%;
-    --color-border: 214.3 31.8% 91.4%;
-    --color-input: 214.3 31.8% 91.4%;
-    --color-ring: 29 100% 53%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 29 100% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 29 100% 53%;
     --radius: 0.5rem;
   }
 
   /* Dark Theme */
   :root.dark {
-    --color-background: 222.2 84% 4.9%;
-    --color-foreground: 210 40% 98%;
-    --color-card: 222.2 84% 7%;
-    --color-card-foreground: 210 40% 98%;
-    --color-popover: 222.2 84% 7%;
-    --color-popover-foreground: 210 40% 98%;
-    --color-primary: 29 100% 58%;
-    --color-primary-foreground: 222.2 47.4% 11.2%;
-    --color-secondary: 217.2 32.6% 17.5%;
-    --color-secondary-foreground: 210 40% 98%;
-    --color-muted: 217.2 32.6% 17.5%;
-    --color-muted-foreground: 215 20.2% 70%;
-    --color-accent: 217.2 32.6% 22%;
-    --color-accent-foreground: 210 40% 98%;
-    --color-destructive: 0 72% 55%;
-    --color-destructive-foreground: 210 40% 98%;
-    --color-border: 217.2 32.6% 20%;
-    --color-input: 217.2 32.6% 17.5%;
-    --color-ring: 29 100% 58%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 29 100% 58%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 70%;
+    --accent: 217.2 32.6% 22%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 20%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 29 100% 58%;
     --radius: 0.5rem;
   }
 
   /* Default to dark if no class */
   :root {
-    --color-background: 222.2 84% 4.9%;
-    --color-foreground: 210 40% 98%;
-    --color-card: 222.2 84% 7%;
-    --color-card-foreground: 210 40% 98%;
-    --color-popover: 222.2 84% 7%;
-    --color-popover-foreground: 210 40% 98%;
-    --color-primary: 29 100% 58%;
-    --color-primary-foreground: 222.2 47.4% 11.2%;
-    --color-secondary: 217.2 32.6% 17.5%;
-    --color-secondary-foreground: 210 40% 98%;
-    --color-muted: 217.2 32.6% 17.5%;
-    --color-muted-foreground: 215 20.2% 70%;
-    --color-accent: 217.2 32.6% 22%;
-    --color-accent-foreground: 210 40% 98%;
-    --color-destructive: 0 72% 55%;
-    --color-destructive-foreground: 210 40% 98%;
-    --color-border: 217.2 32.6% 20%;
-    --color-input: 217.2 32.6% 17.5%;
-    --color-ring: 29 100% 58%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 29 100% 58%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 70%;
+    --accent: 217.2 32.6% 22%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 20%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 29 100% 58%;
     --radius: 0.5rem;
   }
-}
 
-@layer utilities {
-  .transition-smooth {
-    transition: all 0.2s ease-in-out;
-  }
-
-  .glass {
-    background-color: hsl(var(--color-background) / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--color-border) / 0.5);
-  }
-
-  .card-hover {
-    transition: all 0.2s ease-in-out;
-  }
-
-  .card-hover:hover {
-    box-shadow: 0 10px 15px -3px hsl(var(--color-primary) / 0.05);
-    transform: translateY(-2px);
-  }
-}
-
-@layer base {
   * {
-    border-color: hsl(var(--color-border));
+    border-color: hsl(var(--border));
   }
 
   body {
-    background-color: hsl(var(--color-background));
-    color: hsl(var(--color-foreground));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -116,15 +93,36 @@
   }
 
   ::-webkit-scrollbar-track {
-    background-color: hsl(var(--color-muted) / 0.2);
+    background-color: hsl(var(--muted) / 0.2);
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--color-muted));
+    background-color: hsl(var(--muted));
     border-radius: 6px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--color-muted-foreground) / 0.5);
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .glass {
+    background-color: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .card-hover {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 10px 15px -3px hsl(var(--primary) / 0.05);
+    transform: translateY(-2px);
   }
 }
