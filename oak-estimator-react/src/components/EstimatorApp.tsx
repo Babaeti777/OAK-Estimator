@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Header } from "./layout/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
@@ -5,10 +6,11 @@ import { useProject } from "@/contexts/ProjectContext"
 import { ProjectSettingsForm } from "./projects/ProjectSettingsForm"
 import { SummaryCard } from "./projects/SummaryCard"
 import { LineItemsTable } from "./line-items/LineItemsTable"
-import { Plus, FolderOpen } from "lucide-react"
+import { Plus, FolderOpen, PanelRightClose, Calculator } from "lucide-react"
 
 export function EstimatorApp() {
   const { currentProject, projects, createProject, isLoading } = useProject()
+  const [showSummary, setShowSummary] = useState(true)
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,41 +49,56 @@ export function EstimatorApp() {
             </Card>
           </div>
         ) : currentProject ? (
-          <div className="space-y-6">
-            {/* Project Header with Logo and Settings */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left - Logo and Project Info */}
-              <div className="lg:col-span-2">
-                <div className="flex items-start gap-6">
-                  {/* Company Logo */}
-                  {currentProject.companySettings.logoUrl && (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={currentProject.companySettings.logoUrl}
-                        alt={currentProject.companySettings.companyName || "Company logo"}
-                        className="w-32 h-32 object-contain rounded-lg border-2 border-border bg-muted p-2"
-                      />
-                    </div>
-                  )}
-
-                  {/* Project Settings */}
-                  <div className="flex-1">
-                    <ProjectSettingsForm />
+          <div className="flex gap-6">
+            {/* Main Content Area */}
+            <div className={`flex-1 space-y-6 transition-all duration-300 ${showSummary ? 'lg:pr-0' : ''}`}>
+              {/* Project Header with Logo and Settings */}
+              <div className="flex items-start gap-6">
+                {/* Company Logo */}
+                {currentProject.companySettings.logoUrl && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={currentProject.companySettings.logoUrl}
+                      alt={currentProject.companySettings.companyName || "Company logo"}
+                      className="w-24 h-24 object-contain rounded-lg border-2 border-border bg-muted p-2"
+                    />
                   </div>
+                )}
+
+                {/* Project Settings */}
+                <div className="flex-1">
+                  <ProjectSettingsForm />
                 </div>
+
+                {/* Summary Toggle Button */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowSummary(!showSummary)}
+                  className="flex-shrink-0"
+                  title={showSummary ? "Hide Summary" : "Show Summary"}
+                >
+                  {showSummary ? (
+                    <PanelRightClose className="h-4 w-4" />
+                  ) : (
+                    <Calculator className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
 
-              {/* Right - Summary */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-24">
-                  <SummaryCard />
-                </div>
-              </div>
+              {/* Line Items Table */}
+              <LineItemsTable />
             </div>
 
-            {/* Line Items Table - Full Width */}
-            <div>
-              <LineItemsTable />
+            {/* Collapsible Summary Panel */}
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
+              }`}
+            >
+              <div className="w-80 sticky top-24">
+                <SummaryCard />
+              </div>
             </div>
           </div>
         ) : (
