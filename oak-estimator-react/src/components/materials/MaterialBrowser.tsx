@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,50 +7,52 @@ import { useProject } from "@/contexts/ProjectContext"
 import { Package, Search, Plus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
+import { MaterialsDatabase } from "@/data/materials-database"
 
-// Mock materials data - In production, this would come from the materials database
-const MOCK_MATERIALS = [
-  {
-    id: "01-001",
-    division: "01",
-    divisionName: "General Requirements",
-    category: "Project Staff",
-    description: "Project Manager - Senior",
-    unit: "hr",
-    unitCost: 125.00,
-    notes: "Experienced PM with 10+ years"
-  },
-  {
-    id: "03-001",
-    division: "03",
-    divisionName: "Concrete",
-    category: "Concrete Materials",
-    description: "Concrete, 3000 PSI",
-    unit: "CY",
-    unitCost: 165.00,
-    notes: "Ready-mix concrete"
-  },
-  {
-    id: "03-002",
-    division: "03",
-    divisionName: "Concrete",
-    category: "Concrete Accessories",
-    description: "Rebar, #4 Grade 60",
-    unit: "Ton",
-    unitCost: 850.00,
-    notes: "Deformed steel rebar"
-  },
-  {
-    id: "09-001",
-    division: "09",
-    divisionName: "Finishes",
-    category: "Painting",
-    description: "Interior Paint, Premium",
-    unit: "GAL",
-    unitCost: 45.00,
-    notes: "Low-VOC latex paint"
-  },
-]
+// Transform the database into a flat array for searching
+interface MaterialItem {
+  id: string
+  division: string
+  divisionName: string
+  category: string
+  description: string
+  unit: string
+  unitCost: number
+  notes?: string
+}
+
+function getFlatMaterialsList(): MaterialItem[] {
+  const materials: MaterialItem[] = []
+
+  // Iterate through all divisions in the database
+  Object.entries(MaterialsDatabase).forEach(([key, value]) => {
+    // Skip metadata fields
+    if (key === 'version' || key === 'lastUpdated' || key === 'currency' || key === 'totalItems' || key === 'buildDate') {
+      return
+    }
+
+    const division = value as { name: string; items: any[] }
+    if (division.items && Array.isArray(division.items)) {
+      division.items.forEach((item: any) => {
+        // Calculate total unit cost from material + labor + equipment
+        const unitCost = (item.material || 0) + (item.labor || 0) + (item.equipment || 0)
+
+        materials.push({
+          id: item.id,
+          division: key,
+          divisionName: division.name,
+          category: item.category || 'General',
+          description: item.description,
+          unit: item.unit,
+          unitCost: unitCost,
+          notes: item.notes,
+        })
+      })
+    }
+  })
+
+  return materials
+}
 
 const DIVISIONS = [
   { code: '', name: 'All Divisions' },
@@ -79,6 +81,9 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDivision, setSelectedDivision] = useState(initialDivision || "")
 
+  // Load the full materials database (memoized to prevent recalculation)
+  const allMaterials = useMemo(() => getFlatMaterialsList(), [])
+
   // Sync internal state with external control
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const handleOpenChange = (newOpen: boolean) => {
@@ -96,14 +101,18 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
     }
   }, [initialDivision])
 
-  const filteredMaterials = MOCK_MATERIALS.filter(material => {
-    const matchesSearch = material.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         material.category.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDivision = !selectedDivision || material.division === selectedDivision
-    return matchesSearch && matchesDivision
-  })
+  const filteredMaterials = useMemo(() => {
+    return allMaterials.filter(material => {
+      const matchesSearch = !searchTerm ||
+        material.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.id.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesDivision = !selectedDivision || material.division === selectedDivision
+      return matchesSearch && matchesDivision
+    }).slice(0, 100) // Limit to 100 results for performance
+  }, [allMaterials, searchTerm, selectedDivision])
 
-  const handleAddToProject = async (material: typeof MOCK_MATERIALS[0]) => {
+  const handleAddToProject = async (material: MaterialItem) => {
     try {
       await addLineItem({
         division: material.division,
@@ -149,7 +158,7 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
             Material Database
           </DialogTitle>
           <DialogDescription>
-            Browse and add materials to your project. Database contains 2,953 items.
+            Browse and add materials to your project. Database contains {allMaterials.length.toLocaleString()} items.
           </DialogDescription>
         </DialogHeader>
 
@@ -250,10 +259,12 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
           </div>
 
           <div className="text-sm text-muted-foreground text-center">
-            Showing {filteredMaterials.length} materials
-            <div className="text-xs mt-1">
-              💡 Tip: Use the full materials-database.js file for access to all 2,953 items
-            </div>
+            Showing {filteredMaterials.length} of {allMaterials.length} materials
+            {filteredMaterials.length === 100 && (
+              <div className="text-xs mt-1">
+                Results limited to 100 items. Type more to narrow your search.
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
