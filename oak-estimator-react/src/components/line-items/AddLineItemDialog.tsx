@@ -58,7 +58,9 @@ export function AddLineItemDialog() {
   const [unit, setUnit] = useState('EA')
   const [unitCost, setUnitCost] = useState(0)
 
-  const handleCreate = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
     if (!description.trim()) {
       toast({
         variant: "destructive",
@@ -94,6 +96,11 @@ export function AddLineItemDialog() {
       setUnitCost(0)
     } catch (error: any) {
       console.error('Failed to add line item:', error)
+      toast({
+        variant: "destructive",
+        title: "Failed to add line item",
+        description: error.message || "An error occurred while adding the item",
+      })
     }
   }
 
@@ -124,7 +131,7 @@ export function AddLineItemDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="division">Division</Label>
             <Select
@@ -220,9 +227,8 @@ export function AddLineItemDialog() {
               Cancel
             </Button>
             <Button
-              type="button"
+              type="submit"
               className="flex-1"
-              onClick={handleCreate}
               disabled={!description.trim()}
             >
               <Plus className="w-4 h-4 mr-2" />
