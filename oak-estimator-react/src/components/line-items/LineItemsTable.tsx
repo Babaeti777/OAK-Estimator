@@ -11,6 +11,7 @@ import { Trash2, Table, Search } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
+import { DIVISIONS_PRELIMINARY, getDivisionLabel } from "@/data/divisions"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -20,20 +21,12 @@ const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'misc', label: 'Miscellaneous' },
 ]
 
-const DIVISIONS = [
-  { code: '01', name: 'General Requirements' },
-  { code: '02', name: 'Existing Conditions' },
-  { code: '03', name: 'Concrete' },
-  { code: '04', name: 'Masonry' },
-  { code: '05', name: 'Metals' },
-  { code: '06', name: 'Wood, Plastics & Composites' },
-  { code: '07', name: 'Thermal & Moisture Protection' },
-  { code: '08', name: 'Openings' },
-  { code: '09', name: 'Finishes' },
-  { code: '10', name: 'Specialties' },
-]
+interface LineItemsTableProps {
+  selectedDivision: string
+  onClearDivision: () => void
+}
 
-export function LineItemsTable() {
+export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsTableProps) {
   const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -83,10 +76,14 @@ export function LineItemsTable() {
     return null
   }
 
-  const filteredItems = currentProject.lineItems.filter(item =>
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.division.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredItems = currentProject.lineItems.filter(item => {
+    const matchesSearch =
+      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.division.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesDivision = !selectedDivision || item.division === selectedDivision
+
+    return matchesSearch && matchesDivision
+  })
 
   const handleUpdateItem = (itemId: string, updates: Partial<LineItem>) => {
     debouncedUpdate(itemId, updates)
@@ -124,14 +121,14 @@ export function LineItemsTable() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <MaterialBrowser />
+              <MaterialBrowser initialDivision={selectedDivision || undefined} />
               <AddLineItemDialog />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Search Bar */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -141,6 +138,19 @@ export function LineItemsTable() {
                 className="pl-9"
               />
             </div>
+            {selectedDivision && (
+              <div className="flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+                <span>{getDivisionLabel(selectedDivision)}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClearDivision}
+                  className="h-6 px-2 text-xs"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Table */}
@@ -200,7 +210,7 @@ export function LineItemsTable() {
                               onChange={(e) => handleUpdateItem(item.id, { division: e.target.value })}
                               className="h-8 text-sm"
                             >
-                              {DIVISIONS.map(div => (
+                              {DIVISIONS_PRELIMINARY.map(div => (
                                 <option key={div.code} value={div.code}>
                                   {div.code} - {div.name}
                                 </option>
