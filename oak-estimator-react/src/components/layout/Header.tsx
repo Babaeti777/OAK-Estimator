@@ -167,7 +167,10 @@ export function Header() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => setShowTrash(!showTrash)}
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    setShowTrash((prev) => !prev)
+                  }}
                   className="cursor-pointer"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />

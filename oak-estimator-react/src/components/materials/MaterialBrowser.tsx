@@ -8,6 +8,7 @@ import { Package, Search, Plus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { MaterialsDatabase } from "@/data/materials-database"
+import { DIVISION_FILTERS } from "@/data/divisions"
 
 // Transform the database into a flat array for searching
 interface MaterialItem {
@@ -53,20 +54,6 @@ function getFlatMaterialsList(): MaterialItem[] {
 
   return materials
 }
-
-const DIVISIONS = [
-  { code: '', name: 'All Divisions' },
-  { code: '01', name: '01 - General Requirements' },
-  { code: '02', name: '02 - Existing Conditions' },
-  { code: '03', name: '03 - Concrete' },
-  { code: '04', name: '04 - Masonry' },
-  { code: '05', name: '05 - Metals' },
-  { code: '06', name: '06 - Wood, Plastics & Composites' },
-  { code: '07', name: '07 - Thermal & Moisture Protection' },
-  { code: '08', name: '08 - Openings' },
-  { code: '09', name: '09 - Finishes' },
-  { code: '10', name: '10 - Specialties' },
-]
 
 interface MaterialBrowserProps {
   trigger?: React.ReactNode
@@ -183,9 +170,9 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
               value={selectedDivision}
               onChange={(e) => setSelectedDivision(e.target.value)}
             >
-              {DIVISIONS.map(div => (
+              {DIVISION_FILTERS.map(div => (
                 <option key={div.code} value={div.code}>
-                  {div.name}
+                  {div.code ? `${div.code} - ${div.name}` : div.name}
                 </option>
               ))}
             </Select>
