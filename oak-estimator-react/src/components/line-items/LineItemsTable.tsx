@@ -122,22 +122,6 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === "table" ? "secondary" : "outline"}
-                size="icon"
-                onClick={() => setViewMode("table")}
-                aria-label="Table view"
-              >
-                <Table className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === "cards" ? "secondary" : "outline"}
-                size="icon"
-                onClick={() => setViewMode("cards")}
-                aria-label="Card view"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </Button>
               <MaterialBrowser initialDivision={selectedDivision || undefined} />
               <AddLineItemDialog />
             </div>
