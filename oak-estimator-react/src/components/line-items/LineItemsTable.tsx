@@ -7,7 +7,7 @@ import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search, LayoutGrid } from "lucide-react"
+import { Trash2, Table, Search } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
@@ -29,7 +29,7 @@ interface LineItemsTableProps {
 export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsTableProps) {
   const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table")
+  const [viewMode] = useState<"table" | "cards">("table")
 
   // Debounce timers for each item's fields
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
