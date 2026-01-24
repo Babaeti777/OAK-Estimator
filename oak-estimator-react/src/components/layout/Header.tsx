@@ -51,7 +51,7 @@ export function Header() {
                   <span className="inline sm:hidden">Projects</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-72" align="end">
+              <DropdownMenuContent className="w-72 bg-background text-foreground" align="end">
                 <DropdownMenuLabel>
                   {showTrash ? `Trash (${trashedProjects.length})` : `Your Projects (${projects.length})`}
                 </DropdownMenuLabel>
@@ -71,11 +71,11 @@ export function Header() {
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="font-medium truncate text-muted-foreground">
+                                <p className="font-medium truncate text-foreground">
                                   {project.projectSettings.projectName}
                                 </p>
                               </div>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-foreground/70">
                                 {daysLeft} days left
                               </p>
                             </div>
@@ -137,11 +137,11 @@ export function Header() {
                             )}
                           </div>
                           {project.projectSettings.projectNumber && (
-                            <p className="text-xs text-muted-foreground">
-                              #{project.projectSettings.projectNumber}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-foreground/70">
+                            #{project.projectSettings.projectNumber}
+                          </p>
+                        )}
+                          <p className="text-xs text-foreground/70">
                             {project.lineItems.length} items • Updated{" "}
                             {formatDistanceToNow(project.updatedAt, { addSuffix: true })}
                           </p>
@@ -213,13 +213,13 @@ export function Header() {
                   />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent className="w-56 bg-background text-foreground" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
                       {user.displayName || "User"}
                     </p>
-                    <p className="text-xs leading-none text-muted-foreground">
+                    <p className="text-xs leading-none text-foreground/70">
                       {user.email}
                     </p>
                   </div>

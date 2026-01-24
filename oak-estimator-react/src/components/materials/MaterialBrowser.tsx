@@ -123,7 +123,7 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
         description: `${material.description} has been added to your project`,
       })
 
-      handleOpenChange(false)
+      setSearchTerm("")
     } catch (error: any) {
       toast({
         variant: "destructive",
