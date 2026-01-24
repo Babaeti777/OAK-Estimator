@@ -90,6 +90,24 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+
+    #client-report-print,
+    #client-report-print * {
+      visibility: visible;
+    }
+
+    #client-report-print {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+  }
+
   ::-webkit-scrollbar {
     width: 12px;
     height: 12px;
