@@ -15,30 +15,7 @@ import { useProject } from "@/contexts/ProjectContext"
 import { Plus } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import type { LineItem } from "@/types"
-
-const ALL_DIVISIONS = [
-  { code: '01', name: 'General Requirements' },
-  { code: '02', name: 'Existing Conditions' },
-  { code: '03', name: 'Concrete' },
-  { code: '04', name: 'Masonry' },
-  { code: '05', name: 'Metals' },
-  { code: '06', name: 'Wood, Plastics & Composites' },
-  { code: '07', name: 'Thermal & Moisture Protection' },
-  { code: '08', name: 'Openings' },
-  { code: '09', name: 'Finishes' },
-  { code: '10', name: 'Specialties' },
-  { code: '11', name: 'Equipment' },
-  { code: '12', name: 'Furnishings' },
-  { code: '13', name: 'Special Construction' },
-  { code: '14', name: 'Conveying Equipment' },
-  { code: '21', name: 'Fire Suppression' },
-  { code: '22', name: 'Plumbing' },
-  { code: '23', name: 'HVAC' },
-  { code: '26', name: 'Electrical' },
-  { code: '27', name: 'Communications' },
-  { code: '28', name: 'Electronic Safety & Security' },
-  { code: '31', name: 'Earthwork' },
-]
+import { DIVISIONS_ALL } from "@/data/divisions"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -139,7 +116,7 @@ export function AddLineItemDialog() {
               value={division}
               onChange={(e) => setDivision(e.target.value)}
             >
-              {ALL_DIVISIONS.map((div) => (
+              {DIVISIONS_ALL.map((div) => (
                 <option key={div.code} value={div.code}>
                   {div.code} - {div.name}
                 </option>
