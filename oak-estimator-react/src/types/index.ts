@@ -38,6 +38,7 @@ export interface LineItem {
   unit: string
   unitCost: number
   totalCost: number
+  schedule?: string
   notes?: string
   materialId?: string
   order: number

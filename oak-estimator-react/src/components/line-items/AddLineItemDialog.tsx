@@ -34,6 +34,7 @@ export function AddLineItemDialog() {
   const [quantity, setQuantity] = useState(1)
   const [unit, setUnit] = useState('EA')
   const [unitCost, setUnitCost] = useState(0)
+  const [schedule, setSchedule] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +57,7 @@ export function AddLineItemDialog() {
         unit,
         unitCost,
         totalCost: quantity * unitCost,
+        schedule: schedule.trim() || undefined,
       })
 
       toast({
@@ -71,6 +73,7 @@ export function AddLineItemDialog() {
       setQuantity(1)
       setUnit('EA')
       setUnitCost(0)
+      setSchedule('')
     } catch (error: any) {
       console.error('Failed to add line item:', error)
       toast({
@@ -90,10 +93,11 @@ export function AddLineItemDialog() {
         setDescription('')
         setType('material')
         setQuantity(1)
-        setUnit('EA')
-        setUnitCost(0)
-      }
-    }}>
+      setUnit('EA')
+      setUnitCost(0)
+      setSchedule('')
+    }
+  }}>
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="w-4 h-4 mr-2" />
@@ -186,6 +190,16 @@ export function AddLineItemDialog() {
                 onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="schedule">Schedule (optional)</Label>
+            <Input
+              id="schedule"
+              placeholder="e.g., Week 1-2, Phase A"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+            />
           </div>
 
           <div className="bg-muted p-4 rounded-lg">
