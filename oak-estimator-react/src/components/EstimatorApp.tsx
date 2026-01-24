@@ -20,7 +20,7 @@ export function EstimatorApp() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="w-full px-4 py-8 relative">
+      <main className="container mx-auto px-4 py-8 max-w-7xl relative">
         {!currentProject && projects.length === 0 ? (
           <div className="max-w-2xl mx-auto mt-20">
             <Card className="text-center">

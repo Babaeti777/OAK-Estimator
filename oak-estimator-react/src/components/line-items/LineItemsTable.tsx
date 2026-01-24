@@ -29,6 +29,7 @@ interface LineItemsTableProps {
 export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsTableProps) {
   const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
+  const [viewMode] = useState<"table" | "cards">("table")
 
   // Debounce timers for each item's fields
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -154,100 +155,211 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
           </div>
 
           {/* Table */}
-          <div className="border rounded-lg overflow-hidden bg-background/40">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/70 sticky top-0 z-10">
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Division
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Quantity
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Unit
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Schedule
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Unit Cost
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-foreground/80 uppercase tracking-wider">
-                      Total
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-foreground/80 uppercase tracking-wider w-20">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-background divide-y divide-border">
-                  <AnimatePresence>
-                    {filteredItems.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
-                          No line items yet. Click "Add Item" to get started.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredItems.map((item, index) => (
+          {viewMode === "table" ? (
+            <div className="border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr className="border-b">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Division
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Quantity
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Unit
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Unit Cost
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-background divide-y divide-border">
+                    <AnimatePresence>
+                      {filteredItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                            No line items yet. Click "Add Item" to get started.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredItems.map((item, index) => (
                           <motion.tr
                             key={item.id}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className="hover:bg-muted/30 transition-colors even:bg-muted/5"
+                            className="hover:bg-muted/30 transition-colors"
                           >
-                          {/* Division */}
-                          <td className="px-4 py-3">
+                            {/* Division */}
+                            <td className="px-4 py-3">
                               <Select
                                 value={item.division}
                                 onChange={(e) => handleUpdateItem(item.id, { division: e.target.value })}
-                                className="h-8 text-sm bg-muted/20"
+                                className="h-8 text-sm"
                               >
+                                {DIVISIONS_PRELIMINARY.map(div => (
+                                  <option key={div.code} value={div.code}>
+                                    {div.code} - {div.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </td>
+
+                            {/* Description */}
+                            <td className="px-4 py-3">
+                              <Input
+                                value={item.description}
+                                onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
+                                className="h-8 text-sm"
+                                placeholder="Item description"
+                              />
+                            </td>
+
+                            {/* Type */}
+                            <td className="px-4 py-3">
+                              <Select
+                                value={item.type}
+                                onChange={(e) => handleUpdateItem(item.id, { type: e.target.value as LineItem['type'] })}
+                                className="h-8 text-sm"
+                              >
+                                {ITEM_TYPES.map(type => (
+                                  <option key={type.value} value={type.value}>
+                                    {type.label}
+                                  </option>
+                                ))}
+                              </Select>
+                            </td>
+
+                            {/* Quantity */}
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => handleUpdateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-sm text-right"
+                                step="0.01"
+                              />
+                            </td>
+
+                            {/* Unit */}
+                            <td className="px-4 py-3">
+                              <Input
+                                value={item.unit}
+                                onChange={(e) => handleUpdateItem(item.id, { unit: e.target.value })}
+                                className="h-8 text-sm w-20"
+                                placeholder="EA"
+                              />
+                            </td>
+
+                            {/* Unit Cost */}
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                value={item.unitCost}
+                                onChange={(e) => handleUpdateItem(item.id, { unitCost: parseFloat(e.target.value) || 0 })}
+                                className="h-8 text-sm text-right"
+                                step="0.01"
+                              />
+                            </td>
+
+                            {/* Total */}
+                            <td className="px-4 py-3 text-right font-medium text-sm">
+                              {formatCurrency(item.totalCost)}
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-4 py-3">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          </motion.tr>
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {filteredItems.length === 0 ? (
+                <div className="col-span-full rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+                  No line items yet. Click "Add Item" to get started.
+                </div>
+              ) : (
+                filteredItems.map((item, index) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="rounded-lg border bg-background p-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2 flex-1">
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Division</label>
+                            <Select
+                              value={item.division}
+                              onChange={(e) => handleUpdateItem(item.id, { division: e.target.value })}
+                              className="h-8 text-sm"
+                            >
                               {DIVISIONS_PRELIMINARY.map(div => (
                                 <option key={div.code} value={div.code}>
                                   {div.code} - {div.name}
                                 </option>
                               ))}
                             </Select>
-                          </td>
-
-                          {/* Description */}
-                          <td className="px-4 py-3">
-                            <Input
-                              value={item.description}
-                              onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
-                              className="h-8 text-sm bg-muted/20"
-                              placeholder="Item description"
-                            />
-                          </td>
-
-                          {/* Type */}
-                          <td className="px-4 py-3">
-                              <Select
-                                value={item.type}
-                                onChange={(e) => handleUpdateItem(item.id, { type: e.target.value as LineItem['type'] })}
-                                className="h-8 text-sm bg-muted/20"
-                              >
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Type</label>
+                            <Select
+                              value={item.type}
+                              onChange={(e) => handleUpdateItem(item.id, { type: e.target.value as LineItem['type'] })}
+                              className="h-8 text-sm"
+                            >
                               {ITEM_TYPES.map(type => (
                                 <option key={type.value} value={type.value}>
                                   {type.label}
                                 </option>
                               ))}
                             </Select>
-                          </td>
-
-                          {/* Quantity */}
-                          <td className="px-4 py-3">
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Description</label>
+                          <Input
+                            value={item.description}
+                            onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
+                            className="h-8 text-sm"
+                            placeholder="Item description"
+                          />
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground">Quantity</label>
                             <Input
                               type="number"
                               value={item.quantity}
@@ -255,30 +367,18 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                               className="h-8 text-sm text-right bg-muted/20"
                               step="0.01"
                             />
-                          </td>
-
-                          {/* Unit */}
-                          <td className="px-4 py-3">
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Unit</label>
                             <Input
                               value={item.unit}
                               onChange={(e) => handleUpdateItem(item.id, { unit: e.target.value })}
-                              className="h-8 text-sm w-20 bg-muted/20"
+                              className="h-8 text-sm"
                               placeholder="EA"
                             />
-                          </td>
-
-                          {/* Schedule */}
-                          <td className="px-4 py-3">
-                            <Input
-                              value={item.schedule || ""}
-                              onChange={(e) => handleUpdateItem(item.id, { schedule: e.target.value })}
-                              className="h-8 text-sm bg-muted/20"
-                              placeholder="Week 1-2"
-                            />
-                          </td>
-
-                          {/* Unit Cost */}
-                          <td className="px-4 py-3">
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">Unit Cost</label>
                             <Input
                               type="number"
                               value={item.unitCost}
@@ -286,32 +386,29 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                               className="h-8 text-sm text-right bg-muted/20"
                               step="0.01"
                             />
-                          </td>
-
-                          {/* Total */}
-                          <td className="px-4 py-3 text-right font-medium text-sm">
-                            {formatCurrency(item.totalCost)}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="px-4 py-3">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </td>
-                        </motion.tr>
-                      ))
-                    )}
-                  </AnimatePresence>
-                </tbody>
-              </table>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Total</p>
+                        <p className="text-lg font-semibold text-primary">
+                          {formatCurrency(item.totalCost)}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="mt-2 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
-          </div>
+          )}
 
           {/* Footer Info */}
           {filteredItems.length > 0 && (
