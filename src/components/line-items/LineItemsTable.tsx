@@ -7,7 +7,7 @@ import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search } from "lucide-react"
+import { Trash2, Table, Search, Download } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
@@ -103,6 +103,47 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
     }
   }
 
+  // Use the imported Download icon by providing a small download/export feature per item.
+  const handleDownloadItem = (itemId: string) => {
+    const item = currentProject.lineItems.find(i => i.id === itemId)
+    if (!item) {
+      toast({
+        variant: "destructive",
+        title: "Item not found",
+        description: "Could not find the requested line item to download.",
+      })
+      return
+    }
+
+    try {
+      const rows = [
+        ["Division","Description","Type","Quantity","Unit","Unit Cost","Total"],
+        [item.division, item.description, item.type, String(item.quantity), item.unit, String(item.unitCost), String(item.totalCost)],
+      ]
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${currentProject.name || 'line-item'}-${item.id}.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({
+        title: "Download started",
+        description: `${item.description} is downloading as CSV.`,
+      })
+    } catch (error: any) {
+      console.error('Failed to download item:', error)
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: error.message || "An error occurred while generating the download.",
+      })
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -182,7 +223,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                       <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Total
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
                         Actions
                       </th>
                     </tr>
@@ -284,14 +325,26 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 
                             {/* Actions */}
                             <td className="px-4 py-3">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDownloadItem(item.id)}
+                                  className="h-8 w-8"
+                                  aria-label="Download item"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  aria-label="Delete item"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </td>
                           </motion.tr>
                         ))
@@ -394,14 +447,26 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                         <p className="text-lg font-semibold text-primary">
                           {formatCurrency(item.totalCost)}
                         </p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="mt-2 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadItem(item.id)}
+                            className="h-8 w-8"
+                            aria-label="Download item"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            aria-label="Delete item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
