@@ -364,7 +364,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                               type="number"
                               value={item.quantity}
                               onChange={(e) => handleUpdateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-sm text-right"
+                              className="h-8 text-sm text-right bg-muted/20"
                               step="0.01"
                             />
                           </div>
@@ -383,7 +383,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                               type="number"
                               value={item.unitCost}
                               onChange={(e) => handleUpdateItem(item.id, { unitCost: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-sm text-right"
+                              className="h-8 text-sm text-right bg-muted/20"
                               step="0.01"
                             />
                           </div>
