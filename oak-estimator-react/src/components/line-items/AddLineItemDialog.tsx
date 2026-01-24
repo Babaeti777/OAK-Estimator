@@ -15,30 +15,7 @@ import { useProject } from "@/contexts/ProjectContext"
 import { Plus } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import type { LineItem } from "@/types"
-
-const ALL_DIVISIONS = [
-  { code: '01', name: 'General Requirements' },
-  { code: '02', name: 'Existing Conditions' },
-  { code: '03', name: 'Concrete' },
-  { code: '04', name: 'Masonry' },
-  { code: '05', name: 'Metals' },
-  { code: '06', name: 'Wood, Plastics & Composites' },
-  { code: '07', name: 'Thermal & Moisture Protection' },
-  { code: '08', name: 'Openings' },
-  { code: '09', name: 'Finishes' },
-  { code: '10', name: 'Specialties' },
-  { code: '11', name: 'Equipment' },
-  { code: '12', name: 'Furnishings' },
-  { code: '13', name: 'Special Construction' },
-  { code: '14', name: 'Conveying Equipment' },
-  { code: '21', name: 'Fire Suppression' },
-  { code: '22', name: 'Plumbing' },
-  { code: '23', name: 'HVAC' },
-  { code: '26', name: 'Electrical' },
-  { code: '27', name: 'Communications' },
-  { code: '28', name: 'Electronic Safety & Security' },
-  { code: '31', name: 'Earthwork' },
-]
+import { DIVISIONS_ALL } from "@/data/divisions"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -57,6 +34,7 @@ export function AddLineItemDialog() {
   const [quantity, setQuantity] = useState(1)
   const [unit, setUnit] = useState('EA')
   const [unitCost, setUnitCost] = useState(0)
+  const [schedule, setSchedule] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,6 +57,7 @@ export function AddLineItemDialog() {
         unit,
         unitCost,
         totalCost: quantity * unitCost,
+        schedule: schedule.trim() || undefined,
       })
 
       toast({
@@ -94,6 +73,7 @@ export function AddLineItemDialog() {
       setQuantity(1)
       setUnit('EA')
       setUnitCost(0)
+      setSchedule('')
     } catch (error: any) {
       console.error('Failed to add line item:', error)
       toast({
@@ -113,10 +93,11 @@ export function AddLineItemDialog() {
         setDescription('')
         setType('material')
         setQuantity(1)
-        setUnit('EA')
-        setUnitCost(0)
-      }
-    }}>
+      setUnit('EA')
+      setUnitCost(0)
+      setSchedule('')
+    }
+  }}>
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="w-4 h-4 mr-2" />
@@ -139,7 +120,7 @@ export function AddLineItemDialog() {
               value={division}
               onChange={(e) => setDivision(e.target.value)}
             >
-              {ALL_DIVISIONS.map((div) => (
+              {DIVISIONS_ALL.map((div) => (
                 <option key={div.code} value={div.code}>
                   {div.code} - {div.name}
                 </option>
@@ -209,6 +190,16 @@ export function AddLineItemDialog() {
                 onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="schedule">Schedule (optional)</Label>
+            <Input
+              id="schedule"
+              placeholder="e.g., Week 1-2, Phase A"
+              value={schedule}
+              onChange={(e) => setSchedule(e.target.value)}
+            />
           </div>
 
           <div className="bg-muted p-4 rounded-lg">
