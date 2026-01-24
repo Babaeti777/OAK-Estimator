@@ -2,7 +2,7 @@ import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useProject } from "@/contexts/ProjectContext"
-import { DIVISIONS_ALL, getDivisionLabel } from "@/data/divisions"
+import { DIVISIONS_PRELIMINARY, getDivisionLabel } from "@/data/divisions"
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react"
 
 interface DivisionSidebarProps {
@@ -71,7 +71,7 @@ export function DivisionSidebar({
                   {currentProject.lineItems.length}
                 </span>
               </Button>
-              {DIVISIONS_ALL.map((division) => (
+              {DIVISIONS_PRELIMINARY.map((division) => (
                 <Button
                   key={division.code}
                   variant={selectedDivision === division.code ? "secondary" : "ghost"}
