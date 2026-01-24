@@ -10,6 +10,7 @@ import type { ProjectSettings } from "@/types"
 import { FileText, Save, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { motion } from "framer-motion"
+import { Textarea } from "@/components/ui/textarea"
 
 export function ProjectSettingsForm() {
   const { currentProject, updateProjectSettings } = useProject()
@@ -23,13 +24,21 @@ export function ProjectSettingsForm() {
       architect: '',
       estimator: '',
       date: new Date().toISOString().split('T')[0],
+      inclusions: '',
+      exclusions: '',
+      terms: '',
     },
   })
 
   // Reset form when project changes
   useEffect(() => {
     if (currentProject?.projectSettings) {
-      reset(currentProject.projectSettings)
+      reset({
+        ...currentProject.projectSettings,
+        inclusions: currentProject.projectSettings.inclusions || '',
+        exclusions: currentProject.projectSettings.exclusions || '',
+        terms: currentProject.projectSettings.terms || '',
+      })
     }
   }, [currentProject?.id, currentProject?.projectSettings, reset])
 
@@ -143,6 +152,36 @@ export function ProjectSettingsForm() {
                       id="date"
                       type="date"
                       {...register("date")}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="inclusions">Inclusions</Label>
+                    <Textarea
+                      id="inclusions"
+                      placeholder="List included scope items and assumptions"
+                      rows={4}
+                      {...register("inclusions")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="exclusions">Exclusions</Label>
+                    <Textarea
+                      id="exclusions"
+                      placeholder="List exclusions or owner-provided items"
+                      rows={4}
+                      {...register("exclusions")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="terms">Terms & Conditions</Label>
+                    <Textarea
+                      id="terms"
+                      placeholder="Payment terms, schedule notes, or special conditions"
+                      rows={4}
+                      {...register("terms")}
                     />
                   </div>
                 </div>

@@ -24,6 +24,9 @@ export interface ProjectSettings {
   architect: string
   estimator: string
   date: string
+  inclusions: string
+  exclusions: string
+  terms: string
 }
 
 export interface LineItem {
