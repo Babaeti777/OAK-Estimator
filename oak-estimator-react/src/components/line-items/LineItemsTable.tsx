@@ -6,8 +6,10 @@ import { Select } from "@/components/ui/select"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
+import { QuickAddRow } from "@/components/line-items/QuickAddRow"
+import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search } from "lucide-react"
+import { Trash2, Table, Search, CheckSquare, Square, X } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
@@ -36,6 +38,8 @@ const DIVISIONS = [
 export function LineItemsTable() {
   const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const showQuickAdd = true
 
   // Debounce timers for each item's fields
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -95,6 +99,11 @@ export function LineItemsTable() {
   const handleDeleteItem = async (itemId: string) => {
     try {
       await deleteLineItem(itemId)
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
     } catch (error: any) {
       console.error('Failed to delete line item:', error)
       toast({
@@ -103,6 +112,54 @@ export function LineItemsTable() {
         description: error.message || "An error occurred while deleting the item",
       })
     }
+  }
+
+  // Bulk selection handlers
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(itemId)) {
+        next.delete(itemId)
+      } else {
+        next.add(itemId)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredItems.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredItems.map(item => item.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+
+    if (!confirm(`Delete ${selectedIds.size} selected item(s)? This cannot be undone.`)) return
+
+    try {
+      for (const itemId of selectedIds) {
+        await deleteLineItem(itemId)
+      }
+      setSelectedIds(new Set())
+      toast({
+        title: "Items deleted",
+        description: `${selectedIds.size} items have been deleted`,
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete items",
+        description: error.message,
+      })
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedIds(new Set())
   }
 
   return (
@@ -124,13 +181,14 @@ export function LineItemsTable() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <TemplatesManager />
               <MaterialBrowser />
               <AddLineItemDialog />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search Bar */}
+          {/* Search Bar and Bulk Actions */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -141,6 +199,30 @@ export function LineItemsTable() {
                 className="pl-9"
               />
             </div>
+
+            {/* Bulk Actions */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg">
+                <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={clearSelection}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Table */}
@@ -149,6 +231,19 @@ export function LineItemsTable() {
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr className="border-b">
+                    <th className="px-2 py-3 w-10">
+                      <button
+                        onClick={toggleSelectAll}
+                        className="p-1 hover:bg-muted rounded"
+                        title={selectedIds.size === filteredItems.length ? "Deselect all" : "Select all"}
+                      >
+                        {selectedIds.size === filteredItems.length && filteredItems.length > 0 ? (
+                          <CheckSquare className="w-4 h-4 text-primary" />
+                        ) : (
+                          <Square className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Division
                     </th>
@@ -179,7 +274,7 @@ export function LineItemsTable() {
                   <AnimatePresence>
                     {filteredItems.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                        <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                           No line items yet. Click "Add Item" to get started.
                         </td>
                       </tr>
@@ -191,8 +286,21 @@ export function LineItemsTable() {
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="hover:bg-muted/30 transition-colors"
+                          className={`hover:bg-muted/30 transition-colors ${selectedIds.has(item.id) ? 'bg-primary/5' : ''}`}
                         >
+                          {/* Selection */}
+                          <td className="px-2 py-3">
+                            <button
+                              onClick={() => toggleSelectItem(item.id)}
+                              className="p-1 hover:bg-muted rounded"
+                            >
+                              {selectedIds.has(item.id) ? (
+                                <CheckSquare className="w-4 h-4 text-primary" />
+                              ) : (
+                                <Square className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </button>
+                          </td>
                           {/* Division */}
                           <td className="px-4 py-3">
                             <Select
@@ -285,17 +393,25 @@ export function LineItemsTable() {
                       ))
                     )}
                   </AnimatePresence>
+
+                  {/* Quick Add Row */}
+                  {showQuickAdd && <QuickAddRow />}
                 </tbody>
               </table>
             </div>
           </div>
 
           {/* Footer Info */}
-          {filteredItems.length > 0 && (
-            <div className="text-sm text-muted-foreground text-right">
-              Showing {filteredItems.length} of {currentProject.lineItems.length} items
-            </div>
-          )}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              {filteredItems.length > 0 && (
+                `Showing ${filteredItems.length} of ${currentProject.lineItems.length} items`
+              )}
+            </span>
+            <span className="text-xs">
+              Press Enter in Quick Add row to add items rapidly
+            </span>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

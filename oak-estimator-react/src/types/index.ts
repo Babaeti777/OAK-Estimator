@@ -15,6 +15,13 @@ export interface CompanySettings {
   phone: string
   email: string
   logoUrl?: string
+  // Extended branding
+  website?: string
+  licenseNumber?: string
+  certifications?: string[]
+  termsAndConditions?: string
+  warrantyInfo?: string
+  signatureUrl?: string
 }
 
 export interface ProjectSettings {
@@ -24,6 +31,17 @@ export interface ProjectSettings {
   architect: string
   estimator: string
   date: string
+  // New fields
+  clientName?: string
+  clientEmail?: string
+  clientPhone?: string
+  clientAddress?: string
+  scope?: string
+  notes?: string
+  validUntil?: string
+  // Configurable rates per project
+  markupPercentage?: number  // Defaults to 15 if not set
+  taxPercentage?: number     // Defaults to 7 if not set
 }
 
 export interface LineItem {
@@ -54,6 +72,50 @@ export interface Material {
   tags?: string[]
 }
 
+// Project folder/category
+export interface ProjectFolder {
+  id: string
+  userId: string
+  name: string
+  color?: string
+  icon?: string
+  order: number
+  createdAt: number
+}
+
+// Project version for history tracking
+export interface ProjectVersion {
+  id: string
+  projectId: string
+  versionNumber: number
+  name: string
+  snapshot: Omit<Project, 'id' | 'userId'>
+  createdAt: number
+  createdBy?: string
+  notes?: string
+}
+
+// Line item template
+export interface LineItemTemplate {
+  id: string
+  userId: string
+  name: string
+  description?: string
+  category?: string
+  items: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order'>[]
+  createdAt: number
+  updatedAt: number
+}
+
+// User preferences
+export interface UserPreferences {
+  accentColor?: string  // Hex color for branding
+  defaultMarkupPercentage?: number
+  defaultTaxPercentage?: number
+  quickAddEnabled?: boolean
+  compactView?: boolean
+}
+
 export interface Project {
   id: string
   userId: string
@@ -63,8 +125,13 @@ export interface Project {
   createdAt: number
   updatedAt: number
   lastSyncedAt?: number
-  trashedAt?: number  // Timestamp when moved to trash
-  deletedAt?: number  // Timestamp when permanently deleted (30 days after trashedAt)
+  trashedAt?: number
+  deletedAt?: number
+  // New fields
+  folderId?: string  // Reference to ProjectFolder
+  tags?: string[]
+  status?: 'draft' | 'sent' | 'approved' | 'rejected' | 'completed'
+  versionNumber?: number
 }
 
 export interface Summary {
@@ -102,4 +169,15 @@ export interface AppState {
   syncStatus: SyncStatus
   isLoading: boolean
   error: string | null
+}
+
+// Export types for PDF/Excel generation
+export interface ExportOptions {
+  includeCompanyLogo: boolean
+  includeTerms: boolean
+  includeSignatureLine: boolean
+  includeNotes: boolean
+  groupByDivision: boolean
+  showUnitCosts: boolean
+  showLineItemNotes: boolean
 }

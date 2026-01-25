@@ -1,12 +1,55 @@
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Input } from "@/components/ui/input"
 import { useProject } from "@/contexts/ProjectContext"
 import { formatCurrency } from "@/lib/utils"
-import { DollarSign, TrendingUp, Calculator } from "lucide-react"
+import { DollarSign, TrendingUp, Calculator, Percent, Edit2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 export function SummaryCard() {
-  const { summary, currentProject } = useProject()
+  const { summary, currentProject, updateProjectSettings } = useProject()
+  const [editingMarkup, setEditingMarkup] = useState(false)
+  const [editingTax, setEditingTax] = useState(false)
+  const [markupValue, setMarkupValue] = useState(summary.markupPercentage.toString())
+  const [taxValue, setTaxValue] = useState(summary.taxPercentage.toString())
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync local state with summary when it changes
+  useEffect(() => {
+    if (!editingMarkup) {
+      setMarkupValue(summary.markupPercentage.toString())
+    }
+    if (!editingTax) {
+      setTaxValue(summary.taxPercentage.toString())
+    }
+  }, [summary.markupPercentage, summary.taxPercentage, editingMarkup, editingTax])
+
+  // Debounced save function
+  const debouncedSave = useCallback((field: 'markup' | 'tax', value: number) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+    debounceRef.current = setTimeout(async () => {
+      if (!currentProject) return
+      const updates = field === 'markup'
+        ? { ...currentProject.projectSettings, markupPercentage: value }
+        : { ...currentProject.projectSettings, taxPercentage: value }
+      await updateProjectSettings(updates)
+    }, 500)
+  }, [currentProject, updateProjectSettings])
+
+  const handleMarkupChange = (value: string) => {
+    setMarkupValue(value)
+    const numValue = parseFloat(value) || 0
+    debouncedSave('markup', numValue)
+  }
+
+  const handleTaxChange = (value: string) => {
+    setTaxValue(value)
+    const numValue = parseFloat(value) || 0
+    debouncedSave('tax', numValue)
+  }
 
   if (!currentProject) {
     return null
@@ -70,10 +113,34 @@ export function SummaryCard() {
 
           {/* Markup */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground flex items-center gap-2">
+            <div className="text-muted-foreground flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
-              Markup ({summary.markupPercentage}%)
-            </span>
+              <span>Markup</span>
+              {editingMarkup ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    value={markupValue}
+                    onChange={(e) => handleMarkupChange(e.target.value)}
+                    onBlur={() => setEditingMarkup(false)}
+                    autoFocus
+                    className="w-16 h-6 text-xs text-center"
+                    step="0.5"
+                    min="0"
+                    max="100"
+                  />
+                  <Percent className="w-3 h-3" />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setEditingMarkup(true)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+                >
+                  <span>({summary.markupPercentage}%)</span>
+                  <Edit2 className="w-3 h-3 opacity-50" />
+                </button>
+              )}
+            </div>
             <span className="font-medium text-green-500">
               +{formatCurrency(summary.markup)}
             </span>
@@ -81,9 +148,33 @@ export function SummaryCard() {
 
           {/* Tax */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Tax ({summary.taxPercentage}%)
-            </span>
+            <div className="text-muted-foreground flex items-center gap-2">
+              <span>Tax</span>
+              {editingTax ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    value={taxValue}
+                    onChange={(e) => handleTaxChange(e.target.value)}
+                    onBlur={() => setEditingTax(false)}
+                    autoFocus
+                    className="w-16 h-6 text-xs text-center"
+                    step="0.5"
+                    min="0"
+                    max="100"
+                  />
+                  <Percent className="w-3 h-3" />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setEditingTax(true)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+                >
+                  <span>({summary.taxPercentage}%)</span>
+                  <Edit2 className="w-3 h-3 opacity-50" />
+                </button>
+              )}
+            </div>
             <span className="font-medium">
               {formatCurrency(summary.tax)}
             </span>
