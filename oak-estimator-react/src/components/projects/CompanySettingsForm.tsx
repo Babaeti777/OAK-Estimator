@@ -3,10 +3,12 @@ import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
 import { useProject } from "@/contexts/ProjectContext"
 import { useAuth } from "@/contexts/AuthContext"
 import type { CompanySettings } from "@/types"
-import { Save, Upload, X, Image } from "lucide-react"
+import { Save, Upload, X, Image, Globe, FileText, Shield } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { uploadCompanyLogo, deleteCompanyLogo } from "@/services/storage.service"
 
@@ -25,6 +27,12 @@ export function CompanySettingsForm() {
       phone: '',
       email: '',
       logoUrl: '',
+      website: '',
+      licenseNumber: '',
+      certifications: [],
+      termsAndConditions: '',
+      warrantyInfo: '',
+      signatureUrl: '',
     },
   })
 
@@ -189,6 +197,7 @@ export function CompanySettingsForm() {
                   </div>
                 </div>
 
+                {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="companyName">Company Name</Label>
@@ -225,6 +234,64 @@ export function CompanySettingsForm() {
                       id="address"
                       placeholder="123 Main St, City, State 12345"
                       {...register("address")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="website" className="flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      Website
+                    </Label>
+                    <Input
+                      id="website"
+                      type="url"
+                      placeholder="https://www.company.com"
+                      {...register("website")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="licenseNumber" className="flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      License Number
+                    </Label>
+                    <Input
+                      id="licenseNumber"
+                      placeholder="LIC-123456"
+                      {...register("licenseNumber")}
+                    />
+                  </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                {/* Extended Branding */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Document Details
+                  </h3>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="termsAndConditions">Terms and Conditions</Label>
+                    <Textarea
+                      id="termsAndConditions"
+                      placeholder="Enter your standard terms and conditions..."
+                      rows={4}
+                      {...register("termsAndConditions")}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      These will appear on printed estimates and proposals
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="warrantyInfo">Warranty Information</Label>
+                    <Textarea
+                      id="warrantyInfo"
+                      placeholder="Enter warranty details..."
+                      rows={3}
+                      {...register("warrantyInfo")}
                     />
                   </div>
                 </div>

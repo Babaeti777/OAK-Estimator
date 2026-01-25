@@ -42,7 +42,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [trashedProjects, setTrashedProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // Calculate summary from line items
+  // Calculate summary from line items with configurable rates
   const summary: Summary = React.useMemo(() => {
     if (!currentProject) {
       return {
@@ -81,9 +81,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .reduce((sum, item) => sum + item.totalCost, 0)
 
     const subtotal = materialsCost + laborCost + equipmentCost + subcontractorCost + miscCost
-    const markupPercentage = 15
+
+    // Use project-specific rates or defaults
+    const markupPercentage = currentProject.projectSettings.markupPercentage ?? 15
     const markup = subtotal * (markupPercentage / 100)
-    const taxPercentage = 7
+    const taxPercentage = currentProject.projectSettings.taxPercentage ?? 7
     const tax = (subtotal + markup) * (taxPercentage / 100)
     const totalCost = subtotal + markup + tax
 

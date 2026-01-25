@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from "@/contexts/AuthContext"
 import { ProjectProvider } from "@/contexts/ProjectContext"
+import { FolderProvider } from "@/contexts/FolderContext"
 import { ThemeProvider } from "@/contexts/ThemeContext"
 import { LoginScreen } from "@/components/auth/LoginScreen"
 import { LoadingScreen } from "@/components/auth/LoadingScreen"
@@ -18,9 +19,11 @@ function AppContent() {
   }
 
   return (
-    <ProjectProvider>
-      <EstimatorApp />
-    </ProjectProvider>
+    <FolderProvider>
+      <ProjectProvider>
+        <EstimatorApp />
+      </ProjectProvider>
+    </FolderProvider>
   )
 }
 

@@ -6,6 +6,8 @@ import { Select } from "@/components/ui/select"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
+import { QuickAddRow } from "@/components/line-items/QuickAddRow"
+import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import type { LineItem } from "@/types"
 import { Trash2, Table, Search, Download } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
@@ -93,6 +95,11 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const handleDeleteItem = async (itemId: string) => {
     try {
       await deleteLineItem(itemId)
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        next.delete(itemId)
+        return next
+      })
     } catch (error: any) {
       console.error('Failed to delete line item:', error)
       toast({
@@ -101,6 +108,54 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
         description: error.message || "An error occurred while deleting the item",
       })
     }
+  }
+
+  // Bulk selection handlers
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(itemId)) {
+        next.delete(itemId)
+      } else {
+        next.add(itemId)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredItems.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredItems.map(item => item.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+
+    if (!confirm(`Delete ${selectedIds.size} selected item(s)? This cannot be undone.`)) return
+
+    try {
+      for (const itemId of selectedIds) {
+        await deleteLineItem(itemId)
+      }
+      setSelectedIds(new Set())
+      toast({
+        title: "Items deleted",
+        description: `${selectedIds.size} items have been deleted`,
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete items",
+        description: error.message,
+      })
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedIds(new Set())
   }
 
   return (
@@ -411,11 +466,16 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
           )}
 
           {/* Footer Info */}
-          {filteredItems.length > 0 && (
-            <div className="text-sm text-muted-foreground text-right">
-              Showing {filteredItems.length} of {currentProject.lineItems.length} items
-            </div>
-          )}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              {filteredItems.length > 0 && (
+                `Showing ${filteredItems.length} of ${currentProject.lineItems.length} items`
+              )}
+            </span>
+            <span className="text-xs">
+              Press Enter in Quick Add row to add items rapidly
+            </span>
+          </div>
         </CardContent>
       </Card>
     </motion.div>
