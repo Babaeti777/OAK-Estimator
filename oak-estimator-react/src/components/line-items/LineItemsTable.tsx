@@ -9,7 +9,7 @@ import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
 import { QuickAddRow } from "@/components/line-items/QuickAddRow"
 import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search, Download } from "lucide-react"
+import { Trash2, Table, Search, CheckSquare, Square, X } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
@@ -31,7 +31,8 @@ interface LineItemsTableProps {
 export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsTableProps) {
   const { currentProject, updateLineItem, deleteLineItem } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
-  const [viewMode] = useState<"table" | "cards">("table")
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const showQuickAdd = true
 
   // Debounce timers for each item's fields
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -177,13 +178,14 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <TemplatesManager />
               <MaterialBrowser initialDivision={selectedDivision || undefined} />
               <AddLineItemDialog />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search Bar */}
+          {/* Search Bar and Bulk Actions */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -194,6 +196,8 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                 className="pl-9"
               />
             </div>
+
+            {/* Division Filter */}
             {selectedDivision && (
               <div className="flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
                 <span>{getDivisionLabel(selectedDivision)}</span>
@@ -207,175 +211,110 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                 </Button>
               </div>
             )}
+
+            {/* Bulk Actions */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg">
+                <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={clearSelection}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Table */}
-          {viewMode === "table" ? (
-            <div className="border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr className="border-b">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Division
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Description
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Quantity
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Unit
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Unit Cost
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Total
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-background divide-y divide-border">
-                    <AnimatePresence>
-                      {filteredItems.length === 0 ? (
-                        <tr>
-                          <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                            No line items yet. Click "Add Item" to get started.
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="px-2 py-3 w-10">
+                      <button
+                        onClick={toggleSelectAll}
+                        className="p-1 hover:bg-muted rounded"
+                        title={selectedIds.size === filteredItems.length ? "Deselect all" : "Select all"}
+                      >
+                        {selectedIds.size === filteredItems.length && filteredItems.length > 0 ? (
+                          <CheckSquare className="w-4 h-4 text-primary" />
+                        ) : (
+                          <Square className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Division
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Unit
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Unit Cost
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-background divide-y divide-border">
+                  <AnimatePresence>
+                    {filteredItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                          No line items yet. Click "Add Item" to get started.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredItems.map((item, index) => (
+                        <motion.tr
+                          key={item.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={`hover:bg-muted/30 transition-colors ${selectedIds.has(item.id) ? 'bg-primary/5' : ''}`}
+                        >
+                          {/* Selection */}
+                          <td className="px-2 py-3">
+                            <button
+                              onClick={() => toggleSelectItem(item.id)}
+                              className="p-1 hover:bg-muted rounded"
+                            >
+                              {selectedIds.has(item.id) ? (
+                                <CheckSquare className="w-4 h-4 text-primary" />
+                              ) : (
+                                <Square className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </button>
                           </td>
-                        </tr>
-                      ) : (
-                        filteredItems.map((item, index) => (
-                          <motion.tr
-                            key={item.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="hover:bg-muted/30 transition-colors"
-                          >
-                            {/* Division */}
-                            <td className="px-4 py-3">
-                              <Select
-                                value={item.division}
-                                onChange={(e) => handleUpdateItem(item.id, { division: e.target.value })}
-                                className="h-8 text-sm"
-                              >
-                                {DIVISIONS_PRELIMINARY.map(div => (
-                                  <option key={div.code} value={div.code}>
-                                    {div.code} - {div.name}
-                                  </option>
-                                ))}
-                              </Select>
-                            </td>
-
-                            {/* Description */}
-                            <td className="px-4 py-3">
-                              <Input
-                                value={item.description}
-                                onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
-                                className="h-8 text-sm"
-                                placeholder="Item description"
-                              />
-                            </td>
-
-                            {/* Type */}
-                            <td className="px-4 py-3">
-                              <Select
-                                value={item.type}
-                                onChange={(e) => handleUpdateItem(item.id, { type: e.target.value as LineItem['type'] })}
-                                className="h-8 text-sm"
-                              >
-                                {ITEM_TYPES.map(type => (
-                                  <option key={type.value} value={type.value}>
-                                    {type.label}
-                                  </option>
-                                ))}
-                              </Select>
-                            </td>
-
-                            {/* Quantity */}
-                            <td className="px-4 py-3">
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => handleUpdateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
-                                className="h-8 text-sm text-right"
-                                step="0.01"
-                              />
-                            </td>
-
-                            {/* Unit */}
-                            <td className="px-4 py-3">
-                              <Input
-                                value={item.unit}
-                                onChange={(e) => handleUpdateItem(item.id, { unit: e.target.value })}
-                                className="h-8 text-sm w-20"
-                                placeholder="EA"
-                              />
-                            </td>
-
-                            {/* Unit Cost */}
-                            <td className="px-4 py-3">
-                              <Input
-                                type="number"
-                                value={item.unitCost}
-                                onChange={(e) => handleUpdateItem(item.id, { unitCost: parseFloat(e.target.value) || 0 })}
-                                className="h-8 text-sm text-right"
-                                step="0.01"
-                              />
-                            </td>
-
-                            {/* Total */}
-                            <td className="px-4 py-3 text-right font-medium text-sm">
-                              {formatCurrency(item.totalCost)}
-                            </td>
-
-                            {/* Actions */}
-                            <td className="px-4 py-3">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </td>
-                          </motion.tr>
-                        ))
-                      )}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {filteredItems.length === 0 ? (
-                <div className="col-span-full rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                  No line items yet. Click "Add Item" to get started.
-                </div>
-              ) : (
-                filteredItems.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="rounded-lg border bg-background p-4 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-2 flex-1">
-                        <div className="grid gap-2 md:grid-cols-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground">Division</label>
+                          {/* Division */}
+                          <td className="px-4 py-3">
                             <Select
                               value={item.division}
                               onChange={(e) => handleUpdateItem(item.id, { division: e.target.value })}
@@ -387,9 +326,20 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                                 </option>
                               ))}
                             </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">Type</label>
+                          </td>
+
+                          {/* Description */}
+                          <td className="px-4 py-3">
+                            <Input
+                              value={item.description}
+                              onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
+                              className="h-8 text-sm"
+                              placeholder="Item description"
+                            />
+                          </td>
+
+                          {/* Type */}
+                          <td className="px-4 py-3">
                             <Select
                               value={item.type}
                               onChange={(e) => handleUpdateItem(item.id, { type: e.target.value as LineItem['type'] })}
@@ -401,69 +351,67 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                                 </option>
                               ))}
                             </Select>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Description</label>
-                          <Input
-                            value={item.description}
-                            onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
-                            className="h-8 text-sm"
-                            placeholder="Item description"
-                          />
-                        </div>
-                        <div className="grid gap-2 md:grid-cols-3">
-                          <div>
-                            <label className="text-xs text-muted-foreground">Quantity</label>
+                          </td>
+
+                          {/* Quantity */}
+                          <td className="px-4 py-3">
                             <Input
                               type="number"
                               value={item.quantity}
                               onChange={(e) => handleUpdateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-sm text-right bg-muted/20"
+                              className="h-8 text-sm text-right"
                               step="0.01"
                             />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">Unit</label>
+                          </td>
+
+                          {/* Unit */}
+                          <td className="px-4 py-3">
                             <Input
                               value={item.unit}
                               onChange={(e) => handleUpdateItem(item.id, { unit: e.target.value })}
-                              className="h-8 text-sm"
+                              className="h-8 text-sm w-20"
                               placeholder="EA"
                             />
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">Unit Cost</label>
+                          </td>
+
+                          {/* Unit Cost */}
+                          <td className="px-4 py-3">
                             <Input
                               type="number"
                               value={item.unitCost}
                               onChange={(e) => handleUpdateItem(item.id, { unitCost: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-sm text-right bg-muted/20"
+                              className="h-8 text-sm text-right"
                               step="0.01"
                             />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Total</p>
-                        <p className="text-lg font-semibold text-primary">
-                          {formatCurrency(item.totalCost)}
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="mt-2 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              )}
+                          </td>
+
+                          {/* Total */}
+                          <td className="px-4 py-3 text-right font-medium text-sm">
+                            {formatCurrency(item.totalCost)}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-4 py-3">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </AnimatePresence>
+
+                  {/* Quick Add Row */}
+                  {showQuickAdd && <QuickAddRow />}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
 
           {/* Footer Info */}
           <div className="flex items-center justify-between text-sm text-muted-foreground">

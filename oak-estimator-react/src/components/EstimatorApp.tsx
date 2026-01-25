@@ -6,7 +6,10 @@ import { useProject } from "@/contexts/ProjectContext"
 import { ProjectSettingsForm } from "./projects/ProjectSettingsForm"
 import { SummaryCard } from "./projects/SummaryCard"
 import { LineItemsTable } from "./line-items/LineItemsTable"
-import { Plus, FolderOpen } from "lucide-react"
+import { ExportDialog } from "./projects/ExportDialog"
+import { VersionHistory } from "./projects/VersionHistory"
+import { FolderManager } from "./projects/FolderManager"
+import { Plus, FolderOpen, PanelRightClose, Calculator, Download, History, Folder } from "lucide-react"
 import { DivisionSidebar } from "./navigation/DivisionSidebar"
 import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
 
@@ -54,7 +57,31 @@ export function EstimatorApp() {
           </div>
         ) : currentProject ? (
           <>
-            <div className="hidden lg:flex justify-end mb-4">
+            <div className="hidden lg:flex justify-between items-center mb-4">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <FolderManager
+                  trigger={
+                    <Button variant="outline" size="icon" title="Manage Folders">
+                      <Folder className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+                <VersionHistory
+                  trigger={
+                    <Button variant="outline" size="icon" title="Version History">
+                      <History className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+                <ExportDialog
+                  trigger={
+                    <Button variant="outline" size="icon" title="Export">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+              </div>
               <ProjectTotalBadge
                 showSummary={showSummary}
                 onToggleSummary={() => setShowSummary(!showSummary)}
@@ -87,6 +114,22 @@ export function EstimatorApp() {
                   {/* Project Settings */}
                   <div className="flex-1">
                     <ProjectSettingsForm />
+                  </div>
+
+                  {/* Summary Toggle Button (mobile) */}
+                  <div className="lg:hidden flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowSummary(!showSummary)}
+                      title={showSummary ? "Hide Summary" : "Show Summary"}
+                    >
+                      {showSummary ? (
+                        <PanelRightClose className="h-4 w-4" />
+                      ) : (
+                        <Calculator className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
 
