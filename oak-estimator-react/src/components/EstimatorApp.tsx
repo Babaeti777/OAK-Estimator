@@ -47,7 +47,6 @@ export function EstimatorApp() {
     { action: 'go_home', handler: () => setShowDashboard(true) },
     { action: 'go_projects', handler: () => setShowDashboard(false) },
     { action: 'new_project', handler: () => createProject() },
-    { action: 'toggle_theme', handler: () => document.documentElement.classList.toggle('dark') },
   ])
 
   // Show dashboard view
