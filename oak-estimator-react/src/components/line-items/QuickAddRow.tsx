@@ -6,6 +6,7 @@ import { useProject } from "@/contexts/ProjectContext"
 import { Plus, Zap } from "lucide-react"
 import type { LineItem } from "@/types"
 import { toast } from "@/hooks/use-toast"
+import { DIVISIONS_ALL } from "@/data/divisions"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -13,19 +14,6 @@ const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'equipment', label: 'Equipment' },
   { value: 'subcontractor', label: 'Subcontractor' },
   { value: 'misc', label: 'Misc' },
-]
-
-const DIVISIONS = [
-  { code: '01', name: 'General Requirements' },
-  { code: '02', name: 'Existing Conditions' },
-  { code: '03', name: 'Concrete' },
-  { code: '04', name: 'Masonry' },
-  { code: '05', name: 'Metals' },
-  { code: '06', name: 'Wood, Plastics & Composites' },
-  { code: '07', name: 'Thermal & Moisture Protection' },
-  { code: '08', name: 'Openings' },
-  { code: '09', name: 'Finishes' },
-  { code: '10', name: 'Specialties' },
 ]
 
 interface QuickAddRowProps {
@@ -119,7 +107,7 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
   if (!isAdding) {
     return (
       <tr className="border-t border-dashed border-muted">
-        <td colSpan={8} className="px-4 py-2">
+        <td colSpan={9} className="px-4 py-2">
           <Button
             variant="ghost"
             size="sm"
@@ -136,6 +124,9 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
 
   return (
     <tr className="bg-primary/5 border-t-2 border-primary" onKeyDown={handleKeyDown}>
+      {/* Empty cell for checkbox column */}
+      <td className="px-2 py-2"></td>
+
       {/* Division */}
       <td className="px-4 py-2">
         <Select
@@ -143,9 +134,9 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
           onChange={(e) => setFormData({ ...formData, division: e.target.value })}
           className="h-8 text-sm"
         >
-          {DIVISIONS.map(div => (
+          {DIVISIONS_ALL.map(div => (
             <option key={div.code} value={div.code}>
-              {div.code}
+              {div.code} - {div.name}
             </option>
           ))}
         </Select>
