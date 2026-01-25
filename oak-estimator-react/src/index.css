@@ -125,6 +125,57 @@
   ::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground) / 0.5);
   }
+
+  /* Native select dropdown styling for dark mode */
+  select {
+    color-scheme: inherit;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  select option {
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    padding: 8px;
+  }
+
+  select option:hover,
+  select option:focus,
+  select option:checked {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  /* Force dark mode on select in dark theme */
+  :root.dark select,
+  :root:not(.light) select {
+    color-scheme: dark;
+  }
+
+  :root.dark select option,
+  :root:not(.light) select option {
+    background-color: hsl(222.2 84% 7%);
+    color: hsl(210 40% 98%);
+  }
+
+  :root.dark select option:checked,
+  :root:not(.light) select option:checked {
+    background-color: hsl(217.2 32.6% 22%);
+  }
+
+  /* Light mode select styling */
+  :root.light select {
+    color-scheme: light;
+  }
+
+  :root.light select option {
+    background-color: hsl(0 0% 100%);
+    color: hsl(222.2 84% 4.9%);
+  }
+
+  :root.light select option:checked {
+    background-color: hsl(210 40% 96%);
+  }
 }
 
 @layer utilities {
