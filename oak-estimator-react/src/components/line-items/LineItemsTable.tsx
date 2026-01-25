@@ -13,7 +13,7 @@ import { Trash2, Table, Search, CheckSquare, Square, X } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
-import { DIVISIONS_PRELIMINARY, getDivisionLabel } from "@/data/divisions"
+import { DIVISIONS_ALL, getDivisionLabel } from "@/data/divisions"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -320,7 +320,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                               onChange={(e) => handleUpdateItem(item.id, { division: e.target.value })}
                               className="h-8 text-sm"
                             >
-                              {DIVISIONS_PRELIMINARY.map(div => (
+                              {DIVISIONS_ALL.map(div => (
                                 <option key={div.code} value={div.code}>
                                   {div.code} - {div.name}
                                 </option>
