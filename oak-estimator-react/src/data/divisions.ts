@@ -33,7 +33,7 @@ export const DIVISIONS_ALL: Division[] = [
 
 export const DIVISION_FILTERS: Division[] = [
   { code: '', name: 'All Divisions' },
-  ...DIVISIONS_PRELIMINARY,
+  ...DIVISIONS_ALL,
 ]
 
 export function getDivisionLabel(code: string) {

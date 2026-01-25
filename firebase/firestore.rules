@@ -61,6 +61,61 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // Line Item Templates Collection
+    match /lineItemTemplates/{templateId} {
+      // Read: User can only read their own templates
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+
+      // Create: User can create templates with their own userId
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Update: User can update their own templates
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Delete: User can delete their own templates
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
+    }
+
+    // Project Versions Collection
+    match /projectVersions/{versionId} {
+      // Read: User can only read versions of their own projects
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+
+      // Create: User can create versions with their own userId
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Delete: User can delete their own versions
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
+    }
+
+    // Project Folders Collection
+    match /projectFolders/{folderId} {
+      // Read: User can only read their own folders
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+
+      // Create: User can create folders with their own userId
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Update: User can update their own folders
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Delete: User can delete their own folders
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
+    }
+
     // Deny all other collections by default
     match /{document=**} {
       allow read, write: if false;
