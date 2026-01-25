@@ -23,7 +23,6 @@ export const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
 
   // Global
   { key: '/', modifiers: ['ctrl'], action: 'show_shortcuts', description: 'Show Keyboard Shortcuts', category: 'global' },
-  { key: 't', modifiers: ['ctrl'], action: 'toggle_theme', description: 'Toggle Dark/Light Mode', category: 'global' },
 ]
 
 interface ShortcutHandler {

@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
 import { useProject } from "@/contexts/ProjectContext"
-import { useTheme } from "@/contexts/ThemeContext"
-import { Building2, LogOut, FolderOpen, Plus, Moon, Sun, Check, Trash2, RotateCcw } from "lucide-react"
+import { Building2, LogOut, FolderOpen, Plus, Check, Trash2, RotateCcw } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -19,7 +18,6 @@ import { CompanySettingsForm } from "@/components/projects/CompanySettingsForm"
 export function Header() {
   const { user, signOut } = useAuth()
   const { currentProject, projects, trashedProjects, loadProject, createProject, trashProject, restoreProject, deleteProjectPermanently } = useProject()
-  const { theme, toggleTheme } = useTheme()
   const [showTrash, setShowTrash] = useState(false)
   const [companySettingsOpen, setCompanySettingsOpen] = useState(false)
 
@@ -185,21 +183,6 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className="rounded-full"
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-            <span className="sr-only">Toggle theme</span>
-          </Button>
 
           {/* User Menu */}
           {user && (
