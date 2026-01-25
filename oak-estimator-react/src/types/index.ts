@@ -31,17 +31,9 @@ export interface ProjectSettings {
   architect: string
   estimator: string
   date: string
-  // New fields
-  clientName?: string
-  clientEmail?: string
-  clientPhone?: string
-  clientAddress?: string
-  scope?: string
-  notes?: string
-  validUntil?: string
-  // Configurable rates per project
-  markupPercentage?: number  // Defaults to 15 if not set
-  taxPercentage?: number     // Defaults to 7 if not set
+  inclusions: string
+  exclusions: string
+  terms: string
 }
 
 export interface LineItem {
@@ -53,6 +45,7 @@ export interface LineItem {
   unit: string
   unitCost: number
   totalCost: number
+  schedule?: string
   notes?: string
   materialId?: string
   order: number

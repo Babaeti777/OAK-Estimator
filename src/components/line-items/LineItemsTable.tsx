@@ -6,8 +6,6 @@ import { Select } from "@/components/ui/select"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
-import { QuickAddRow } from "@/components/line-items/QuickAddRow"
-import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import type { LineItem } from "@/types"
 import { Trash2, Table, Search, Download } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
@@ -95,11 +93,6 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const handleDeleteItem = async (itemId: string) => {
     try {
       await deleteLineItem(itemId)
-      setSelectedIds(prev => {
-        const next = new Set(prev)
-        next.delete(itemId)
-        return next
-      })
     } catch (error: any) {
       console.error('Failed to delete line item:', error)
       toast({
@@ -110,52 +103,45 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
     }
   }
 
-  // Bulk selection handlers
-  const toggleSelectItem = (itemId: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(itemId)) {
-        next.delete(itemId)
-      } else {
-        next.add(itemId)
-      }
-      return next
-    })
-  }
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredItems.length) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(filteredItems.map(item => item.id)))
-    }
-  }
-
-  const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return
-
-    if (!confirm(`Delete ${selectedIds.size} selected item(s)? This cannot be undone.`)) return
-
-    try {
-      for (const itemId of selectedIds) {
-        await deleteLineItem(itemId)
-      }
-      setSelectedIds(new Set())
-      toast({
-        title: "Items deleted",
-        description: `${selectedIds.size} items have been deleted`,
-      })
-    } catch (error: any) {
+  // Use the imported Download icon by providing a small download/export feature per item.
+  const handleDownloadItem = (itemId: string) => {
+    const item = currentProject.lineItems.find(i => i.id === itemId)
+    if (!item) {
       toast({
         variant: "destructive",
-        title: "Failed to delete items",
-        description: error.message,
+        title: "Item not found",
+        description: "Could not find the requested line item to download.",
+      })
+      return
+    }
+
+    try {
+      const rows = [
+        ["Division","Description","Type","Quantity","Unit","Unit Cost","Total"],
+        [item.division, item.description, item.type, String(item.quantity), item.unit, String(item.unitCost), String(item.totalCost)],
+      ]
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${currentProject.name || 'line-item'}-${item.id}.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({
+        title: "Download started",
+        description: `${item.description} is downloading as CSV.`,
+      })
+    } catch (error: any) {
+      console.error('Failed to download item:', error)
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: error.message || "An error occurred while generating the download.",
       })
     }
-  }
-
-  const clearSelection = () => {
-    setSelectedIds(new Set())
   }
 
   return (
@@ -237,7 +223,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                       <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Total
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
                         Actions
                       </th>
                     </tr>
@@ -339,14 +325,26 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 
                             {/* Actions */}
                             <td className="px-4 py-3">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDownloadItem(item.id)}
+                                  className="h-8 w-8"
+                                  aria-label="Download item"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  aria-label="Delete item"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </td>
                           </motion.tr>
                         ))
@@ -449,14 +447,26 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                         <p className="text-lg font-semibold text-primary">
                           {formatCurrency(item.totalCost)}
                         </p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="mt-2 h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="mt-2 flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadItem(item.id)}
+                            className="h-8 w-8"
+                            aria-label="Download item"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            aria-label="Delete item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -466,16 +476,11 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
           )}
 
           {/* Footer Info */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              {filteredItems.length > 0 && (
-                `Showing ${filteredItems.length} of ${currentProject.lineItems.length} items`
-              )}
-            </span>
-            <span className="text-xs">
-              Press Enter in Quick Add row to add items rapidly
-            </span>
-          </div>
+          {filteredItems.length > 0 && (
+            <div className="text-sm text-muted-foreground text-right">
+              Showing {filteredItems.length} of {currentProject.lineItems.length} items
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

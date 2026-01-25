@@ -154,6 +154,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           architect: '',
           estimator: user.displayName || '',
           date: new Date().toISOString().split('T')[0],
+          inclusions: '',
+          exclusions: '',
+          terms: '',
         },
         lineItems: [],
       }
