@@ -31,7 +31,11 @@ export interface ProjectSettings {
   architect: string
   estimator: string
   date: string
-  // New fields
+  // From main branch
+  inclusions: string
+  exclusions: string
+  terms: string
+  // Extended fields
   clientName?: string
   clientEmail?: string
   clientPhone?: string
@@ -53,6 +57,7 @@ export interface LineItem {
   unit: string
   unitCost: number
   totalCost: number
+  schedule?: string
   notes?: string
   materialId?: string
   order: number

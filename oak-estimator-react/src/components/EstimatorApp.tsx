@@ -10,16 +10,20 @@ import { ExportDialog } from "./projects/ExportDialog"
 import { VersionHistory } from "./projects/VersionHistory"
 import { FolderManager } from "./projects/FolderManager"
 import { Plus, FolderOpen, PanelRightClose, Calculator, Download, History, Folder } from "lucide-react"
+import { DivisionSidebar } from "./navigation/DivisionSidebar"
+import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
 
 export function EstimatorApp() {
   const { currentProject, projects, createProject, isLoading } = useProject()
   const [showSummary, setShowSummary] = useState(true)
+  const [selectedDivision, setSelectedDivision] = useState("")
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="container mx-auto px-4 py-8 max-w-7xl relative">
         {!currentProject && projects.length === 0 ? (
           <div className="max-w-2xl mx-auto mt-20">
             <Card className="text-center">
@@ -52,80 +56,102 @@ export function EstimatorApp() {
             </Card>
           </div>
         ) : currentProject ? (
-          <div className="flex gap-6">
-            {/* Main Content Area */}
-            <div className={`flex-1 space-y-6 transition-all duration-300 ${showSummary ? 'lg:pr-0' : ''}`}>
-              {/* Project Header with Logo and Settings */}
-              <div className="flex items-start gap-6">
-                {/* Company Logo */}
-                {currentProject.companySettings.logoUrl && (
-                  <div className="flex-shrink-0">
-                    <img
-                      src={currentProject.companySettings.logoUrl}
-                      alt={currentProject.companySettings.companyName || "Company logo"}
-                      className="w-24 h-24 object-contain rounded-lg border-2 border-border bg-muted p-2"
-                    />
+          <>
+            <div className="hidden lg:flex justify-between items-center mb-4">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <FolderManager
+                  trigger={
+                    <Button variant="outline" size="icon" title="Manage Folders">
+                      <Folder className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+                <VersionHistory
+                  trigger={
+                    <Button variant="outline" size="icon" title="Version History">
+                      <History className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+                <ExportDialog
+                  trigger={
+                    <Button variant="outline" size="icon" title="Export">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+              </div>
+              <ProjectTotalBadge
+                showSummary={showSummary}
+                onToggleSummary={() => setShowSummary(!showSummary)}
+              />
+            </div>
+            <div className="flex gap-6">
+              <DivisionSidebar
+                selectedDivision={selectedDivision}
+                onSelectDivision={setSelectedDivision}
+                onClearDivision={() => setSelectedDivision("")}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+              />
+
+              {/* Main Content Area */}
+              <div className="flex-1 space-y-6 transition-all duration-300">
+                {/* Project Header with Logo and Settings */}
+                <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                  {/* Company Logo */}
+                  {currentProject.companySettings.logoUrl && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={currentProject.companySettings.logoUrl}
+                        alt={currentProject.companySettings.companyName || "Company logo"}
+                        className="w-24 h-24 object-contain rounded-lg border-2 border-border bg-muted p-2"
+                      />
+                    </div>
+                  )}
+
+                  {/* Project Settings */}
+                  <div className="flex-1">
+                    <ProjectSettingsForm />
                   </div>
-                )}
 
-                {/* Project Settings */}
-                <div className="flex-1">
-                  <ProjectSettingsForm />
+                  {/* Summary Toggle Button (mobile) */}
+                  <div className="lg:hidden flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowSummary(!showSummary)}
+                      title={showSummary ? "Hide Summary" : "Show Summary"}
+                    >
+                      {showSummary ? (
+                        <PanelRightClose className="h-4 w-4" />
+                      ) : (
+                        <Calculator className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <FolderManager
-                    trigger={
-                      <Button variant="outline" size="icon" title="Manage Folders">
-                        <Folder className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
-                  <VersionHistory
-                    trigger={
-                      <Button variant="outline" size="icon" title="Version History">
-                        <History className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
-                  <ExportDialog
-                    trigger={
-                      <Button variant="outline" size="icon" title="Export">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowSummary(!showSummary)}
-                    title={showSummary ? "Hide Summary" : "Show Summary"}
-                  >
-                    {showSummary ? (
-                      <PanelRightClose className="h-4 w-4" />
-                    ) : (
-                      <Calculator className="h-4 w-4" />
-                    )}
-                  </Button>
+                {/* Line Items Table */}
+                <LineItemsTable
+                  selectedDivision={selectedDivision}
+                  onClearDivision={() => setSelectedDivision("")}
+                />
+              </div>
+
+              {/* Collapsible Summary Panel */}
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
+                }`}
+              >
+                <div className="w-80 sticky top-24">
+                  <SummaryCard />
                 </div>
               </div>
-
-              {/* Line Items Table */}
-              <LineItemsTable />
             </div>
-
-            {/* Collapsible Summary Panel */}
-            <div
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
-              }`}
-            >
-              <div className="w-80 sticky top-24">
-                <SummaryCard />
-              </div>
-            </div>
-          </div>
+          </>
         ) : (
           <div className="max-w-2xl mx-auto mt-20">
             <Card className="text-center">
