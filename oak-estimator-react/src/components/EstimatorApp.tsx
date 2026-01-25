@@ -9,15 +9,67 @@ import { LineItemsTable } from "./line-items/LineItemsTable"
 import { ExportDialog } from "./projects/ExportDialog"
 import { VersionHistory } from "./projects/VersionHistory"
 import { FolderManager } from "./projects/FolderManager"
-import { Plus, FolderOpen, PanelRightClose, Calculator, Download, History, Folder } from "lucide-react"
+import { Dashboard } from "./dashboard/Dashboard"
+import { AssemblyManager } from "./assemblies/AssemblyManager"
+import { ChangeOrderManager } from "./change-orders/ChangeOrderManager"
+import { ImportDialog } from "./import/ImportDialog"
+import { ShareDialog } from "./sharing/ShareDialog"
+import { KeyboardShortcutsDialog } from "./shortcuts/KeyboardShortcutsDialog"
+import { AttachmentsPanel } from "./attachments/AttachmentsPanel"
+import { LaborRatesManager } from "./labor/LaborRatesManager"
+import { ProfitMarginChart } from "./analysis/ProfitMarginChart"
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
+import {
+  Plus,
+  FolderOpen,
+  PanelRightClose,
+  Calculator,
+  Download,
+  History,
+  Folder,
+  LayoutDashboard,
+  Copy,
+  Paperclip,
+} from "lucide-react"
 import { DivisionSidebar } from "./navigation/DivisionSidebar"
 import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
 
 export function EstimatorApp() {
-  const { currentProject, projects, createProject, isLoading } = useProject()
+  const { currentProject, projects, createProject, duplicateProject, isLoading } = useProject()
   const [showSummary, setShowSummary] = useState(true)
+  const [showDashboard, setShowDashboard] = useState(false)
+  const [showAttachments, setShowAttachments] = useState(false)
   const [selectedDivision, setSelectedDivision] = useState("")
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  // Keyboard shortcuts handlers
+  useKeyboardShortcuts([
+    { action: 'go_home', handler: () => setShowDashboard(true) },
+    { action: 'go_projects', handler: () => setShowDashboard(false) },
+    { action: 'new_project', handler: () => createProject() },
+    { action: 'toggle_theme', handler: () => document.documentElement.classList.toggle('dark') },
+  ])
+
+  // Show dashboard view
+  if (showDashboard) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <LayoutDashboard className="w-6 h-6" />
+              Dashboard
+            </h1>
+            <Button variant="outline" onClick={() => setShowDashboard(false)}>
+              Back to Projects
+            </Button>
+          </div>
+          <Dashboard />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,8 +110,16 @@ export function EstimatorApp() {
         ) : currentProject ? (
           <>
             <div className="hidden lg:flex justify-between items-center mb-4">
-              {/* Action Buttons */}
+              {/* Action Buttons - Left */}
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Dashboard"
+                  onClick={() => setShowDashboard(true)}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                </Button>
                 <FolderManager
                   trigger={
                     <Button variant="outline" size="icon" title="Manage Folders">
@@ -67,6 +127,14 @@ export function EstimatorApp() {
                     </Button>
                   }
                 />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Duplicate Project"
+                  onClick={() => currentProject && duplicateProject(currentProject.id)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
                 <VersionHistory
                   trigger={
                     <Button variant="outline" size="icon" title="Version History">
@@ -74,6 +142,27 @@ export function EstimatorApp() {
                     </Button>
                   }
                 />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Attachments"
+                  onClick={() => setShowAttachments(!showAttachments)}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Action Buttons - Center */}
+              <div className="flex items-center gap-2">
+                <AssemblyManager />
+                <LaborRatesManager />
+                <ChangeOrderManager />
+                <ProfitMarginChart />
+              </div>
+
+              {/* Action Buttons - Right */}
+              <div className="flex items-center gap-2">
+                <ImportDialog />
                 <ExportDialog
                   trigger={
                     <Button variant="outline" size="icon" title="Export">
@@ -81,6 +170,8 @@ export function EstimatorApp() {
                     </Button>
                   }
                 />
+                <ShareDialog />
+                <KeyboardShortcutsDialog />
               </div>
               <ProjectTotalBadge
                 showSummary={showSummary}
@@ -146,8 +237,10 @@ export function EstimatorApp() {
                   showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
                 }`}
               >
-                <div className="w-80 sticky top-24">
+                <div className="w-80 sticky top-24 space-y-4">
                   <SummaryCard />
+                  {/* Attachments Panel (collapsible) */}
+                  {showAttachments && <AttachmentsPanel />}
                 </div>
               </div>
             </div>

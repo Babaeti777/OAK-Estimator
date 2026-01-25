@@ -21,12 +21,14 @@ interface ProjectContextType {
   summary: Summary
   isLoading: boolean
   createProject: () => Promise<void>
+  duplicateProject: (projectId: string) => Promise<void>
   loadProject: (projectId: string) => Promise<void>
   updateCompanySettings: (settings: CompanySettings) => Promise<void>
   updateProjectSettings: (settings: ProjectSettings) => Promise<void>
   addLineItem: (item: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => Promise<void>
   updateLineItem: (itemId: string, updates: Partial<LineItem>) => Promise<void>
   deleteLineItem: (itemId: string) => Promise<void>
+  deleteLineItems: (itemIds: string[]) => Promise<void>
   trashProject: (projectId: string) => Promise<void>
   restoreProject: (projectId: string) => Promise<void>
   deleteProjectPermanently: (projectId: string) => Promise<void>
@@ -184,6 +186,63 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
+  const duplicateProject = useCallback(async (projectId: string) => {
+    if (!user) {
+      throw new Error('Must be logged in to duplicate a project')
+    }
+
+    const sourceProject = projects.find(p => p.id === projectId)
+    if (!sourceProject) {
+      throw new Error('Project not found')
+    }
+
+    try {
+      setIsLoading(true)
+
+      // Create new line items with new IDs
+      const now = Date.now()
+      const newLineItems = sourceProject.lineItems.map((item, index) => ({
+        ...item,
+        id: `item-${now}-${index}`,
+        createdAt: now,
+        updatedAt: now,
+      }))
+
+      const newProject: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: user.uid,
+        companySettings: { ...sourceProject.companySettings },
+        projectSettings: {
+          ...sourceProject.projectSettings,
+          projectName: `${sourceProject.projectSettings.projectName} (Copy)`,
+          date: new Date().toISOString().split('T')[0],
+        },
+        lineItems: newLineItems,
+        status: 'draft',
+      }
+
+      const newProjectId = await createFirestoreProject(newProject)
+      const allProjects = await getUserProjects(user.uid)
+      const created = allProjects.find(p => p.id === newProjectId)
+
+      if (created) {
+        setCurrentProject(created)
+        toast({
+          title: "Project duplicated",
+          description: `Created "${created.projectSettings.projectName}"`,
+        })
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to duplicate project",
+        description: error.message,
+      })
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user, projects])
+
   const loadProject = useCallback(async (projectId: string) => {
     try {
       setIsLoading(true)
@@ -322,6 +381,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentProject])
 
+  const deleteLineItems = useCallback(async (itemIds: string[]) => {
+    if (!currentProject) {
+      throw new Error('No project selected')
+    }
+
+    try {
+      const idsSet = new Set(itemIds)
+      const updatedItems = currentProject.lineItems.filter(item => !idsSet.has(item.id))
+
+      await updateFirestoreProject(currentProject.id, {
+        lineItems: updatedItems,
+      })
+
+      toast({
+        title: "Line items deleted",
+        description: `${itemIds.length} items have been removed`,
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete line items",
+        description: error.message,
+      })
+      throw error
+    }
+  }, [currentProject])
+
   const trashProject = useCallback(async (projectId: string) => {
     try {
       await trashFirestoreProject(projectId)
@@ -421,12 +507,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         summary,
         isLoading,
         createProject,
+        duplicateProject,
         loadProject,
         updateCompanySettings,
         updateProjectSettings,
         addLineItem,
         updateLineItem,
         deleteLineItem,
+        deleteLineItems,
         trashProject,
         restoreProject,
         deleteProjectPermanently,

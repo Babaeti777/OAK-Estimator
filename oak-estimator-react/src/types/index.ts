@@ -186,3 +186,218 @@ export interface ExportOptions {
   showUnitCosts: boolean
   showLineItemNotes: boolean
 }
+
+// ============================================
+// FEATURE 1: Dashboard Analytics Types
+// ============================================
+
+export interface DashboardStats {
+  totalProjects: number
+  activeProjects: number
+  totalPipelineValue: number
+  avgProjectValue: number
+  projectsByStatus: Record<string, number>
+  projectsByMonth: { month: string; count: number; value: number }[]
+  costsByDivision: { division: string; cost: number }[]
+  recentActivity: ActivityItem[]
+}
+
+export interface ActivityItem {
+  id: string
+  type: 'project_created' | 'project_updated' | 'project_sent' | 'project_approved' | 'project_rejected'
+  projectId: string
+  projectName: string
+  timestamp: number
+  details?: string
+}
+
+// ============================================
+// FEATURE 2: Assembly/Kit Items Types
+// ============================================
+
+export interface Assembly {
+  id: string
+  userId: string
+  name: string
+  description?: string
+  category?: string
+  items: AssemblyItem[]
+  totalCost: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface AssemblyItem {
+  description: string
+  division: string
+  type: LineItem['type']
+  quantity: number
+  unit: string
+  unitCost: number
+  notes?: string
+}
+
+// ============================================
+// FEATURE 3: Change Order Management Types
+// ============================================
+
+export interface ChangeOrder {
+  id: string
+  projectId: string
+  userId: string
+  changeOrderNumber: number
+  title: string
+  description: string
+  reason: 'scope_change' | 'client_request' | 'unforeseen_conditions' | 'design_change' | 'other'
+  status: 'draft' | 'pending' | 'approved' | 'rejected'
+  addedItems: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order'>[]
+  removedItemIds: string[]
+  modifiedItems: { itemId: string; changes: Partial<LineItem> }[]
+  originalTotal: number
+  newTotal: number
+  netChange: number
+  approvedBy?: string
+  approvedAt?: number
+  createdAt: number
+  updatedAt: number
+}
+
+// ============================================
+// FEATURE 5: Import/Export Types
+// ============================================
+
+export interface ImportMapping {
+  division?: string
+  description: string
+  type?: string
+  quantity: string
+  unit: string
+  unitCost: string
+  notes?: string
+}
+
+export interface ImportResult {
+  success: number
+  failed: number
+  errors: { row: number; message: string }[]
+  items: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order'>[]
+}
+
+// ============================================
+// FEATURE 6: Client Portal Types
+// ============================================
+
+export interface SharedProject {
+  id: string
+  projectId: string
+  userId: string
+  shareToken: string
+  expiresAt?: number
+  allowComments: boolean
+  showUnitCosts: boolean
+  showMarkup: boolean
+  password?: string
+  viewCount: number
+  lastViewedAt?: number
+  createdAt: number
+}
+
+export interface ClientComment {
+  id: string
+  sharedProjectId: string
+  lineItemId?: string
+  content: string
+  authorName: string
+  authorEmail?: string
+  createdAt: number
+  resolved?: boolean
+  resolvedAt?: number
+}
+
+// ============================================
+// FEATURE 7: Keyboard Shortcuts Types
+// ============================================
+
+export interface KeyboardShortcut {
+  key: string
+  modifiers: ('ctrl' | 'alt' | 'shift' | 'meta')[]
+  action: string
+  description: string
+  category: 'navigation' | 'editing' | 'actions' | 'global'
+}
+
+// ============================================
+// FEATURE 8: Attachments Types
+// ============================================
+
+export interface Attachment {
+  id: string
+  projectId: string
+  userId: string
+  filename: string
+  originalName: string
+  mimeType: string
+  size: number
+  url: string
+  thumbnailUrl?: string
+  lineItemId?: string
+  description?: string
+  createdAt: number
+}
+
+// ============================================
+// FEATURE 9: Labor Rate Management Types
+// ============================================
+
+export interface LaborRate {
+  id: string
+  userId: string
+  tradeName: string
+  tradeCode: string
+  description?: string
+  hourlyRate: number
+  overtimeMultiplier: number
+  benefitsRate?: number
+  burdenRate?: number
+  effectiveRate: number
+  isDefault?: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+export interface LaborCategory {
+  code: string
+  name: string
+  defaultRate: number
+}
+
+// ============================================
+// FEATURE 10: Profit Margin Types
+// ============================================
+
+export interface ProfitAnalysis {
+  totalRevenue: number
+  totalCost: number
+  grossProfit: number
+  grossMarginPercentage: number
+  byDivision: DivisionProfit[]
+  byType: TypeProfit[]
+  recommendations: string[]
+}
+
+export interface DivisionProfit {
+  division: string
+  divisionName: string
+  cost: number
+  revenue: number
+  profit: number
+  marginPercentage: number
+}
+
+export interface TypeProfit {
+  type: LineItem['type']
+  cost: number
+  revenue: number
+  profit: number
+  marginPercentage: number
+}
