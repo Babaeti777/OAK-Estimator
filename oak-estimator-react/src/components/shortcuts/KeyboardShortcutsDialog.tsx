@@ -30,17 +30,23 @@ const CATEGORY_LABELS: Record<string, string> = {
   global: 'Global',
 }
 
-export function KeyboardShortcutsDialog() {
+interface KeyboardShortcutsDialogProps {
+  trigger?: React.ReactNode
+}
+
+export function KeyboardShortcutsDialog({ trigger }: KeyboardShortcutsDialogProps) {
   const [open, setOpen] = useState(false)
   const groupedShortcuts = groupShortcutsByCategory()
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Keyboard className="w-4 h-4" />
-          <span className="hidden md:inline">Shortcuts</span>
-        </Button>
+        {trigger || (
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Keyboard className="w-4 h-4" />
+            <span className="hidden md:inline">Shortcuts</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>

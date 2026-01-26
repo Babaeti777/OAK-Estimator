@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { CalculatorInput } from "@/components/ui/calculator-input"
 import { useProject } from "@/contexts/ProjectContext"
 import { Plus, Zap } from "lucide-react"
 import type { LineItem } from "@/types"
@@ -168,14 +169,13 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
         </Select>
       </td>
 
-      {/* Quantity */}
+      {/* Quantity - supports calculator expressions */}
       <td className="px-4 py-2">
-        <Input
-          type="number"
+        <CalculatorInput
           value={formData.quantity}
-          onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-          className="h-8 text-sm text-right"
-          step="0.01"
+          onChange={(value) => setFormData({ ...formData, quantity: value })}
+          className="h-8 text-sm text-right w-28"
+          placeholder="e.g. 2+3"
         />
       </td>
 
@@ -189,14 +189,13 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
         />
       </td>
 
-      {/* Unit Cost */}
+      {/* Unit Cost - supports calculator expressions */}
       <td className="px-4 py-2">
-        <Input
-          type="number"
+        <CalculatorInput
           value={formData.unitCost}
-          onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) || 0 })}
-          className="h-8 text-sm text-right"
-          step="0.01"
+          onChange={(value) => setFormData({ ...formData, unitCost: value })}
+          className="h-8 text-sm text-right w-28"
+          placeholder="e.g. 100*1.1"
         />
       </td>
 

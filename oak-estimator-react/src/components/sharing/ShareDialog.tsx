@@ -31,7 +31,11 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
-export function ShareDialog() {
+interface ShareDialogProps {
+  trigger?: React.ReactNode
+}
+
+export function ShareDialog({ trigger }: ShareDialogProps) {
   const { user } = useAuth()
   const { currentProject } = useProject()
   const [open, setOpen] = useState(false)
@@ -132,10 +136,12 @@ export function ShareDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Share2 className="w-4 h-4 mr-2" />
-          Share
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <Share2 className="w-4 h-4 mr-2" />
+            Share
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>

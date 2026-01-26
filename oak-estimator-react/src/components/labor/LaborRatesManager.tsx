@@ -34,7 +34,11 @@ import {
   Calculator,
 } from 'lucide-react'
 
-export function LaborRatesManager() {
+interface LaborRatesManagerProps {
+  trigger?: React.ReactNode
+}
+
+export function LaborRatesManager({ trigger }: LaborRatesManagerProps) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [laborRates, setLaborRates] = useState<LaborRate[]>([])
@@ -180,10 +184,12 @@ export function LaborRatesManager() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Users className="w-4 h-4 mr-2" />
-          Labor Rates
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <Users className="w-4 h-4 mr-2" />
+            Labor Rates
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>

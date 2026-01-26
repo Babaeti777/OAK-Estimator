@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { CalculatorInput } from "@/components/ui/calculator-input"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
 import { QuickAddRow } from "@/components/line-items/QuickAddRow"
 import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search, CheckSquare, Square, X } from "lucide-react"
+import { Trash2, Table, Search, CheckSquare, Square, X, Calculator } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "@/hooks/use-toast"
@@ -353,14 +354,13 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                             </Select>
                           </td>
 
-                          {/* Quantity */}
+                          {/* Quantity - supports calculator expressions */}
                           <td className="px-4 py-3">
-                            <Input
-                              type="number"
+                            <CalculatorInput
                               value={item.quantity}
-                              onChange={(e) => handleUpdateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-sm text-right"
-                              step="0.01"
+                              onChange={(value) => handleUpdateItem(item.id, { quantity: value })}
+                              className="h-8 text-sm text-right w-28"
+                              placeholder="e.g. 2+3"
                             />
                           </td>
 
@@ -374,14 +374,13 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                             />
                           </td>
 
-                          {/* Unit Cost */}
+                          {/* Unit Cost - supports calculator expressions */}
                           <td className="px-4 py-3">
-                            <Input
-                              type="number"
+                            <CalculatorInput
                               value={item.unitCost}
-                              onChange={(e) => handleUpdateItem(item.id, { unitCost: parseFloat(e.target.value) || 0 })}
-                              className="h-8 text-sm text-right"
-                              step="0.01"
+                              onChange={(value) => handleUpdateItem(item.id, { unitCost: value })}
+                              className="h-8 text-sm text-right w-28"
+                              placeholder="e.g. 100*1.1"
                             />
                           </td>
 
@@ -420,9 +419,12 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                 `Showing ${filteredItems.length} of ${currentProject.lineItems.length} items`
               )}
             </span>
-            <span className="text-xs">
-              Press Enter in Quick Add row to add items rapidly
-            </span>
+            <div className="flex items-center gap-4 text-xs">
+              <span className="flex items-center gap-1">
+                <Calculator className="w-3 h-3" />
+                Quantity supports math: 2+3, 10*5, (4+2)*3
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
