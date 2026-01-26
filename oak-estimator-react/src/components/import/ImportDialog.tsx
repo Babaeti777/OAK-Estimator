@@ -22,7 +22,11 @@ import {
 import type { ImportMapping, ImportResult } from '@/types'
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react'
 
-export function ImportDialog() {
+interface ImportDialogProps {
+  trigger?: React.ReactNode
+}
+
+export function ImportDialog({ trigger }: ImportDialogProps) {
   const { addLineItem, currentProject } = useProject()
   const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -129,10 +133,12 @@ export function ImportDialog() {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => isOpen ? setOpen(true) : handleClose()}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Upload className="w-4 h-4 mr-2" />
-          Import CSV
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <Upload className="w-4 h-4 mr-2" />
+            Import CSV
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>

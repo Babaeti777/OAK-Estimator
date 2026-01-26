@@ -39,7 +39,11 @@ const TYPE_COLORS: Record<string, string> = {
   misc: 'bg-gray-500',
 }
 
-export function ProfitMarginChart() {
+interface ProfitMarginChartProps {
+  trigger?: React.ReactNode
+}
+
+export function ProfitMarginChart({ trigger }: ProfitMarginChartProps) {
   const { currentProject } = useProject()
 
   const analysis = useMemo<ProfitAnalysis | null>(() => {
@@ -48,7 +52,9 @@ export function ProfitMarginChart() {
   }, [currentProject])
 
   if (!analysis) {
-    return (
+    return trigger ? (
+      <div className="opacity-50 pointer-events-none">{trigger}</div>
+    ) : (
       <Button variant="outline" size="sm" disabled>
         <PieChart className="w-4 h-4 mr-2" />
         Profit Analysis
@@ -65,10 +71,12 @@ export function ProfitMarginChart() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <PieChart className="w-4 h-4 mr-2" />
-          Profit Analysis
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <PieChart className="w-4 h-4 mr-2" />
+            Profit Analysis
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>

@@ -59,7 +59,11 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   rejected: <X className="w-4 h-4" />,
 }
 
-export function ChangeOrderManager() {
+interface ChangeOrderManagerProps {
+  trigger?: React.ReactNode
+}
+
+export function ChangeOrderManager({ trigger }: ChangeOrderManagerProps) {
   const { user } = useAuth()
   const { currentProject, summary } = useProject()
   const [open, setOpen] = useState(false)
@@ -186,10 +190,12 @@ export function ChangeOrderManager() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <FileEdit className="w-4 h-4 mr-2" />
-          Change Orders
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <FileEdit className="w-4 h-4 mr-2" />
+            Change Orders
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>

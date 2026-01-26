@@ -33,7 +33,11 @@ const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'misc', label: 'Miscellaneous' },
 ]
 
-export function AssemblyManager() {
+interface AssemblyManagerProps {
+  trigger?: React.ReactNode
+}
+
+export function AssemblyManager({ trigger }: AssemblyManagerProps) {
   const { user } = useAuth()
   const { addLineItem, currentProject } = useProject()
   const [open, setOpen] = useState(false)
@@ -204,10 +208,12 @@ export function AssemblyManager() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Layers className="w-4 h-4 mr-2" />
-          Assemblies
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <Layers className="w-4 h-4 mr-2" />
+            Assemblies
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
