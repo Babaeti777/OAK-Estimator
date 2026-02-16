@@ -97,9 +97,18 @@ export function ImportDialog({ trigger }: ImportDialogProps) {
       setResult(importResult)
 
       if (importResult.success > 0) {
-        // Add items to project
-        for (const item of importResult.items) {
-          await addLineItem(item)
+        // Fix #10: Chunk import to avoid blocking UI on large datasets
+        const BATCH_SIZE = 25
+        const items = importResult.items
+        for (let i = 0; i < items.length; i += BATCH_SIZE) {
+          const batch = items.slice(i, i + BATCH_SIZE)
+          for (const item of batch) {
+            await addLineItem(item)
+          }
+          // Yield to browser between batches
+          if (i + BATCH_SIZE < items.length) {
+            await new Promise(resolve => setTimeout(resolve, 0))
+          }
         }
 
         toast({

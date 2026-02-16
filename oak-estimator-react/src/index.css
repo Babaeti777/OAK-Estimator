@@ -6,10 +6,8 @@
    ============================================ */
 
 @layer base {
-  /* Dark Theme Variables */
-  :root,
-  :root.dark,
-  :root.light {
+  /* Dark Theme Variables (single dark-only theme) */
+  :root {
     color-scheme: dark;
 
     /* Background colors */
