@@ -3,7 +3,6 @@ import { Header } from "./layout/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { useProject } from "@/contexts/ProjectContext"
-import { ProjectSettingsForm } from "./projects/ProjectSettingsForm"
 import { SummaryCard } from "./projects/SummaryCard"
 import { LineItemsTable } from "./line-items/LineItemsTable"
 import { ExportDialog } from "./projects/ExportDialog"
@@ -25,7 +24,6 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import {
   Plus,
   FolderOpen,
-  PanelRightClose,
   Calculator,
   Download,
   History,
@@ -439,55 +437,11 @@ export function EstimatorApp() {
               </div>
             )}
 
-            {/* Mobile Division Filter Chips */}
-            <DivisionSidebar
+            {/* Line Items Table - Full Width */}
+            <LineItemsTable
               selectedDivision={state.selectedDivision}
-              onSelectDivision={(div) => dispatch({ type: 'SET_DIVISION', payload: div })}
               onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
-              isCollapsed={false}
-              onToggleCollapse={() => {}}
             />
-
-            {/* Full Width Main Content Area */}
-            <div className="space-y-4 md:space-y-6">
-              {/* Project Header with Logo and Settings */}
-              <div className="flex flex-col lg:flex-row lg:items-start gap-4 md:gap-6">
-                {currentProject.companySettings.logoUrl && (
-                  <div className="flex-shrink-0 hidden sm:block">
-                    <img
-                      src={currentProject.companySettings.logoUrl}
-                      alt={currentProject.companySettings.companyName || "Company logo"}
-                      className="w-16 h-16 md:w-24 md:h-24 object-contain rounded-lg border-2 border-border bg-card p-2"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <ProjectSettingsForm />
-                </div>
-                {/* Summary Toggle Button (tablet/desktop) */}
-                <div className="hidden md:flex items-center gap-2">
-                  <Button
-                    variant={state.showSummary ? "default" : "outline"}
-                    size="icon"
-                    onClick={() => dispatch({ type: 'TOGGLE_SUMMARY' })}
-                    title={state.showSummary ? "Hide Summary" : "Show Summary"}
-                    aria-label={state.showSummary ? "Hide Summary" : "Show Summary"}
-                  >
-                    {state.showSummary ? (
-                      <PanelRightClose className="h-4 w-4" />
-                    ) : (
-                      <Calculator className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Line Items Table - Full Width */}
-              <LineItemsTable
-                selectedDivision={state.selectedDivision}
-                onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
-              />
-            </div>
 
             {/* Overlay Division Panel (left) */}
             <OverlaySidePanel
@@ -500,8 +454,6 @@ export function EstimatorApp() {
                 selectedDivision={state.selectedDivision}
                 onSelectDivision={(div) => dispatch({ type: 'SET_DIVISION', payload: div })}
                 onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
-                isCollapsed={false}
-                onToggleCollapse={() => {}}
               />
             </OverlaySidePanel>
 

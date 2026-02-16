@@ -16,7 +16,7 @@ import { toast } from "@/hooks/use-toast"
 import { getDivisionLabel } from "@/data/divisions"
 import { useVirtualizer } from "@tanstack/react-virtual"
 
-const ROW_HEIGHT = 56
+const ROW_HEIGHT = 40
 
 interface LineItemsTableProps {
   selectedDivision: string
@@ -265,10 +265,10 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               <table className="w-full">
                 <thead className="bg-muted/50 sticky top-0 z-10">
                   <tr className="border-b">
-                    <th className="px-2 py-3 w-10">
+                    <th className="px-2 py-2 w-10">
                       <button
                         onClick={toggleSelectAll}
-                        className="p-1.5 hover:bg-muted rounded min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="p-1 hover:bg-muted rounded min-w-[36px] min-h-[36px] flex items-center justify-center"
                         aria-label={selectedIds.size === filteredItems.length ? "Deselect all" : "Select all"}
                       >
                         {selectedIds.size === filteredItems.length && filteredItems.length > 0 ? (
@@ -278,28 +278,28 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                         )}
                       </button>
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Division
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Description
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Quantity
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Unit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Unit Cost
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Total
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
                       Actions
                     </th>
                   </tr>
@@ -307,7 +307,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                 <tbody className="bg-background divide-y divide-border">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
                         No line items yet. Click &quot;Add Item&quot; to get started.
                       </td>
                     </tr>
@@ -479,10 +479,10 @@ function LineItemRow({
   return (
     <tr className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
       {/* Selection */}
-      <td className="px-2 py-3">
+      <td className="px-2 py-1.5">
         <button
           onClick={() => onToggleSelect(item.id)}
-          className="p-1.5 hover:bg-muted rounded min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="p-1 hover:bg-muted rounded min-w-[32px] min-h-[32px] flex items-center justify-center"
           aria-label={isSelected ? `Deselect ${item.description}` : `Select ${item.description}`}
         >
           {isSelected ? (
@@ -493,73 +493,73 @@ function LineItemRow({
         </button>
       </td>
       {/* Division - auto-detected, display only */}
-      <td className="px-4 py-3">
-        <span className="text-sm text-muted-foreground" title={getDivisionLabel(item.division)}>
+      <td className="px-3 py-1.5">
+        <span className="text-sm leading-relaxed text-muted-foreground" title={getDivisionLabel(item.division)}>
           {item.division}
         </span>
       </td>
 
       {/* Description */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1.5">
         <Input
           value={item.description}
           onChange={(e) => onUpdate(item.id, { description: e.target.value })}
-          className="h-8 text-sm"
+          className="h-7 text-sm"
           placeholder="Item description"
           aria-label="Description"
         />
       </td>
 
       {/* Type - auto-detected, display only */}
-      <td className="px-4 py-3">
-        <span className="text-sm capitalize text-muted-foreground">
+      <td className="px-3 py-1.5">
+        <span className="text-sm leading-relaxed capitalize text-muted-foreground">
           {item.type}
         </span>
       </td>
 
       {/* Quantity */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1.5">
         <CalculatorInput
           value={item.quantity}
           onChange={(value) => onUpdate(item.id, { quantity: value })}
-          className="h-8 text-sm text-right w-28"
+          className="h-7 text-sm text-right w-24"
           placeholder="e.g. 2+3"
         />
       </td>
 
       {/* Unit */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1.5">
         <Input
           value={item.unit}
           onChange={(e) => onUpdate(item.id, { unit: e.target.value })}
-          className="h-8 text-sm w-20"
+          className="h-7 text-sm w-16"
           placeholder="EA"
           aria-label="Unit"
         />
       </td>
 
       {/* Unit Cost */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1.5">
         <CalculatorInput
           value={item.unitCost}
           onChange={(value) => onUpdate(item.id, { unitCost: value })}
-          className="h-8 text-sm text-right w-28"
+          className="h-7 text-sm text-right w-24"
           placeholder="e.g. 100*1.1"
         />
       </td>
 
       {/* Total */}
-      <td className="px-4 py-3 text-right font-medium text-sm">
+      <td className="px-3 py-1.5 text-right font-medium text-sm leading-relaxed">
         {formatCurrency(item.totalCost)}
       </td>
 
       {/* Actions */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1.5">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onDelete(item.id)}
-          className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
           aria-label={`Delete ${item.description}`}
         >
           <Trash2 className="w-4 h-4" />
