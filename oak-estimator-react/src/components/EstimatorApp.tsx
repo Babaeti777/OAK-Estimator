@@ -19,6 +19,8 @@ import { AttachmentsPanel } from "./attachments/AttachmentsPanel"
 import { LaborRatesManager } from "./labor/LaborRatesManager"
 import { ProfitMarginChart } from "./analysis/ProfitMarginChart"
 import { MaterialsCatalogManager } from "./materials/MaterialsCatalogManager"
+import { DivisionSidebar } from "./navigation/DivisionSidebar"
+import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import {
   Plus,
@@ -42,17 +44,15 @@ import {
   Keyboard,
   ChevronUp,
   Database,
+  PanelLeft,
 } from "lucide-react"
-import { DivisionSidebar } from "./navigation/DivisionSidebar"
-import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
 
-// Fix #3: useReducer to consolidate 7 independent useState hooks
 interface AppState {
   showSummary: boolean
   showDashboard: boolean
   showAttachments: boolean
   selectedDivision: string
-  isSidebarCollapsed: boolean
+  showDivisionPanel: boolean
   mobileMenuOpen: boolean
   showMobileSummary: boolean
 }
@@ -63,17 +63,17 @@ type AppAction =
   | { type: 'TOGGLE_ATTACHMENTS' }
   | { type: 'SET_DIVISION'; payload: string }
   | { type: 'CLEAR_DIVISION' }
-  | { type: 'TOGGLE_SIDEBAR' }
+  | { type: 'TOGGLE_DIVISION_PANEL' }
   | { type: 'SET_MOBILE_MENU'; payload: boolean }
   | { type: 'TOGGLE_MOBILE_SUMMARY' }
   | { type: 'SHOW_ATTACHMENTS_MOBILE' }
 
 const initialState: AppState = {
-  showSummary: true,
+  showSummary: false,
   showDashboard: false,
   showAttachments: false,
   selectedDivision: "",
-  isSidebarCollapsed: false,
+  showDivisionPanel: false,
   mobileMenuOpen: false,
   showMobileSummary: false,
 }
@@ -90,8 +90,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, selectedDivision: action.payload }
     case 'CLEAR_DIVISION':
       return { ...state, selectedDivision: "" }
-    case 'TOGGLE_SIDEBAR':
-      return { ...state, isSidebarCollapsed: !state.isSidebarCollapsed }
+    case 'TOGGLE_DIVISION_PANEL':
+      return { ...state, showDivisionPanel: !state.showDivisionPanel }
     case 'SET_MOBILE_MENU':
       return { ...state, mobileMenuOpen: action.payload }
     case 'TOGGLE_MOBILE_SUMMARY':
@@ -103,7 +103,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-// Fix #3: Extracted mobile action button component
 function MobileActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
   return (
     <button
@@ -121,7 +120,6 @@ function MobileActionButton({ icon: Icon, label, onClick }: { icon: React.Elemen
   )
 }
 
-// Fix #3: Extracted Desktop Toolbar component
 function DesktopToolbar({
   state,
   dispatch,
@@ -145,6 +143,15 @@ function DesktopToolbar({
           aria-label="Dashboard"
         >
           <LayoutDashboard className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={state.showDivisionPanel ? "default" : "outline"}
+          size="icon"
+          title="Divisions Panel"
+          onClick={() => dispatch({ type: 'TOGGLE_DIVISION_PANEL' })}
+          aria-label="Toggle Divisions Panel"
+        >
+          <PanelLeft className="h-4 w-4" />
         </Button>
         <FolderManager
           trigger={
@@ -210,7 +217,6 @@ function DesktopToolbar({
   )
 }
 
-// Fix #3: Extracted Mobile Bottom Sheet component
 function MobileBottomSheet({
   isOpen,
   onClose,
@@ -228,123 +234,48 @@ function MobileBottomSheet({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
         onClick={onClose}
       />
-
-      {/* Bottom Sheet */}
-      <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-3xl z-40 max-h-[80vh] overflow-hidden transform transition-transform"
-      >
-        {/* Handle */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-3xl z-40 max-h-[80vh] overflow-hidden">
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
         </div>
-
-        {/* Header */}
         <div className="px-6 pb-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
           <p className="text-sm text-muted-foreground">Access all project tools</p>
         </div>
-
-        {/* Scrollable Content */}
         <div className="overflow-y-auto max-h-[calc(80vh-120px)] pb-24">
-          {/* Project Actions */}
           <div className="px-4 py-3">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-              Project
-            </h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">Project</h3>
             <div className="grid grid-cols-4 gap-2">
-              <MobileActionButton
-                icon={Copy}
-                label="Duplicate"
-                onClick={() => { currentProject && duplicateProject(currentProject.id); onClose() }}
-              />
-              <MobileActionButton
-                icon={Paperclip}
-                label="Files"
-                onClick={() => dispatch({ type: 'SHOW_ATTACHMENTS_MOBILE' })}
-              />
-              <div onClick={onClose}>
-                <FolderManager
-                  trigger={<MobileActionButton icon={Folder} label="Folders" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <VersionHistory
-                  trigger={<MobileActionButton icon={History} label="History" />}
-                />
-              </div>
+              <MobileActionButton icon={Copy} label="Duplicate" onClick={() => { currentProject && duplicateProject(currentProject.id); onClose() }} />
+              <MobileActionButton icon={Paperclip} label="Files" onClick={() => dispatch({ type: 'SHOW_ATTACHMENTS_MOBILE' })} />
+              <div onClick={onClose}><FolderManager trigger={<MobileActionButton icon={Folder} label="Folders" />} /></div>
+              <div onClick={onClose}><VersionHistory trigger={<MobileActionButton icon={History} label="History" />} /></div>
             </div>
           </div>
-
-          {/* Tools */}
           <div className="px-4 py-3">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-              Tools
-            </h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">Tools</h3>
             <div className="grid grid-cols-4 gap-2">
-              <div onClick={onClose}>
-                <MaterialsCatalogManager
-                  trigger={<MobileActionButton icon={Database} label="Catalog" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <AssemblyManager
-                  trigger={<MobileActionButton icon={Package} label="Assemblies" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <LaborRatesManager
-                  trigger={<MobileActionButton icon={Users} label="Labor" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <ChangeOrderManager
-                  trigger={<MobileActionButton icon={FileStack} label="Changes" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <ProfitMarginChart
-                  trigger={<MobileActionButton icon={PieChart} label="Profit" />}
-                />
-              </div>
+              <div onClick={onClose}><MaterialsCatalogManager trigger={<MobileActionButton icon={Database} label="Catalog" />} /></div>
+              <div onClick={onClose}><AssemblyManager trigger={<MobileActionButton icon={Package} label="Assemblies" />} /></div>
+              <div onClick={onClose}><LaborRatesManager trigger={<MobileActionButton icon={Users} label="Labor" />} /></div>
+              <div onClick={onClose}><ChangeOrderManager trigger={<MobileActionButton icon={FileStack} label="Changes" />} /></div>
+              <div onClick={onClose}><ProfitMarginChart trigger={<MobileActionButton icon={PieChart} label="Profit" />} /></div>
             </div>
           </div>
-
-          {/* Data */}
           <div className="px-4 py-3">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-              Data
-            </h3>
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">Data</h3>
             <div className="grid grid-cols-4 gap-2">
-              <div onClick={onClose}>
-                <ImportDialog
-                  trigger={<MobileActionButton icon={Upload} label="Import" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <ExportDialog
-                  trigger={<MobileActionButton icon={Download} label="Export" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <ShareDialog
-                  trigger={<MobileActionButton icon={Share2} label="Share" />}
-                />
-              </div>
-              <div onClick={onClose}>
-                <KeyboardShortcutsDialog
-                  trigger={<MobileActionButton icon={Keyboard} label="Shortcuts" />}
-                />
-              </div>
+              <div onClick={onClose}><ImportDialog trigger={<MobileActionButton icon={Upload} label="Import" />} /></div>
+              <div onClick={onClose}><ExportDialog trigger={<MobileActionButton icon={Download} label="Export" />} /></div>
+              <div onClick={onClose}><ShareDialog trigger={<MobileActionButton icon={Share2} label="Share" />} /></div>
+              <div onClick={onClose}><KeyboardShortcutsDialog trigger={<MobileActionButton icon={Keyboard} label="Shortcuts" />} /></div>
             </div>
           </div>
         </div>
-
-        {/* Swipe hint */}
         <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
           <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur px-3 py-1.5 rounded-full">
             <ChevronUp className="w-3 h-3" />
@@ -356,11 +287,53 @@ function MobileBottomSheet({
   )
 }
 
+// Overlay Side Panel component for Summary and Divisions
+function OverlaySidePanel({
+  isOpen,
+  onClose,
+  position,
+  title,
+  children,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  position: 'left' | 'right'
+  title: string
+  children: React.ReactNode
+}) {
+  if (!isOpen) return null
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div
+        className={`fixed top-0 ${position === 'left' ? 'left-0' : 'right-0'} h-full w-80 max-w-[90vw] bg-card border-${position === 'left' ? 'r' : 'l'} border-border z-50 shadow-2xl overflow-hidden flex flex-col`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+          <h2 className="font-semibold text-foreground">{title}</h2>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close panel">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 bg-card">
+          {children}
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function EstimatorApp() {
   const { currentProject, projects, createProject, duplicateProject, isLoading } = useProject()
   const [state, dispatch] = useReducer(appReducer, initialState)
 
-  // Keyboard shortcuts handlers
   useKeyboardShortcuts([
     { action: 'go_home', handler: () => dispatch({ type: 'SET_DASHBOARD', payload: true }) },
     { action: 'go_projects', handler: () => dispatch({ type: 'SET_DASHBOARD', payload: false }) },
@@ -376,7 +349,7 @@ export function EstimatorApp() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+        <main className="px-4 py-6 md:px-6 md:py-8">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
               <LayoutDashboard className="w-5 h-5 md:w-6 md:h-6" />
@@ -396,10 +369,11 @@ export function EstimatorApp() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-4 md:py-8 max-w-7xl relative">
+      {/* Full width main content - no max-width constraint */}
+      <main className="px-4 py-4 md:px-6 md:py-6">
         {!currentProject && projects.length === 0 ? (
           <div className="max-w-2xl mx-auto mt-10 md:mt-20">
-            <Card className="text-center">
+            <Card className="text-center bg-card">
               <CardHeader>
                 <CardTitle className="text-xl md:text-2xl">Welcome to OAK Estimator</CardTitle>
                 <CardDescription>
@@ -416,12 +390,7 @@ export function EstimatorApp() {
                   Projects help you organize your construction cost estimates.
                   Start by creating your first project.
                 </p>
-                <Button
-                  onClick={createProject}
-                  disabled={isLoading}
-                  size="lg"
-                  className="w-full sm:w-auto"
-                >
+                <Button onClick={createProject} disabled={isLoading} size="lg" className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Your First Project
                 </Button>
@@ -462,7 +431,7 @@ export function EstimatorApp() {
               </div>
             </div>
 
-            {/* Mobile Summary Panel (collapsible) */}
+            {/* Mobile Summary Panel (collapsible inline) */}
             {state.showMobileSummary && (
               <div className="lg:hidden mb-4">
                 <SummaryCard />
@@ -470,86 +439,94 @@ export function EstimatorApp() {
               </div>
             )}
 
-            <div className="flex gap-4 lg:gap-6">
+            {/* Mobile Division Filter Chips */}
+            <DivisionSidebar
+              selectedDivision={state.selectedDivision}
+              onSelectDivision={(div) => dispatch({ type: 'SET_DIVISION', payload: div })}
+              onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
+              isCollapsed={false}
+              onToggleCollapse={() => {}}
+            />
+
+            {/* Full Width Main Content Area */}
+            <div className="space-y-4 md:space-y-6">
+              {/* Project Header with Logo and Settings */}
+              <div className="flex flex-col lg:flex-row lg:items-start gap-4 md:gap-6">
+                {currentProject.companySettings.logoUrl && (
+                  <div className="flex-shrink-0 hidden sm:block">
+                    <img
+                      src={currentProject.companySettings.logoUrl}
+                      alt={currentProject.companySettings.companyName || "Company logo"}
+                      className="w-16 h-16 md:w-24 md:h-24 object-contain rounded-lg border-2 border-border bg-card p-2"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <ProjectSettingsForm />
+                </div>
+                {/* Summary Toggle Button (tablet/desktop) */}
+                <div className="hidden md:flex items-center gap-2">
+                  <Button
+                    variant={state.showSummary ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => dispatch({ type: 'TOGGLE_SUMMARY' })}
+                    title={state.showSummary ? "Hide Summary" : "Show Summary"}
+                    aria-label={state.showSummary ? "Hide Summary" : "Show Summary"}
+                  >
+                    {state.showSummary ? (
+                      <PanelRightClose className="h-4 w-4" />
+                    ) : (
+                      <Calculator className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Line Items Table - Full Width */}
+              <LineItemsTable
+                selectedDivision={state.selectedDivision}
+                onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
+              />
+            </div>
+
+            {/* Overlay Division Panel (left) */}
+            <OverlaySidePanel
+              isOpen={state.showDivisionPanel}
+              onClose={() => dispatch({ type: 'TOGGLE_DIVISION_PANEL' })}
+              position="left"
+              title="Divisions"
+            >
               <DivisionSidebar
                 selectedDivision={state.selectedDivision}
                 onSelectDivision={(div) => dispatch({ type: 'SET_DIVISION', payload: div })}
                 onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
-                isCollapsed={state.isSidebarCollapsed}
-                onToggleCollapse={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
+                isCollapsed={false}
+                onToggleCollapse={() => {}}
               />
+            </OverlaySidePanel>
 
-              {/* Main Content Area */}
-              <div className="flex-1 space-y-4 md:space-y-6 transition-all duration-300 min-w-0">
-                {/* Project Header with Logo and Settings */}
-                <div className="flex flex-col lg:flex-row lg:items-start gap-4 md:gap-6">
-                  {/* Company Logo */}
-                  {currentProject.companySettings.logoUrl && (
-                    <div className="flex-shrink-0 hidden sm:block">
-                      <img
-                        src={currentProject.companySettings.logoUrl}
-                        alt={currentProject.companySettings.companyName || "Company logo"}
-                        className="w-16 h-16 md:w-24 md:h-24 object-contain rounded-lg border-2 border-border bg-muted p-2"
-                      />
-                    </div>
-                  )}
-
-                  {/* Project Settings */}
-                  <div className="flex-1 min-w-0">
-                    <ProjectSettingsForm />
-                  </div>
-
-                  {/* Summary Toggle Button (tablet) */}
-                  <div className="hidden md:flex lg:hidden items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => dispatch({ type: 'TOGGLE_SUMMARY' })}
-                      title={state.showSummary ? "Hide Summary" : "Show Summary"}
-                      aria-label={state.showSummary ? "Hide Summary" : "Show Summary"}
-                    >
-                      {state.showSummary ? (
-                        <PanelRightClose className="h-4 w-4" />
-                      ) : (
-                        <Calculator className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Line Items Table */}
-                <LineItemsTable
-                  selectedDivision={state.selectedDivision}
-                  onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
-                />
+            {/* Overlay Summary Panel (right) */}
+            <OverlaySidePanel
+              isOpen={state.showSummary}
+              onClose={() => dispatch({ type: 'TOGGLE_SUMMARY' })}
+              position="right"
+              title="Cost Summary"
+            >
+              <div className="space-y-4">
+                <SummaryCard />
+                {state.showAttachments && <AttachmentsPanel />}
               </div>
-
-              {/* Collapsible Summary Panel (desktop) */}
-              <div
-                className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-                  state.showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
-                }`}
-              >
-                <div className="w-80 sticky top-24 space-y-4">
-                  <SummaryCard />
-                  {state.showAttachments && <AttachmentsPanel />}
-                </div>
-              </div>
-            </div>
+            </OverlaySidePanel>
 
             {/* Mobile Floating Action Button */}
-            <div className="lg:hidden fixed bottom-6 right-6 z-50">
+            <div className="lg:hidden fixed bottom-6 right-6 z-30">
               <Button
                 size="lg"
                 className="h-14 w-14 rounded-full shadow-lg shadow-primary/30"
                 onClick={() => dispatch({ type: 'SET_MOBILE_MENU', payload: !state.mobileMenuOpen })}
                 aria-label={state.mobileMenuOpen ? "Close menu" : "Open menu"}
               >
-                {state.mobileMenuOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
+                {state.mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
             </div>
 
@@ -564,7 +541,7 @@ export function EstimatorApp() {
           </>
         ) : (
           <div className="max-w-2xl mx-auto mt-10 md:mt-20">
-            <Card className="text-center">
+            <Card className="text-center bg-card">
               <CardHeader>
                 <CardTitle>Select a Project</CardTitle>
                 <CardDescription>
