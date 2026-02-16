@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
+// Select removed - Type and Division are now auto-detected
 import { CalculatorInput } from "@/components/ui/calculator-input"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
@@ -13,16 +13,8 @@ import type { LineItem } from "@/types"
 import { Trash2, Table, Search, CheckSquare, Square, X, Calculator } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
-import { DIVISIONS_ALL, getDivisionLabel } from "@/data/divisions"
+import { getDivisionLabel } from "@/data/divisions"
 import { useVirtualizer } from "@tanstack/react-virtual"
-
-const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
-  { value: 'material', label: 'Material' },
-  { value: 'labor', label: 'Labor' },
-  { value: 'equipment', label: 'Equipment' },
-  { value: 'subcontractor', label: 'Subcontractor' },
-  { value: 'misc', label: 'Miscellaneous' },
-]
 
 const ROW_HEIGHT = 56
 
@@ -500,20 +492,11 @@ function LineItemRow({
           )}
         </button>
       </td>
-      {/* Division */}
+      {/* Division - auto-detected, display only */}
       <td className="px-4 py-3">
-        <Select
-          value={item.division}
-          onChange={(e) => onUpdate(item.id, { division: e.target.value })}
-          className="h-8 text-sm"
-          aria-label="Division"
-        >
-          {DIVISIONS_ALL.map(div => (
-            <option key={div.code} value={div.code}>
-              {div.code} - {div.name}
-            </option>
-          ))}
-        </Select>
+        <span className="text-sm text-muted-foreground" title={getDivisionLabel(item.division)}>
+          {item.division}
+        </span>
       </td>
 
       {/* Description */}
@@ -527,20 +510,11 @@ function LineItemRow({
         />
       </td>
 
-      {/* Type */}
+      {/* Type - auto-detected, display only */}
       <td className="px-4 py-3">
-        <Select
-          value={item.type}
-          onChange={(e) => onUpdate(item.id, { type: e.target.value as LineItem['type'] })}
-          className="h-8 text-sm"
-          aria-label="Type"
-        >
-          {ITEM_TYPES.map(type => (
-            <option key={type.value} value={type.value}>
-              {type.label}
-            </option>
-          ))}
-        </Select>
+        <span className="text-sm capitalize text-muted-foreground">
+          {item.type}
+        </span>
       </td>
 
       {/* Quantity */}

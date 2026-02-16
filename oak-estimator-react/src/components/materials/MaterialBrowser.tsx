@@ -19,7 +19,21 @@ interface MaterialItem {
   description: string
   unit: string
   unitCost: number
+  materialCost: number
+  laborCost: number
+  equipmentCost: number
   notes?: string
+}
+
+// Helper to determine item type based on cost breakdown
+function determineItemType(materialCost: number, laborCost: number, equipmentCost: number): 'material' | 'labor' | 'equipment' | 'misc' {
+  const total = materialCost + laborCost + equipmentCost
+  if (total === 0) return 'misc'
+
+  // Determine dominant cost type
+  if (laborCost >= materialCost && laborCost >= equipmentCost) return 'labor'
+  if (equipmentCost >= materialCost && equipmentCost >= laborCost) return 'equipment'
+  return 'material'
 }
 
 // Fix #2: Pre-flatten at module level so it's computed once on import, not per render
@@ -34,7 +48,10 @@ const FLAT_MATERIALS_LIST: MaterialItem[] = (() => {
     const division = value as { name: string; items: any[] }
     if (division.items && Array.isArray(division.items)) {
       division.items.forEach((item: any) => {
-        const unitCost = (item.material || 0) + (item.labor || 0) + (item.equipment || 0)
+        const materialCost = item.material || 0
+        const laborCost = item.labor || 0
+        const equipmentCost = item.equipment || 0
+        const unitCost = materialCost + laborCost + equipmentCost
 
         materials.push({
           id: item.id,
@@ -42,6 +59,9 @@ const FLAT_MATERIALS_LIST: MaterialItem[] = (() => {
           divisionName: division.name,
           category: item.category || 'General',
           description: item.description,
+          materialCost,
+          laborCost,
+          equipmentCost,
           unit: item.unit,
           unitCost: unitCost,
           notes: item.notes,
@@ -116,11 +136,14 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
 
   const handleAddToProject = async (material: MaterialItem) => {
     try {
+      // Auto-detect item type based on cost breakdown
+      const itemType = determineItemType(material.materialCost, material.laborCost, material.equipmentCost)
+
       // Build line item data, excluding undefined values (Firestore doesn't accept undefined)
       const lineItemData: Parameters<typeof addLineItem>[0] = {
         division: material.division,
         description: material.description,
-        type: 'material',
+        type: itemType,
         quantity: 1,
         unit: material.unit,
         unitCost: material.unitCost,
