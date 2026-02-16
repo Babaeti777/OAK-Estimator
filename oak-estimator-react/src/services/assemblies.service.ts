@@ -52,8 +52,22 @@ export async function createAssembly(
       0
     )
 
+    // Clean items to remove undefined values (Firestore doesn't accept undefined)
+    const cleanItems = assembly.items.map(item => ({
+      description: item.description || '',
+      division: item.division || '',
+      type: item.type || 'material',
+      quantity: item.quantity || 0,
+      unit: item.unit || 'EA',
+      unitCost: item.unitCost || 0,
+      notes: item.notes || '',
+    }))
+
     await setDoc(docRef, {
-      ...assembly,
+      userId: assembly.userId,
+      name: assembly.name || '',
+      description: assembly.description || '',
+      items: cleanItems,
       totalCost,
       createdAt: now,
       updatedAt: now,
@@ -85,11 +99,28 @@ export async function updateAssembly(
       )
     }
 
-    await updateDoc(docRef, {
-      ...updates,
-      totalCost,
+    // Build clean update object without undefined values
+    const cleanUpdates: Record<string, any> = {
       updatedAt: Date.now(),
-    })
+    }
+
+    if (updates.name !== undefined) cleanUpdates.name = updates.name
+    if (updates.description !== undefined) cleanUpdates.description = updates.description
+    if (totalCost !== undefined) cleanUpdates.totalCost = totalCost
+
+    if (updates.items) {
+      cleanUpdates.items = updates.items.map(item => ({
+        description: item.description || '',
+        division: item.division || '',
+        type: item.type || 'material',
+        quantity: item.quantity || 0,
+        unit: item.unit || 'EA',
+        unitCost: item.unitCost || 0,
+        notes: item.notes || '',
+      }))
+    }
+
+    await updateDoc(docRef, cleanUpdates)
   } catch (error: any) {
     console.error('Error updating assembly:', error)
     throw new Error(error.message || 'Failed to update assembly')
