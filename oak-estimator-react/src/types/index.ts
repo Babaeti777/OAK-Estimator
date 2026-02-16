@@ -401,3 +401,69 @@ export interface TypeProfit {
   profit: number
   marginPercentage: number
 }
+
+// ============================================
+// FEATURE 11: Updatable Materials Catalog
+// ============================================
+
+/** A user-defined custom material stored in Firestore */
+export interface CustomMaterial {
+  id: string
+  userId: string
+  division: string
+  category: string
+  description: string
+  unit: string
+  materialCost: number
+  laborCost: number
+  equipmentCost: number
+  notes?: string
+  tags?: string[]
+  source?: string  // where it came from (manual, supplier, etc.)
+  isActive: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+/** A price override for an existing static material */
+export interface PriceOverride {
+  id: string
+  userId: string
+  materialId: string  // reference to static MaterialsDatabase item
+  materialCost?: number
+  laborCost?: number
+  equipmentCost?: number
+  notes?: string
+  effectiveDate: number
+  createdAt: number
+  updatedAt: number
+}
+
+/** Catalog metadata for tracking database version */
+export interface CatalogMeta {
+  id: string
+  userId: string
+  currentVersion: string
+  lastChecked: number
+  customMaterialsCount: number
+  priceOverridesCount: number
+  lastUpdated: number
+}
+
+/** Shared assembly published to community */
+export interface SharedAssembly {
+  id: string
+  publishedBy: string
+  publisherName: string
+  name: string
+  description: string
+  category: string
+  items: AssemblyItem[]
+  totalCost: number
+  usageCount: number
+  rating: number
+  tags: string[]
+  createdAt: number
+  updatedAt: number
+}
+
