@@ -18,6 +18,7 @@ import { KeyboardShortcutsDialog } from "./shortcuts/KeyboardShortcutsDialog"
 import { AttachmentsPanel } from "./attachments/AttachmentsPanel"
 import { LaborRatesManager } from "./labor/LaborRatesManager"
 import { ProfitMarginChart } from "./analysis/ProfitMarginChart"
+import { MaterialsCatalogManager } from "./materials/MaterialsCatalogManager"
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import {
   Plus,
@@ -40,6 +41,7 @@ import {
   Share2,
   Keyboard,
   ChevronUp,
+  Database,
 } from "lucide-react"
 import { DivisionSidebar } from "./navigation/DivisionSidebar"
 import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
@@ -184,6 +186,7 @@ export function EstimatorApp() {
 
               {/* Action Buttons - Center */}
               <div className="flex items-center gap-2">
+                <MaterialsCatalogManager />
                 <AssemblyManager />
                 <LaborRatesManager />
                 <ChangeOrderManager />
@@ -420,6 +423,11 @@ export function EstimatorApp() {
                           Tools
                         </h3>
                         <div className="grid grid-cols-4 gap-2">
+                          <div onClick={() => setMobileMenuOpen(false)}>
+                            <MaterialsCatalogManager
+                              trigger={<MobileActionButton icon={Database} label="Catalog" />}
+                            />
+                          </div>
                           <div onClick={() => setMobileMenuOpen(false)}>
                             <AssemblyManager
                               trigger={<MobileActionButton icon={Package} label="Assemblies" />}
