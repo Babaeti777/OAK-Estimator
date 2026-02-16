@@ -96,7 +96,27 @@ service cloud.firestore {
                        resource.data.userId == request.auth.uid;
     }
 
-    // Project Folders Collection
+    // Project Folders Collection (app uses 'folders')
+    match /folders/{folderId} {
+      // Read: User can only read their own folders
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+
+      // Create: User can create folders with their own userId
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Update: User can update their own folders
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == request.auth.uid;
+
+      // Delete: User can delete their own folders
+      allow delete: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
+    }
+
+    // Legacy Project Folders Collection (for backwards compatibility)
     match /projectFolders/{folderId} {
       // Read: User can only read their own folders
       allow read: if isAuthenticated() &&
