@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,12 +22,11 @@ interface MaterialItem {
   notes?: string
 }
 
-function getFlatMaterialsList(): MaterialItem[] {
+// Fix #2: Pre-flatten at module level so it's computed once on import, not per render
+const FLAT_MATERIALS_LIST: MaterialItem[] = (() => {
   const materials: MaterialItem[] = []
 
-  // Iterate through all divisions in the database
   Object.entries(MaterialsDatabase).forEach(([key, value]) => {
-    // Skip metadata fields
     if (key === 'version' || key === 'lastUpdated' || key === 'currency' || key === 'totalItems' || key === 'buildDate') {
       return
     }
@@ -35,7 +34,6 @@ function getFlatMaterialsList(): MaterialItem[] {
     const division = value as { name: string; items: any[] }
     if (division.items && Array.isArray(division.items)) {
       division.items.forEach((item: any) => {
-        // Calculate total unit cost from material + labor + equipment
         const unitCost = (item.material || 0) + (item.labor || 0) + (item.equipment || 0)
 
         materials.push({
@@ -53,7 +51,7 @@ function getFlatMaterialsList(): MaterialItem[] {
   })
 
   return materials
-}
+})()
 
 interface MaterialBrowserProps {
   trigger?: React.ReactNode
@@ -67,9 +65,10 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
   const [internalOpen, setInternalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDivision, setSelectedDivision] = useState(initialDivision || "")
+  const [displayLimit, setDisplayLimit] = useState(50)
 
-  // Load the full materials database (memoized to prevent recalculation)
-  const allMaterials = useMemo(() => getFlatMaterialsList(), [])
+  // Fix #2: Use pre-flattened module-level data directly
+  const allMaterials = FLAT_MATERIALS_LIST
 
   // Sync internal state with external control
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
@@ -88,7 +87,8 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
     }
   }, [initialDivision])
 
-  const filteredMaterials = useMemo(() => {
+  // Fix #7: Separate total filtered from displayed items for load-more
+  const allFilteredMaterials = useMemo(() => {
     return allMaterials.filter(material => {
       const matchesSearch = !searchTerm ||
         material.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -96,8 +96,23 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
         material.id.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesDivision = !selectedDivision || material.division === selectedDivision
       return matchesSearch && matchesDivision
-    }).slice(0, 100) // Limit to 100 results for performance
+    })
   }, [allMaterials, searchTerm, selectedDivision])
+
+  const filteredMaterials = useMemo(() => {
+    return allFilteredMaterials.slice(0, displayLimit)
+  }, [allFilteredMaterials, displayLimit])
+
+  const hasMore = allFilteredMaterials.length > displayLimit
+
+  const loadMore = useCallback(() => {
+    setDisplayLimit(prev => prev + 50)
+  }, [])
+
+  // Reset display limit when filters change
+  useEffect(() => {
+    setDisplayLimit(50)
+  }, [searchTerm, selectedDivision])
 
   const handleAddToProject = async (material: MaterialItem) => {
     try {
@@ -250,12 +265,19 @@ export function MaterialBrowser({ trigger, open: controlledOpen, onOpenChange, i
             </div>
           </div>
 
-          <div className="text-sm text-muted-foreground text-center">
-            Showing {filteredMaterials.length} of {allMaterials.length} materials
-            {filteredMaterials.length === 100 && (
-              <div className="text-xs mt-1">
-                Results limited to 100 items. Type more to narrow your search.
-              </div>
+          <div className="text-sm text-muted-foreground text-center space-y-2">
+            <div>
+              Showing {filteredMaterials.length} of {allFilteredMaterials.length} materials
+              {allFilteredMaterials.length < allMaterials.length && ` (${allMaterials.length} total)`}
+            </div>
+            {hasMore && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadMore}
+              >
+                Load More ({allFilteredMaterials.length - displayLimit} remaining)
+              </Button>
             )}
           </div>
         </div>

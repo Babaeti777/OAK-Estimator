@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useReducer, useCallback } from "react"
 import { Header } from "./layout/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
@@ -45,14 +45,71 @@ import {
 } from "lucide-react"
 import { DivisionSidebar } from "./navigation/DivisionSidebar"
 import { ProjectTotalBadge } from "./projects/ProjectTotalBadge"
-import { motion, AnimatePresence } from "framer-motion"
 
-// Mobile Action Button component for consistent styling
+// Fix #3: useReducer to consolidate 7 independent useState hooks
+interface AppState {
+  showSummary: boolean
+  showDashboard: boolean
+  showAttachments: boolean
+  selectedDivision: string
+  isSidebarCollapsed: boolean
+  mobileMenuOpen: boolean
+  showMobileSummary: boolean
+}
+
+type AppAction =
+  | { type: 'TOGGLE_SUMMARY' }
+  | { type: 'SET_DASHBOARD'; payload: boolean }
+  | { type: 'TOGGLE_ATTACHMENTS' }
+  | { type: 'SET_DIVISION'; payload: string }
+  | { type: 'CLEAR_DIVISION' }
+  | { type: 'TOGGLE_SIDEBAR' }
+  | { type: 'SET_MOBILE_MENU'; payload: boolean }
+  | { type: 'TOGGLE_MOBILE_SUMMARY' }
+  | { type: 'SHOW_ATTACHMENTS_MOBILE' }
+
+const initialState: AppState = {
+  showSummary: true,
+  showDashboard: false,
+  showAttachments: false,
+  selectedDivision: "",
+  isSidebarCollapsed: false,
+  mobileMenuOpen: false,
+  showMobileSummary: false,
+}
+
+function appReducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case 'TOGGLE_SUMMARY':
+      return { ...state, showSummary: !state.showSummary }
+    case 'SET_DASHBOARD':
+      return { ...state, showDashboard: action.payload }
+    case 'TOGGLE_ATTACHMENTS':
+      return { ...state, showAttachments: !state.showAttachments }
+    case 'SET_DIVISION':
+      return { ...state, selectedDivision: action.payload }
+    case 'CLEAR_DIVISION':
+      return { ...state, selectedDivision: "" }
+    case 'TOGGLE_SIDEBAR':
+      return { ...state, isSidebarCollapsed: !state.isSidebarCollapsed }
+    case 'SET_MOBILE_MENU':
+      return { ...state, mobileMenuOpen: action.payload }
+    case 'TOGGLE_MOBILE_SUMMARY':
+      return { ...state, showMobileSummary: !state.showMobileSummary }
+    case 'SHOW_ATTACHMENTS_MOBILE':
+      return { ...state, showAttachments: !state.showAttachments, showMobileSummary: true, mobileMenuOpen: false }
+    default:
+      return state
+  }
+}
+
+// Fix #3: Extracted mobile action button component
 function MobileActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-3 rounded-xl hover:bg-accent transition-colors"
+      className="flex flex-col items-center justify-center p-3 rounded-xl hover:bg-accent transition-colors min-w-[44px] min-h-[44px]"
+      aria-label={label}
     >
       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-1.5">
         <Icon className="w-5 h-5 text-primary" />
@@ -64,25 +121,258 @@ function MobileActionButton({ icon: Icon, label, onClick }: { icon: React.Elemen
   )
 }
 
+// Fix #3: Extracted Desktop Toolbar component
+function DesktopToolbar({
+  state,
+  dispatch,
+  currentProject,
+  duplicateProject,
+}: {
+  state: AppState
+  dispatch: React.Dispatch<AppAction>
+  currentProject: any
+  duplicateProject: (id: string) => void
+}) {
+  return (
+    <div className="hidden lg:flex justify-between items-center mb-4">
+      {/* Action Buttons - Left */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          title="Dashboard"
+          onClick={() => dispatch({ type: 'SET_DASHBOARD', payload: true })}
+          aria-label="Dashboard"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+        </Button>
+        <FolderManager
+          trigger={
+            <Button variant="outline" size="icon" title="Manage Folders" aria-label="Manage Folders">
+              <Folder className="h-4 w-4" />
+            </Button>
+          }
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          title="Duplicate Project"
+          onClick={() => currentProject && duplicateProject(currentProject.id)}
+          aria-label="Duplicate Project"
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+        <VersionHistory
+          trigger={
+            <Button variant="outline" size="icon" title="Version History" aria-label="Version History">
+              <History className="h-4 w-4" />
+            </Button>
+          }
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          title="Attachments"
+          onClick={() => dispatch({ type: 'TOGGLE_ATTACHMENTS' })}
+          aria-label="Attachments"
+        >
+          <Paperclip className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Action Buttons - Center */}
+      <div className="flex items-center gap-2">
+        <MaterialsCatalogManager />
+        <AssemblyManager />
+        <LaborRatesManager />
+        <ChangeOrderManager />
+        <ProfitMarginChart />
+      </div>
+
+      {/* Action Buttons - Right */}
+      <div className="flex items-center gap-2">
+        <ImportDialog />
+        <ExportDialog
+          trigger={
+            <Button variant="outline" size="icon" title="Export" aria-label="Export">
+              <Download className="h-4 w-4" />
+            </Button>
+          }
+        />
+        <ShareDialog />
+        <KeyboardShortcutsDialog />
+      </div>
+      <ProjectTotalBadge
+        showSummary={state.showSummary}
+        onToggleSummary={() => dispatch({ type: 'TOGGLE_SUMMARY' })}
+      />
+    </div>
+  )
+}
+
+// Fix #3: Extracted Mobile Bottom Sheet component
+function MobileBottomSheet({
+  isOpen,
+  onClose,
+  currentProject,
+  duplicateProject,
+  dispatch,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  currentProject: any
+  duplicateProject: (id: string) => void
+  dispatch: React.Dispatch<AppAction>
+}) {
+  if (!isOpen) return null
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Bottom Sheet */}
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-3xl z-40 max-h-[80vh] overflow-hidden transform transition-transform"
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+        </div>
+
+        {/* Header */}
+        <div className="px-6 pb-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
+          <p className="text-sm text-muted-foreground">Access all project tools</p>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto max-h-[calc(80vh-120px)] pb-24">
+          {/* Project Actions */}
+          <div className="px-4 py-3">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+              Project
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              <MobileActionButton
+                icon={Copy}
+                label="Duplicate"
+                onClick={() => { currentProject && duplicateProject(currentProject.id); onClose() }}
+              />
+              <MobileActionButton
+                icon={Paperclip}
+                label="Files"
+                onClick={() => dispatch({ type: 'SHOW_ATTACHMENTS_MOBILE' })}
+              />
+              <div onClick={onClose}>
+                <FolderManager
+                  trigger={<MobileActionButton icon={Folder} label="Folders" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <VersionHistory
+                  trigger={<MobileActionButton icon={History} label="History" />}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Tools */}
+          <div className="px-4 py-3">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+              Tools
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              <div onClick={onClose}>
+                <MaterialsCatalogManager
+                  trigger={<MobileActionButton icon={Database} label="Catalog" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <AssemblyManager
+                  trigger={<MobileActionButton icon={Package} label="Assemblies" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <LaborRatesManager
+                  trigger={<MobileActionButton icon={Users} label="Labor" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <ChangeOrderManager
+                  trigger={<MobileActionButton icon={FileStack} label="Changes" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <ProfitMarginChart
+                  trigger={<MobileActionButton icon={PieChart} label="Profit" />}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Data */}
+          <div className="px-4 py-3">
+            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
+              Data
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              <div onClick={onClose}>
+                <ImportDialog
+                  trigger={<MobileActionButton icon={Upload} label="Import" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <ExportDialog
+                  trigger={<MobileActionButton icon={Download} label="Export" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <ShareDialog
+                  trigger={<MobileActionButton icon={Share2} label="Share" />}
+                />
+              </div>
+              <div onClick={onClose}>
+                <KeyboardShortcutsDialog
+                  trigger={<MobileActionButton icon={Keyboard} label="Shortcuts" />}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Swipe hint */}
+        <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur px-3 py-1.5 rounded-full">
+            <ChevronUp className="w-3 h-3" />
+            Tap outside to close
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export function EstimatorApp() {
   const { currentProject, projects, createProject, duplicateProject, isLoading } = useProject()
-  const [showSummary, setShowSummary] = useState(true)
-  const [showDashboard, setShowDashboard] = useState(false)
-  const [showAttachments, setShowAttachments] = useState(false)
-  const [selectedDivision, setSelectedDivision] = useState("")
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [showMobileSummary, setShowMobileSummary] = useState(false)
+  const [state, dispatch] = useReducer(appReducer, initialState)
 
   // Keyboard shortcuts handlers
   useKeyboardShortcuts([
-    { action: 'go_home', handler: () => setShowDashboard(true) },
-    { action: 'go_projects', handler: () => setShowDashboard(false) },
+    { action: 'go_home', handler: () => dispatch({ type: 'SET_DASHBOARD', payload: true }) },
+    { action: 'go_projects', handler: () => dispatch({ type: 'SET_DASHBOARD', payload: false }) },
     { action: 'new_project', handler: () => createProject() },
   ])
 
+  const closeMobileMenu = useCallback(() => {
+    dispatch({ type: 'SET_MOBILE_MENU', payload: false })
+  }, [])
+
   // Show dashboard view
-  if (showDashboard) {
+  if (state.showDashboard) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -92,7 +382,7 @@ export function EstimatorApp() {
               <LayoutDashboard className="w-5 h-5 md:w-6 md:h-6" />
               Dashboard
             </h1>
-            <Button variant="outline" size="sm" onClick={() => setShowDashboard(false)}>
+            <Button variant="outline" size="sm" onClick={() => dispatch({ type: 'SET_DASHBOARD', payload: false })}>
               Back to Projects
             </Button>
           </div>
@@ -141,76 +431,12 @@ export function EstimatorApp() {
         ) : currentProject ? (
           <>
             {/* Desktop Action Bar */}
-            <div className="hidden lg:flex justify-between items-center mb-4">
-              {/* Action Buttons - Left */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  title="Dashboard"
-                  onClick={() => setShowDashboard(true)}
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                </Button>
-                <FolderManager
-                  trigger={
-                    <Button variant="outline" size="icon" title="Manage Folders">
-                      <Folder className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  title="Duplicate Project"
-                  onClick={() => currentProject && duplicateProject(currentProject.id)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <VersionHistory
-                  trigger={
-                    <Button variant="outline" size="icon" title="Version History">
-                      <History className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  title="Attachments"
-                  onClick={() => setShowAttachments(!showAttachments)}
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Action Buttons - Center */}
-              <div className="flex items-center gap-2">
-                <MaterialsCatalogManager />
-                <AssemblyManager />
-                <LaborRatesManager />
-                <ChangeOrderManager />
-                <ProfitMarginChart />
-              </div>
-
-              {/* Action Buttons - Right */}
-              <div className="flex items-center gap-2">
-                <ImportDialog />
-                <ExportDialog
-                  trigger={
-                    <Button variant="outline" size="icon" title="Export">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  }
-                />
-                <ShareDialog />
-                <KeyboardShortcutsDialog />
-              </div>
-              <ProjectTotalBadge
-                showSummary={showSummary}
-                onToggleSummary={() => setShowSummary(!showSummary)}
-              />
-            </div>
+            <DesktopToolbar
+              state={state}
+              dispatch={dispatch}
+              currentProject={currentProject}
+              duplicateProject={duplicateProject}
+            />
 
             {/* Mobile Quick Actions Bar */}
             <div className="lg:hidden flex items-center justify-between gap-2 mb-4 overflow-x-auto pb-2">
@@ -218,15 +444,17 @@ export function EstimatorApp() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowDashboard(true)}
+                  onClick={() => dispatch({ type: 'SET_DASHBOARD', payload: true })}
+                  className="min-h-[44px]"
                 >
                   <LayoutDashboard className="h-4 w-4 mr-1" />
                   <span className="hidden xs:inline">Dashboard</span>
                 </Button>
                 <Button
-                  variant={showMobileSummary ? "default" : "outline"}
+                  variant={state.showMobileSummary ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setShowMobileSummary(!showMobileSummary)}
+                  onClick={() => dispatch({ type: 'TOGGLE_MOBILE_SUMMARY' })}
+                  className="min-h-[44px]"
                 >
                   <Calculator className="h-4 w-4 mr-1" />
                   <span className="hidden xs:inline">Summary</span>
@@ -235,27 +463,20 @@ export function EstimatorApp() {
             </div>
 
             {/* Mobile Summary Panel (collapsible) */}
-            <AnimatePresence>
-              {showMobileSummary && (
-                <motion.div
-                  className="lg:hidden mb-4"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <SummaryCard />
-                  {showAttachments && <div className="mt-4"><AttachmentsPanel /></div>}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {state.showMobileSummary && (
+              <div className="lg:hidden mb-4">
+                <SummaryCard />
+                {state.showAttachments && <div className="mt-4"><AttachmentsPanel /></div>}
+              </div>
+            )}
 
             <div className="flex gap-4 lg:gap-6">
               <DivisionSidebar
-                selectedDivision={selectedDivision}
-                onSelectDivision={setSelectedDivision}
-                onClearDivision={() => setSelectedDivision("")}
-                isCollapsed={isSidebarCollapsed}
-                onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+                selectedDivision={state.selectedDivision}
+                onSelectDivision={(div) => dispatch({ type: 'SET_DIVISION', payload: div })}
+                onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
+                isCollapsed={state.isSidebarCollapsed}
+                onToggleCollapse={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
               />
 
               {/* Main Content Area */}
@@ -283,10 +504,11 @@ export function EstimatorApp() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => setShowSummary(!showSummary)}
-                      title={showSummary ? "Hide Summary" : "Show Summary"}
+                      onClick={() => dispatch({ type: 'TOGGLE_SUMMARY' })}
+                      title={state.showSummary ? "Hide Summary" : "Show Summary"}
+                      aria-label={state.showSummary ? "Hide Summary" : "Show Summary"}
                     >
-                      {showSummary ? (
+                      {state.showSummary ? (
                         <PanelRightClose className="h-4 w-4" />
                       ) : (
                         <Calculator className="h-4 w-4" />
@@ -297,201 +519,48 @@ export function EstimatorApp() {
 
                 {/* Line Items Table */}
                 <LineItemsTable
-                  selectedDivision={selectedDivision}
-                  onClearDivision={() => setSelectedDivision("")}
+                  selectedDivision={state.selectedDivision}
+                  onClearDivision={() => dispatch({ type: 'CLEAR_DIVISION' })}
                 />
               </div>
 
               {/* Collapsible Summary Panel (desktop) */}
               <div
                 className={`hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-                  showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
+                  state.showSummary ? 'w-80 opacity-100' : 'w-0 opacity-0'
                 }`}
               >
                 <div className="w-80 sticky top-24 space-y-4">
                   <SummaryCard />
-                  {/* Attachments Panel (collapsible) */}
-                  {showAttachments && <AttachmentsPanel />}
+                  {state.showAttachments && <AttachmentsPanel />}
                 </div>
               </div>
             </div>
 
             {/* Mobile Floating Action Button */}
-            <motion.div
-              className="lg:hidden fixed bottom-6 right-6 z-50"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-            >
+            <div className="lg:hidden fixed bottom-6 right-6 z-50">
               <Button
                 size="lg"
                 className="h-14 w-14 rounded-full shadow-lg shadow-primary/30"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => dispatch({ type: 'SET_MOBILE_MENU', payload: !state.mobileMenuOpen })}
+                aria-label={state.mobileMenuOpen ? "Close menu" : "Open menu"}
               >
-                <AnimatePresence mode="wait">
-                  {mobileMenuOpen ? (
-                    <motion.div
-                      key="close"
-                      initial={{ rotate: -90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <X className="h-6 w-6" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="menu"
-                      initial={{ rotate: 90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: -90, opacity: 0 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <Menu className="h-6 w-6" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {state.mobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </Button>
-            </motion.div>
+            </div>
 
             {/* Mobile Bottom Sheet Menu */}
-            <AnimatePresence>
-              {mobileMenuOpen && (
-                <>
-                  {/* Backdrop */}
-                  <motion.div
-                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setMobileMenuOpen(false)}
-                  />
-
-                  {/* Bottom Sheet */}
-                  <motion.div
-                    className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-3xl z-40 max-h-[80vh] overflow-hidden"
-                    initial={{ y: "100%" }}
-                    animate={{ y: 0 }}
-                    exit={{ y: "100%" }}
-                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  >
-                    {/* Handle */}
-                    <div className="flex justify-center pt-3 pb-2">
-                      <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
-                    </div>
-
-                    {/* Header */}
-                    <div className="px-6 pb-4 border-b border-border">
-                      <h2 className="text-lg font-semibold text-foreground">Quick Actions</h2>
-                      <p className="text-sm text-muted-foreground">Access all project tools</p>
-                    </div>
-
-                    {/* Scrollable Content */}
-                    <div className="overflow-y-auto max-h-[calc(80vh-120px)] pb-24">
-                      {/* Project Actions */}
-                      <div className="px-4 py-3">
-                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                          Project
-                        </h3>
-                        <div className="grid grid-cols-4 gap-2">
-                          <MobileActionButton
-                            icon={Copy}
-                            label="Duplicate"
-                            onClick={() => { currentProject && duplicateProject(currentProject.id); setMobileMenuOpen(false) }}
-                          />
-                          <MobileActionButton
-                            icon={Paperclip}
-                            label="Files"
-                            onClick={() => { setShowAttachments(!showAttachments); setShowMobileSummary(true); setMobileMenuOpen(false) }}
-                          />
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <FolderManager
-                              trigger={<MobileActionButton icon={Folder} label="Folders" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <VersionHistory
-                              trigger={<MobileActionButton icon={History} label="History" />}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tools */}
-                      <div className="px-4 py-3">
-                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                          Tools
-                        </h3>
-                        <div className="grid grid-cols-4 gap-2">
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <MaterialsCatalogManager
-                              trigger={<MobileActionButton icon={Database} label="Catalog" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <AssemblyManager
-                              trigger={<MobileActionButton icon={Package} label="Assemblies" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <LaborRatesManager
-                              trigger={<MobileActionButton icon={Users} label="Labor" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <ChangeOrderManager
-                              trigger={<MobileActionButton icon={FileStack} label="Changes" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <ProfitMarginChart
-                              trigger={<MobileActionButton icon={PieChart} label="Profit" />}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Data */}
-                      <div className="px-4 py-3">
-                        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                          Data
-                        </h3>
-                        <div className="grid grid-cols-4 gap-2">
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <ImportDialog
-                              trigger={<MobileActionButton icon={Upload} label="Import" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <ExportDialog
-                              trigger={<MobileActionButton icon={Download} label="Export" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <ShareDialog
-                              trigger={<MobileActionButton icon={Share2} label="Share" />}
-                            />
-                          </div>
-                          <div onClick={() => setMobileMenuOpen(false)}>
-                            <KeyboardShortcutsDialog
-                              trigger={<MobileActionButton icon={Keyboard} label="Shortcuts" />}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Swipe hint */}
-                    <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur px-3 py-1.5 rounded-full">
-                        <ChevronUp className="w-3 h-3" />
-                        Tap outside to close
-                      </div>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+            <MobileBottomSheet
+              isOpen={state.mobileMenuOpen}
+              onClose={closeMobileMenu}
+              currentProject={currentProject}
+              duplicateProject={duplicateProject}
+              dispatch={dispatch}
+            />
           </>
         ) : (
           <div className="max-w-2xl mx-auto mt-10 md:mt-20">
