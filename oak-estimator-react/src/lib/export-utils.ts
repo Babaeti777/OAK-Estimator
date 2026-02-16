@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx'
 import type { Project, Summary, ExportOptions, LineItem } from '@/types'
 import { formatCurrency } from './utils'
 
@@ -20,7 +21,146 @@ export function groupLineItemsByDivision(lineItems: LineItem[]): Map<string, Lin
 }
 
 /**
- * Export project to CSV format
+ * Export project to Excel format with formulas and table formatting
+ */
+export function exportToExcel(project: Project, summary: Summary): void {
+  const wb = XLSX.utils.book_new()
+
+  // Create line items data with formulas
+  const headers = ['Division', 'Description', 'Type', 'Quantity', 'Unit', 'Unit Cost', 'Total', 'Notes']
+  const data: any[][] = [headers]
+
+  // Add line items with Total formula (Quantity * Unit Cost)
+  project.lineItems.forEach((item, index) => {
+    const rowNum = index + 2 // Excel rows are 1-indexed, and row 1 is header
+    data.push([
+      item.division,
+      item.description,
+      item.type,
+      item.quantity,
+      item.unit,
+      item.unitCost,
+      { f: `D${rowNum}*F${rowNum}` }, // Formula: Quantity * Unit Cost
+      item.notes || '',
+    ])
+  })
+
+  // Create worksheet from data
+  const ws = XLSX.utils.aoa_to_sheet(data)
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 10 },  // Division
+    { wch: 45 },  // Description
+    { wch: 12 },  // Type
+    { wch: 10 },  // Quantity
+    { wch: 8 },   // Unit
+    { wch: 12 },  // Unit Cost
+    { wch: 14 },  // Total
+    { wch: 30 },  // Notes
+  ]
+
+  // Define table range
+  const lastRow = project.lineItems.length + 1
+  const tableRef = `A1:H${lastRow}`
+
+  // Add table formatting (Excel Table)
+  if (!ws['!tables']) ws['!tables'] = []
+  ws['!tables'].push({
+    name: 'LineItems',
+    ref: tableRef,
+    headerRow: true,
+    totalsRow: false,
+    style: {
+      name: 'TableStyleMedium2',
+      showFirstColumn: false,
+      showLastColumn: false,
+      showRowStripes: true,
+      showColumnStripes: false,
+    },
+  })
+
+  // Add number formatting for currency columns
+  const currencyFormat = '"$"#,##0.00'
+  for (let row = 2; row <= lastRow; row++) {
+    const unitCostCell = `F${row}`
+    const totalCell = `G${row}`
+    if (ws[unitCostCell]) ws[unitCostCell].z = currencyFormat
+    if (ws[totalCell]) ws[totalCell].z = currencyFormat
+  }
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(wb, ws, 'Line Items')
+
+  // Create Summary sheet
+  const summaryData: any[][] = [
+    ['Cost Summary', ''],
+    ['', ''],
+    ['Category', 'Amount'],
+    ['Materials', { f: `SUMIF('Line Items'!C:C,"material",'Line Items'!G:G)` }],
+    ['Labor', { f: `SUMIF('Line Items'!C:C,"labor",'Line Items'!G:G)` }],
+    ['Equipment', { f: `SUMIF('Line Items'!C:C,"equipment",'Line Items'!G:G)` }],
+    ['Subcontractor', { f: `SUMIF('Line Items'!C:C,"subcontractor",'Line Items'!G:G)` }],
+    ['Miscellaneous', { f: `SUMIF('Line Items'!C:C,"misc",'Line Items'!G:G)` }],
+    ['', ''],
+    ['Subtotal', { f: `SUM(B4:B8)` }],
+    [`Markup (${summary.markupPercentage}%)`, { f: `B10*${summary.markupPercentage}/100` }],
+    [`Tax (${summary.taxPercentage}%)`, { f: `(B10+B11)*${summary.taxPercentage}/100` }],
+    ['', ''],
+    ['TOTAL', { f: `B10+B11+B12` }],
+  ]
+
+  const summaryWs = XLSX.utils.aoa_to_sheet(summaryData)
+
+  // Set column widths for summary
+  summaryWs['!cols'] = [
+    { wch: 20 },
+    { wch: 15 },
+  ]
+
+  // Apply currency formatting to summary amounts
+  for (let row = 4; row <= 14; row++) {
+    const cell = `B${row}`
+    if (summaryWs[cell]) summaryWs[cell].z = currencyFormat
+  }
+
+  // Merge title cell
+  summaryWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }]
+
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary')
+
+  // Create Project Info sheet
+  const projectInfoData: any[][] = [
+    ['Project Information', ''],
+    ['', ''],
+    ['Project Name', project.projectSettings.projectName || ''],
+    ['Project Number', project.projectSettings.projectNumber || ''],
+    ['Date', project.projectSettings.date || ''],
+    ['Location', project.projectSettings.location || ''],
+    ['Client', project.projectSettings.clientName || ''],
+    ['Estimator', project.projectSettings.estimator || ''],
+    ['Architect', project.projectSettings.architect || ''],
+    ['Valid Until', project.projectSettings.validUntil || ''],
+    ['', ''],
+    ['Company', project.companySettings.companyName || ''],
+    ['Address', project.companySettings.address || ''],
+    ['Phone', project.companySettings.phone || ''],
+    ['Email', project.companySettings.email || ''],
+  ]
+
+  const projectInfoWs = XLSX.utils.aoa_to_sheet(projectInfoData)
+  projectInfoWs['!cols'] = [{ wch: 15 }, { wch: 40 }]
+  projectInfoWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }]
+
+  XLSX.utils.book_append_sheet(wb, projectInfoWs, 'Project Info')
+
+  // Generate filename and download
+  const filename = `${project.projectSettings.projectName || 'estimate'}_${new Date().toISOString().split('T')[0]}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
+
+/**
+ * Export project to CSV format (legacy)
  */
 export function exportToCSV(project: Project, summary: Summary): string {
   const lines: string[] = []
@@ -75,12 +215,11 @@ export function downloadFile(content: string, filename: string, mimeType: string
 }
 
 /**
- * Export project data to CSV and download
+ * Export project data to CSV and download (legacy function)
  */
 export function downloadProjectCSV(project: Project, summary: Summary): void {
-  const csv = exportToCSV(project, summary)
-  const filename = `${project.projectSettings.projectName || 'estimate'}_${new Date().toISOString().split('T')[0]}.csv`
-  downloadFile(csv, filename, 'text/csv;charset=utf-8')
+  // Use Excel export instead of CSV for better formatting
+  exportToExcel(project, summary)
 }
 
 /**
