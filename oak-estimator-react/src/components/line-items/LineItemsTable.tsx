@@ -186,8 +186,8 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const useVirtual = filteredItems.length > 50
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="bg-card">
+      <CardHeader className="bg-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Table className="w-5 h-5 text-primary" />
