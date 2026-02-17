@@ -54,6 +54,7 @@ export async function createAssembly(
 
     // Clean items to remove undefined values (Firestore doesn't accept undefined)
     const cleanItems = assembly.items.map(item => ({
+      id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       description: item.description || '',
       division: item.division || '',
       type: item.type || 'material',
@@ -61,22 +62,47 @@ export async function createAssembly(
       unit: item.unit || 'EA',
       unitCost: item.unitCost || 0,
       notes: item.notes || '',
+      laborHours: item.laborHours || 0,
     }))
 
-    await setDoc(docRef, {
+    // Build the document with all fields
+    const assemblyDoc: Record<string, unknown> = {
       userId: assembly.userId,
       name: assembly.name || '',
       description: assembly.description || '',
+      category: assembly.category || 'custom',
       items: cleanItems,
       totalCost,
+      estimatedDuration: assembly.estimatedDuration || 1,
+      durationUnit: assembly.durationUnit || 'days',
+      phase: assembly.phase || 'finishes',
+      isDefault: assembly.isDefault || false,
+      isShared: assembly.isShared || false,
+      usageCount: assembly.usageCount || 0,
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    // Only add optional fields if they have values
+    if (assembly.tags && assembly.tags.length > 0) {
+      assemblyDoc.tags = assembly.tags
+    }
+    if (assembly.dependencies && assembly.dependencies.length > 0) {
+      assemblyDoc.dependencies = assembly.dependencies
+    }
+    if (assembly.forkedFrom) {
+      assemblyDoc.forkedFrom = assembly.forkedFrom
+    }
+    if (assembly.lastUsedAt) {
+      assemblyDoc.lastUsedAt = assembly.lastUsedAt
+    }
+
+    await setDoc(docRef, assemblyDoc)
 
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating assembly:', error)
-    throw new Error(error.message || 'Failed to create assembly')
+    throw new Error(error instanceof Error ? error.message : 'Failed to create assembly')
   }
 }
 
@@ -100,16 +126,32 @@ export async function updateAssembly(
     }
 
     // Build clean update object without undefined values
-    const cleanUpdates: Record<string, any> = {
+    const cleanUpdates: Record<string, unknown> = {
       updatedAt: Date.now(),
     }
 
+    // Basic fields
     if (updates.name !== undefined) cleanUpdates.name = updates.name
     if (updates.description !== undefined) cleanUpdates.description = updates.description
     if (totalCost !== undefined) cleanUpdates.totalCost = totalCost
 
+    // Scheduling fields
+    if (updates.category !== undefined) cleanUpdates.category = updates.category
+    if (updates.estimatedDuration !== undefined) cleanUpdates.estimatedDuration = updates.estimatedDuration
+    if (updates.durationUnit !== undefined) cleanUpdates.durationUnit = updates.durationUnit
+    if (updates.phase !== undefined) cleanUpdates.phase = updates.phase
+    if (updates.dependencies !== undefined) cleanUpdates.dependencies = updates.dependencies
+    if (updates.tags !== undefined) cleanUpdates.tags = updates.tags
+
+    // Metadata fields
+    if (updates.isShared !== undefined) cleanUpdates.isShared = updates.isShared
+    if (updates.usageCount !== undefined) cleanUpdates.usageCount = updates.usageCount
+    if (updates.lastUsedAt !== undefined) cleanUpdates.lastUsedAt = updates.lastUsedAt
+
+    // Clean items if provided
     if (updates.items) {
       cleanUpdates.items = updates.items.map(item => ({
+        id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: item.description || '',
         division: item.division || '',
         type: item.type || 'material',
@@ -117,13 +159,14 @@ export async function updateAssembly(
         unit: item.unit || 'EA',
         unitCost: item.unitCost || 0,
         notes: item.notes || '',
+        laborHours: item.laborHours || 0,
       }))
     }
 
     await updateDoc(docRef, cleanUpdates)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating assembly:', error)
-    throw new Error(error.message || 'Failed to update assembly')
+    throw new Error(error instanceof Error ? error.message : 'Failed to update assembly')
   }
 }
 
