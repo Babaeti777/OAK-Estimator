@@ -43,17 +43,15 @@ import {
   Sparkles,
   Settings,
 } from 'lucide-react'
-import type { Assembly, AssemblyCategory, AssemblyCategoryInfo, DependencyWarning } from '@/types'
+import type { Assembly, AssemblyCategory, DependencyWarning } from '@/types'
 import {
   ASSEMBLY_CATEGORIES,
   DEFAULT_ASSEMBLIES,
   getCategoryInfo,
   getSuggestedDependencies,
-  searchAssemblies,
-  getAssembliesByCategory,
 } from '@/data/default-assemblies'
-import { useProject } from '@/context/ProjectContext'
-import { useAuth } from '@/context/AuthContext'
+import { useProject } from '@/contexts/ProjectContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { createAssembly, getUserAssemblies, updateAssembly } from '@/services/assemblies.service'
 

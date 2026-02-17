@@ -5,7 +5,7 @@
  * Users can fork these to customize for their needs.
  */
 
-import type { Assembly, AssemblyCategory, AssemblyCategoryInfo, ProjectPhase } from '@/types'
+import type { Assembly, AssemblyCategory, AssemblyCategoryInfo } from '@/types'
 
 // ============================================
 // Category Metadata

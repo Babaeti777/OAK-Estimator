@@ -10,6 +10,7 @@ import { VersionHistory } from "./projects/VersionHistory"
 import { FolderManager } from "./projects/FolderManager"
 import { Dashboard } from "./dashboard/Dashboard"
 import { AssemblyManager } from "./assemblies/AssemblyManager"
+import { AssemblyLibrary } from "./assemblies/AssemblyLibrary"
 import { ChangeOrderManager } from "./change-orders/ChangeOrderManager"
 import { ImportDialog } from "./import/ImportDialog"
 import { ShareDialog } from "./sharing/ShareDialog"
@@ -49,6 +50,7 @@ interface AppState {
   showSummary: boolean
   showDashboard: boolean
   showAttachments: boolean
+  showAssemblyLibrary: boolean
   selectedDivision: string
   showDivisionPanel: boolean
   mobileMenuOpen: boolean
@@ -59,6 +61,7 @@ type AppAction =
   | { type: 'TOGGLE_SUMMARY' }
   | { type: 'SET_DASHBOARD'; payload: boolean }
   | { type: 'TOGGLE_ATTACHMENTS' }
+  | { type: 'SET_ASSEMBLY_LIBRARY'; payload: boolean }
   | { type: 'SET_DIVISION'; payload: string }
   | { type: 'CLEAR_DIVISION' }
   | { type: 'TOGGLE_DIVISION_PANEL' }
@@ -70,6 +73,7 @@ const initialState: AppState = {
   showSummary: false,
   showDashboard: false,
   showAttachments: false,
+  showAssemblyLibrary: false,
   selectedDivision: "",
   showDivisionPanel: false,
   mobileMenuOpen: false,
@@ -84,6 +88,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, showDashboard: action.payload }
     case 'TOGGLE_ATTACHMENTS':
       return { ...state, showAttachments: !state.showAttachments }
+    case 'SET_ASSEMBLY_LIBRARY':
+      return { ...state, showAssemblyLibrary: action.payload }
     case 'SET_DIVISION':
       return { ...state, selectedDivision: action.payload }
     case 'CLEAR_DIVISION':
@@ -188,6 +194,16 @@ function DesktopToolbar({
       {/* Action Buttons - Center */}
       <div className="flex items-center gap-2">
         <MaterialsCatalogManager />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => dispatch({ type: 'SET_ASSEMBLY_LIBRARY', payload: true })}
+          title="Assembly Library"
+          className="gap-2"
+        >
+          <Package className="h-4 w-4" />
+          <span className="hidden xl:inline">Library</span>
+        </Button>
         <AssemblyManager />
         <LaborRatesManager />
         <ChangeOrderManager />
@@ -258,7 +274,8 @@ function MobileBottomSheet({
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">Tools</h3>
             <div className="grid grid-cols-4 gap-2">
               <div onClick={onClose}><MaterialsCatalogManager trigger={<MobileActionButton icon={Database} label="Catalog" />} /></div>
-              <div onClick={onClose}><AssemblyManager trigger={<MobileActionButton icon={Package} label="Assemblies" />} /></div>
+              <MobileActionButton icon={Package} label="Library" onClick={() => { dispatch({ type: 'SET_ASSEMBLY_LIBRARY', payload: true }); onClose() }} />
+              <div onClick={onClose}><AssemblyManager trigger={<MobileActionButton icon={Package} label="My Kits" />} /></div>
               <div onClick={onClose}><LaborRatesManager trigger={<MobileActionButton icon={Users} label="Labor" />} /></div>
               <div onClick={onClose}><ChangeOrderManager trigger={<MobileActionButton icon={FileStack} label="Changes" />} /></div>
               <div onClick={onClose}><ProfitMarginChart trigger={<MobileActionButton icon={PieChart} label="Profit" />} /></div>
@@ -489,6 +506,12 @@ export function EstimatorApp() {
               currentProject={currentProject}
               duplicateProject={duplicateProject}
               dispatch={dispatch}
+            />
+
+            {/* Assembly Library Dialog */}
+            <AssemblyLibrary
+              open={state.showAssemblyLibrary}
+              onOpenChange={(open) => dispatch({ type: 'SET_ASSEMBLY_LIBRARY', payload: open })}
             />
           </>
         ) : (
