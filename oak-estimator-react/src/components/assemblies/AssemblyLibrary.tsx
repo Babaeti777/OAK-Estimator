@@ -45,6 +45,8 @@ import {
   Pencil,
 } from 'lucide-react'
 import { AssemblyEditor } from './AssemblyEditor'
+import { ItemSearchInput } from './ItemSearchInput'
+import type { SearchableItem } from '@/data/item-search'
 import type { Assembly, AssemblyCategory, DependencyWarning } from '@/types'
 import {
   ASSEMBLY_CATEGORIES,
@@ -742,9 +744,18 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
               {reviewItems.map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 rounded bg-muted/30 hover:bg-muted/50">
                   <div className="col-span-4">
-                    <Input
+                    <ItemSearchInput
                       value={item.description}
-                      onChange={e => updateReviewItem(index, { description: e.target.value })}
+                      onChange={desc => updateReviewItem(index, { description: desc })}
+                      onSelectItem={(match: SearchableItem) => {
+                        updateReviewItem(index, {
+                          description: match.description,
+                          type: match.type,
+                          unit: match.unit,
+                          unitCost: match.unitCost,
+                          notes: match.notes,
+                        })
+                      }}
                       className="text-sm h-8"
                     />
                   </div>

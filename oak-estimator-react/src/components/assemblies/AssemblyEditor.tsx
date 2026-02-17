@@ -43,6 +43,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { createAssembly, updateAssembly } from '@/services/assemblies.service'
 import { formatCurrency } from '@/lib/utils'
+import { ItemSearchInput } from './ItemSearchInput'
+import type { SearchableItem } from '@/data/item-search'
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -580,10 +582,20 @@ export function AssemblyEditor({
                       </Select>
                     </div>
                     <div className="col-span-3">
-                      <Input
+                      <ItemSearchInput
                         value={item.description}
-                        onChange={e => updateItem(index, { description: e.target.value })}
-                        placeholder="Description"
+                        onChange={desc => updateItem(index, { description: desc })}
+                        onSelectItem={(match: SearchableItem) => {
+                          updateItem(index, {
+                            description: match.description,
+                            division: match.division,
+                            type: match.type,
+                            unit: match.unit,
+                            unitCost: match.unitCost,
+                            notes: match.notes,
+                          })
+                        }}
+                        placeholder="Search or type description..."
                         className="text-sm"
                       />
                     </div>

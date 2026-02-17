@@ -275,6 +275,13 @@ export interface Assembly {
   updatedAt: number
 }
 
+export interface RelatedItem {
+  description: string
+  unitCost: number
+  unit?: string                    // Override unit if different
+  notes?: string                   // e.g., "fire-rated", "moisture-resistant"
+}
+
 export interface AssemblyItem {
   id: string                       // ID for editing
   description: string
@@ -285,6 +292,7 @@ export interface AssemblyItem {
   unitCost: number
   notes?: string
   laborHours?: number              // Optional labor tracking
+  relatedItems?: RelatedItem[]     // Alternative/similar items that can be swapped in
 }
 
 // ============================================
