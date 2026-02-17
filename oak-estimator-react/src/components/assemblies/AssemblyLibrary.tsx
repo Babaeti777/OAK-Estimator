@@ -42,7 +42,9 @@ import {
   TreePine,
   Sparkles,
   Settings,
+  Pencil,
 } from 'lucide-react'
+import { AssemblyEditor } from './AssemblyEditor'
 import type { Assembly, AssemblyCategory, DependencyWarning } from '@/types'
 import {
   ASSEMBLY_CATEGORIES,
@@ -112,6 +114,10 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
     notes?: string
     schedule?: string
   }> | null>(null)
+
+  // Assembly Editor state
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingAssembly, setEditingAssembly] = useState<Assembly | null>(null)
 
   // Load user assemblies when dialog opens
   const loadUserAssemblies = useCallback(async () => {
@@ -311,6 +317,19 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
     }
   }, [currentProject, selectedAssemblies, addLineItem, user, toast, onOpenChange])
 
+  // Edit a user assembly
+  const handleEditAssembly = useCallback((assembly: Assembly) => {
+    setEditingAssembly(assembly)
+    setEditorOpen(true)
+  }, [])
+
+  // Handle save from editor
+  const handleEditorSave = useCallback(() => {
+    setEditorOpen(false)
+    setEditingAssembly(null)
+    loadUserAssemblies()
+  }, [loadUserAssemblies])
+
   // Fork an assembly (copy default to user's library)
   const handleForkAssembly = useCallback(
     async (assembly: Assembly) => {
@@ -471,14 +490,29 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
 
               {/* Actions */}
               <div className="flex items-center gap-1 shrink-0">
-                {assembly.isDefault && (
+                {assembly.isDefault ? (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleForkAssembly(assembly)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleForkAssembly(assembly)
+                    }}
                     title="Fork to my library"
                   >
                     <Copy className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleEditAssembly(assembly)
+                    }}
+                    title="Edit assembly"
+                  >
+                    <Pencil className="w-4 h-4" />
                   </Button>
                 )}
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -603,10 +637,15 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
               </>
             )}
           </Button>
-          {detailAssembly.isDefault && (
+          {detailAssembly.isDefault ? (
             <Button variant="outline" onClick={() => handleForkAssembly(detailAssembly)}>
               <Copy className="w-4 h-4 mr-2" />
               Fork
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => handleEditAssembly(detailAssembly)}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit
             </Button>
           )}
         </div>
@@ -841,6 +880,18 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
           </div>
         )}
       </DialogContent>
+
+      {/* Assembly Editor Dialog */}
+      <AssemblyEditor
+        assembly={editingAssembly}
+        open={editorOpen}
+        onOpenChange={(open) => {
+          setEditorOpen(open)
+          if (!open) setEditingAssembly(null)
+        }}
+        onSave={handleEditorSave}
+        mode="edit"
+      />
     </Dialog>
   )
 }

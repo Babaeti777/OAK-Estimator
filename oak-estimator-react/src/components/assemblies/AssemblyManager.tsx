@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import { Select } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/contexts/AuthContext'
 import { useProject } from '@/contexts/ProjectContext'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import {
   getUserAssemblies,
   createAssembly,
@@ -23,7 +23,8 @@ import {
 import { formatCurrency } from '@/lib/utils'
 import type { Assembly, AssemblyItem, LineItem } from '@/types'
 import { DIVISIONS_ALL } from '@/data/divisions'
-import { Package, Plus, Trash2, Layers, ChevronDown, ChevronUp } from 'lucide-react'
+import { Package, Plus, Trash2, Layers, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
+import { AssemblyEditor } from './AssemblyEditor'
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -40,10 +41,15 @@ interface AssemblyManagerProps {
 export function AssemblyManager({ trigger }: AssemblyManagerProps) {
   const { user } = useAuth()
   const { addLineItem, currentProject } = useProject()
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [assemblies, setAssemblies] = useState<Assembly[]>([])
   const [loading, setLoading] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Editor state
+  const [editingAssembly, setEditingAssembly] = useState<Assembly | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
 
   // New assembly form state
   const [showNewForm, setShowNewForm] = useState(false)
@@ -162,6 +168,17 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
       })
     }
   }
+
+  const handleEditAssembly = useCallback((assembly: Assembly) => {
+    setEditingAssembly(assembly)
+    setEditorOpen(true)
+  }, [])
+
+  const handleEditorSave = useCallback(() => {
+    setEditorOpen(false)
+    setEditingAssembly(null)
+    loadAssemblies()
+  }, [])
 
   const addNewItem = () => {
     setNewItems([
@@ -415,8 +432,20 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
+                          handleEditAssembly(assembly)
+                        }}
+                        title="Edit assembly"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
                           handleDeleteAssembly(assembly.id)
                         }}
+                        title="Delete assembly"
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -460,6 +489,18 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
           </div>
         </div>
       </DialogContent>
+
+      {/* Assembly Editor Dialog */}
+      <AssemblyEditor
+        assembly={editingAssembly}
+        open={editorOpen}
+        onOpenChange={(open) => {
+          setEditorOpen(open)
+          if (!open) setEditingAssembly(null)
+        }}
+        onSave={handleEditorSave}
+        mode="edit"
+      />
     </Dialog>
   )
 }
