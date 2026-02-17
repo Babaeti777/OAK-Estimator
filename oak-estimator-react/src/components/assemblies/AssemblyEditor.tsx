@@ -253,8 +253,13 @@ export function AssemblyEditor({
         }
       } else {
         // Create new assembly
-        const newAssembly = await createAssembly(assemblyData as Omit<Assembly, 'id' | 'createdAt' | 'updatedAt'>)
-        savedAssembly = newAssembly
+        const newId = await createAssembly(assemblyData as Omit<Assembly, 'id' | 'createdAt' | 'updatedAt'>)
+        savedAssembly = {
+          ...assemblyData,
+          id: newId,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        } as Assembly
       }
 
       toast({
@@ -319,14 +324,20 @@ export function AssemblyEditor({
         forkedFrom: assembly?.id,
       }
 
-      const newAssembly = await createAssembly(assemblyData as Omit<Assembly, 'id' | 'createdAt' | 'updatedAt'>)
+      const newId = await createAssembly(assemblyData as Omit<Assembly, 'id' | 'createdAt' | 'updatedAt'>)
+      const savedAssembly = {
+        ...assemblyData,
+        id: newId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as Assembly
 
       toast({
         title: 'Assembly created',
         description: `"${assemblyData.name}" has been saved as a new assembly`,
       })
 
-      onSave?.(newAssembly)
+      onSave?.(savedAssembly)
       onOpenChange(false)
     } catch (error: unknown) {
       toast({

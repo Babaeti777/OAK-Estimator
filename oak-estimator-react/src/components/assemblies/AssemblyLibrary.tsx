@@ -100,6 +100,19 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [detailAssembly, setDetailAssembly] = useState<Assembly | null>(null)
 
+  // Editable review state - items staged for adding to project
+  const [reviewItems, setReviewItems] = useState<Array<{
+    assemblyName: string
+    division: string
+    description: string
+    type: string
+    quantity: number
+    unit: string
+    unitCost: number
+    notes?: string
+    schedule?: string
+  }> | null>(null)
+
   // Load user assemblies when dialog opens
   const loadUserAssemblies = useCallback(async () => {
     if (!user) return
@@ -198,29 +211,79 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
     return { totalCost, totalDuration }
   }, [selectedAssemblies])
 
-  // Add selected assemblies to project
+  // Stage items for review/editing before adding
+  const handleReviewBeforeAdd = useCallback(() => {
+    if (selectedAssemblies.length === 0) return
+
+    const items = selectedAssemblies.flatMap(assembly =>
+      assembly.items.map(item => ({
+        assemblyName: assembly.name,
+        division: item.division,
+        description: `[${assembly.name}] ${item.description}`,
+        type: item.type,
+        quantity: item.quantity,
+        unit: item.unit,
+        unitCost: item.unitCost,
+        notes: item.notes,
+        schedule: `Duration: ${assembly.estimatedDuration} ${assembly.durationUnit}`,
+      }))
+    )
+    setReviewItems(items)
+  }, [selectedAssemblies])
+
+  // Update a review item
+  const updateReviewItem = useCallback((index: number, updates: Partial<typeof reviewItems extends Array<infer T> | null ? T : never>) => {
+    setReviewItems(prev => {
+      if (!prev) return prev
+      const updated = [...prev]
+      updated[index] = { ...updated[index], ...updates }
+      return updated
+    })
+  }, [])
+
+  // Remove a review item
+  const removeReviewItem = useCallback((index: number) => {
+    setReviewItems(prev => prev ? prev.filter((_, i) => i !== index) : prev)
+  }, [])
+
+  // Add reviewed/edited items to project
   const handleAddToProject = useCallback(async () => {
-    if (!currentProject || selectedAssemblies.length === 0) return
+    if (!currentProject) return
+
+    const itemsToAdd = reviewItems || selectedAssemblies.flatMap(assembly =>
+      assembly.items.map(item => ({
+        assemblyName: assembly.name,
+        division: item.division,
+        description: `[${assembly.name}] ${item.description}`,
+        type: item.type as string,
+        quantity: item.quantity,
+        unit: item.unit,
+        unitCost: item.unitCost,
+        notes: item.notes,
+        schedule: `Duration: ${assembly.estimatedDuration} ${assembly.durationUnit}`,
+      }))
+    )
+
+    if (itemsToAdd.length === 0) return
 
     setIsLoading(true)
     try {
-      for (const assembly of selectedAssemblies) {
-        // Add each item from the assembly as a line item
-        for (const item of assembly.items) {
-          await addLineItem({
-            division: item.division,
-            description: `[${assembly.name}] ${item.description}`,
-            type: item.type,
-            quantity: item.quantity,
-            unit: item.unit,
-            unitCost: item.unitCost,
-            totalCost: item.quantity * item.unitCost,
-            notes: item.notes,
-            schedule: `Duration: ${assembly.estimatedDuration} ${assembly.durationUnit}`,
-          })
-        }
+      for (const item of itemsToAdd) {
+        await addLineItem({
+          division: item.division,
+          description: item.description,
+          type: item.type as any,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitCost: item.unitCost,
+          totalCost: item.quantity * item.unitCost,
+          notes: item.notes,
+          schedule: item.schedule,
+        })
+      }
 
-        // Update usage count for non-default assemblies
+      // Update usage count for non-default assemblies
+      for (const assembly of selectedAssemblies) {
         if (!assembly.isDefault && assembly.userId === user?.uid) {
           await updateAssembly(assembly.id, {
             usageCount: (assembly.usageCount || 0) + 1,
@@ -230,19 +293,17 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
       }
 
       toast({
-        title: 'Assemblies added',
-        description: `Added ${selectedAssemblies.length} assemblies (${selectedAssemblies.reduce(
-          (sum, a) => sum + a.items.length,
-          0
-        )} items) to project`,
+        title: 'Items added to project',
+        description: `Added ${itemsToAdd.length} items to project`,
       })
 
       setSelectedAssemblies([])
+      setReviewItems(null)
       onOpenChange(false)
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
-        title: 'Failed to add assemblies',
+        title: 'Failed to add items',
         description: error instanceof Error ? error.message : 'Unknown error occurred',
       })
     } finally {
@@ -617,48 +678,164 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {viewMode === 'categories' && !searchQuery && renderCategoryGrid()}
-          {(viewMode === 'list' || searchQuery) && renderAssemblyList()}
-          {viewMode === 'detail' && renderAssemblyDetail()}
+          {reviewItems ? (
+            /* Review & Edit View */
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium">
+                  Review & edit items before adding ({reviewItems.length} items)
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setReviewItems(null)}>
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </Button>
+              </div>
+              {/* Header */}
+              <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground px-2 py-1">
+                <div className="col-span-4">Description</div>
+                <div className="col-span-2">Type</div>
+                <div className="col-span-1">Qty</div>
+                <div className="col-span-1">Unit</div>
+                <div className="col-span-2">Unit Cost</div>
+                <div className="col-span-1">Total</div>
+                <div className="col-span-1"></div>
+              </div>
+              {reviewItems.map((item, index) => (
+                <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 rounded bg-muted/30 hover:bg-muted/50">
+                  <div className="col-span-4">
+                    <Input
+                      value={item.description}
+                      onChange={e => updateReviewItem(index, { description: e.target.value })}
+                      className="text-sm h-8"
+                    />
+                  </div>
+                  <div className="col-span-2 text-xs text-muted-foreground capitalize">
+                    {item.type}
+                  </div>
+                  <div className="col-span-1">
+                    <Input
+                      type="number"
+                      value={item.quantity}
+                      onChange={e => updateReviewItem(index, { quantity: parseFloat(e.target.value) || 0 })}
+                      className="text-sm h-8"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Input
+                      value={item.unit}
+                      onChange={e => updateReviewItem(index, { unit: e.target.value })}
+                      className="text-sm h-8"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      type="number"
+                      value={item.unitCost}
+                      onChange={e => updateReviewItem(index, { unitCost: parseFloat(e.target.value) || 0 })}
+                      className="text-sm h-8"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="col-span-1 text-xs font-medium">
+                    ${(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </div>
+                  <div className="col-span-1 flex justify-center">
+                    <button onClick={() => removeReviewItem(index)} className="text-destructive hover:text-destructive/80">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-end text-sm font-semibold pt-2 border-t">
+                Total: ${reviewItems.reduce((sum, i) => sum + i.quantity * i.unitCost, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </div>
+            </div>
+          ) : (
+            <>
+              {viewMode === 'categories' && !searchQuery && renderCategoryGrid()}
+              {(viewMode === 'list' || searchQuery) && renderAssemblyList()}
+              {viewMode === 'detail' && renderAssemblyDetail()}
+            </>
+          )}
         </div>
 
         {/* Selection footer */}
-        {selectedAssemblies.length > 0 && (
+        {(selectedAssemblies.length > 0 || reviewItems) && (
           <div className="border-t pt-3 mt-3">
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm">
-                <span className="font-medium">{selectedAssemblies.length}</span> selected
-                <span className="text-muted-foreground mx-2">|</span>
-                <span className="text-muted-foreground">
-                  ${selectionTotals.totalCost.toLocaleString()}
-                </span>
-                <span className="text-muted-foreground mx-2">|</span>
-                <span className="text-muted-foreground">
-                  {selectionTotals.totalDuration} days
-                </span>
+                {reviewItems ? (
+                  <span className="font-medium">{reviewItems.length} items ready to add</span>
+                ) : (
+                  <>
+                    <span className="font-medium">{selectedAssemblies.length}</span> selected
+                    <span className="text-muted-foreground mx-2">|</span>
+                    <span className="text-muted-foreground">
+                      ${selectionTotals.totalCost.toLocaleString()}
+                    </span>
+                    <span className="text-muted-foreground mx-2">|</span>
+                    <span className="text-muted-foreground">
+                      {selectionTotals.totalDuration} days
+                    </span>
+                  </>
+                )}
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedAssemblies([])}
-                >
-                  Clear
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleAddToProject}
-                  disabled={isLoading || !currentProject}
-                >
-                  {isLoading ? (
-                    'Adding...'
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add to Project
-                    </>
-                  )}
-                </Button>
+                {reviewItems ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setReviewItems(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleAddToProject}
+                      disabled={isLoading || !currentProject || reviewItems.length === 0}
+                    >
+                      {isLoading ? 'Adding...' : (
+                        <>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add {reviewItems.length} Items
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedAssemblies([])}
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReviewBeforeAdd}
+                    >
+                      Review & Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleAddToProject}
+                      disabled={isLoading || !currentProject}
+                    >
+                      {isLoading ? 'Adding...' : (
+                        <>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add to Project
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

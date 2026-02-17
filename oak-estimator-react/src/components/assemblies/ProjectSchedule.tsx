@@ -20,7 +20,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Calendar,
-  Download,
   Clock,
   CheckCircle2,
   Circle,
@@ -33,7 +32,6 @@ import {
 } from 'lucide-react'
 import type {
   Assembly,
-  ProjectSchedule as ProjectScheduleType,
   ScheduledAssembly,
   AssemblyCategory,
   ProjectPhase,
@@ -41,7 +39,7 @@ import type {
 import { useProject } from '@/contexts/ProjectContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
-import { getCategoryInfo, ASSEMBLY_CATEGORIES, DEFAULT_ASSEMBLIES } from '@/data/default-assemblies'
+import { getCategoryInfo, DEFAULT_ASSEMBLIES } from '@/data/default-assemblies'
 import { getUserAssemblies } from '@/services/assemblies.service'
 import { formatCurrency } from '@/lib/utils'
 
@@ -276,11 +274,9 @@ function StatusIcon({ status }: { status: ScheduledAssembly['status'] }) {
 function TimelineBar({
   item,
   maxDuration,
-  startDate,
 }: {
   item: ScheduledAssembly
   maxDuration: number
-  startDate: Date
 }) {
   const startPercent = ((item.startDay - 1) / maxDuration) * 100
   const widthPercent = (item.duration / maxDuration) * 100
@@ -439,7 +435,7 @@ export function ProjectSchedule({ open, onOpenChange, assemblies: propAssemblies
       return
     }
 
-    const projectName = currentProject?.name || 'Project'
+    const projectName = currentProject?.projectSettings?.projectName || 'Project'
     const filename = `${projectName.replace(/[^a-z0-9]/gi, '_')}_schedule_${
       startDate.toISOString().split('T')[0]
     }.csv`
@@ -635,7 +631,6 @@ export function ProjectSchedule({ open, onOpenChange, assemblies: propAssemblies
                                 <TimelineBar
                                   item={item}
                                   maxDuration={totals.totalDuration}
-                                  startDate={startDate}
                                 />
                               </div>
                             </div>
