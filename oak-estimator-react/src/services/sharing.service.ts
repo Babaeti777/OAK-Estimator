@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { SharedProject, ClientComment } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const SHARED_PROJECTS_COLLECTION = 'sharedProjects'
 const CLIENT_COMMENTS_COLLECTION = 'clientComments'
@@ -64,9 +65,9 @@ export async function createSharedProject(
     await setDoc(docRef, sharedProject)
 
     return { id: docRef.id, ...sharedProject }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating shared project:', error)
-    throw new Error(error.message || 'Failed to create shareable link')
+    throw new Error(getErrorMessage(error) || 'Failed to create shareable link')
   }
 }
 
@@ -85,9 +86,9 @@ export async function getSharedProjectByToken(token: string): Promise<SharedProj
 
     const doc = snapshot.docs[0]
     return { id: doc.id, ...doc.data() } as SharedProject
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting shared project:', error)
-    throw new Error(error.message || 'Failed to get shared project')
+    throw new Error(getErrorMessage(error) || 'Failed to get shared project')
   }
 }
 
@@ -106,9 +107,9 @@ export async function getProjectShares(projectId: string): Promise<SharedProject
       id: doc.id,
       ...doc.data(),
     } as SharedProject))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting project shares:', error)
-    throw new Error(error.message || 'Failed to get project shares')
+    throw new Error(getErrorMessage(error) || 'Failed to get project shares')
   }
 }
 
@@ -126,7 +127,7 @@ export async function recordSharedProjectView(sharedProjectId: string): Promise<
       viewCount: (data.viewCount || 0) + 1,
       lastViewedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error recording view:', error)
   }
 }
@@ -138,9 +139,9 @@ export async function deleteSharedProject(sharedProjectId: string): Promise<void
   try {
     const docRef = doc(db, SHARED_PROJECTS_COLLECTION, sharedProjectId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting shared project:', error)
-    throw new Error(error.message || 'Failed to delete shared link')
+    throw new Error(getErrorMessage(error) || 'Failed to delete shared link')
   }
 }
 
@@ -154,9 +155,9 @@ export async function updateSharedProject(
   try {
     const docRef = doc(db, SHARED_PROJECTS_COLLECTION, sharedProjectId)
     await updateDoc(docRef, updates)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating shared project:', error)
-    throw new Error(error.message || 'Failed to update shared link')
+    throw new Error(getErrorMessage(error) || 'Failed to update shared link')
   }
 }
 
@@ -177,9 +178,9 @@ export async function addClientComment(
       createdAt: Date.now(),
     })
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error adding comment:', error)
-    throw new Error(error.message || 'Failed to add comment')
+    throw new Error(getErrorMessage(error) || 'Failed to add comment')
   }
 }
 
@@ -198,9 +199,9 @@ export async function getSharedProjectComments(sharedProjectId: string): Promise
       id: doc.id,
       ...doc.data(),
     } as ClientComment))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting comments:', error)
-    throw new Error(error.message || 'Failed to get comments')
+    throw new Error(getErrorMessage(error) || 'Failed to get comments')
   }
 }
 
@@ -214,8 +215,8 @@ export async function resolveClientComment(commentId: string): Promise<void> {
       resolved: true,
       resolvedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error resolving comment:', error)
-    throw new Error(error.message || 'Failed to resolve comment')
+    throw new Error(getErrorMessage(error) || 'Failed to resolve comment')
   }
 }

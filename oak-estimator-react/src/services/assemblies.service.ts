@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Assembly } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const ASSEMBLIES_COLLECTION = 'assemblies'
 
@@ -30,9 +31,9 @@ export async function getUserAssemblies(userId: string): Promise<Assembly[]> {
       id: doc.id,
       ...doc.data(),
     } as Assembly))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting assemblies:', error)
-    throw new Error(error.message || 'Failed to load assemblies')
+    throw new Error(getErrorMessage(error) || 'Failed to load assemblies')
   }
 }
 
@@ -102,7 +103,7 @@ export async function createAssembly(
     return docRef.id
   } catch (error: unknown) {
     console.error('Error creating assembly:', error)
-    throw new Error(error instanceof Error ? error.message : 'Failed to create assembly')
+    throw new Error(getErrorMessage(error) || 'Failed to create assembly')
   }
 }
 
@@ -166,7 +167,7 @@ export async function updateAssembly(
     await updateDoc(docRef, cleanUpdates)
   } catch (error: unknown) {
     console.error('Error updating assembly:', error)
-    throw new Error(error instanceof Error ? error.message : 'Failed to update assembly')
+    throw new Error(getErrorMessage(error) || 'Failed to update assembly')
   }
 }
 
@@ -177,8 +178,8 @@ export async function deleteAssembly(assemblyId: string): Promise<void> {
   try {
     const docRef = doc(db, ASSEMBLIES_COLLECTION, assemblyId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting assembly:', error)
-    throw new Error(error.message || 'Failed to delete assembly')
+    throw new Error(getErrorMessage(error) || 'Failed to delete assembly')
   }
 }

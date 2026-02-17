@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { ProjectFolder } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const FOLDERS_COLLECTION = 'folders'
 
@@ -31,9 +32,9 @@ export async function getUserFolders(userId: string): Promise<ProjectFolder[]> {
       id: doc.id,
       ...doc.data(),
     } as ProjectFolder))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting folders:', error)
-    throw new Error(error.message || 'Failed to load folders')
+    throw new Error(getErrorMessage(error) || 'Failed to load folders')
   }
 }
 
@@ -50,9 +51,9 @@ export async function createFolder(folder: Omit<ProjectFolder, 'id' | 'createdAt
     })
 
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating folder:', error)
-    throw new Error(error.message || 'Failed to create folder')
+    throw new Error(getErrorMessage(error) || 'Failed to create folder')
   }
 }
 
@@ -63,9 +64,9 @@ export async function updateFolder(folderId: string, updates: Partial<ProjectFol
   try {
     const docRef = doc(db, FOLDERS_COLLECTION, folderId)
     await updateDoc(docRef, updates)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating folder:', error)
-    throw new Error(error.message || 'Failed to update folder')
+    throw new Error(getErrorMessage(error) || 'Failed to update folder')
   }
 }
 
@@ -76,9 +77,9 @@ export async function deleteFolder(folderId: string): Promise<void> {
   try {
     const docRef = doc(db, FOLDERS_COLLECTION, folderId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting folder:', error)
-    throw new Error(error.message || 'Failed to delete folder')
+    throw new Error(getErrorMessage(error) || 'Failed to delete folder')
   }
 }
 

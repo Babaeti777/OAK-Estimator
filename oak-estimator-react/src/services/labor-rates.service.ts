@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { LaborRate, LaborCategory } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const LABOR_RATES_COLLECTION = 'laborRates'
 
@@ -54,9 +55,9 @@ export async function getUserLaborRates(userId: string): Promise<LaborRate[]> {
       id: doc.id,
       ...doc.data(),
     } as LaborRate))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting labor rates:', error)
-    throw new Error(error.message || 'Failed to load labor rates')
+    throw new Error(getErrorMessage(error) || 'Failed to load labor rates')
   }
 }
 
@@ -95,9 +96,9 @@ export async function createLaborRate(
     })
 
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating labor rate:', error)
-    throw new Error(error.message || 'Failed to create labor rate')
+    throw new Error(getErrorMessage(error) || 'Failed to create labor rate')
   }
 }
 
@@ -126,9 +127,9 @@ export async function updateLaborRate(
       effectiveRate,
       updatedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating labor rate:', error)
-    throw new Error(error.message || 'Failed to update labor rate')
+    throw new Error(getErrorMessage(error) || 'Failed to update labor rate')
   }
 }
 
@@ -139,9 +140,9 @@ export async function deleteLaborRate(laborRateId: string): Promise<void> {
   try {
     const docRef = doc(db, LABOR_RATES_COLLECTION, laborRateId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting labor rate:', error)
-    throw new Error(error.message || 'Failed to delete labor rate')
+    throw new Error(getErrorMessage(error) || 'Failed to delete labor rate')
   }
 }
 
@@ -165,7 +166,7 @@ export async function initializeDefaultLaborRates(userId: string): Promise<void>
         isDefault: true,
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error initializing labor rates:', error)
   }
 }

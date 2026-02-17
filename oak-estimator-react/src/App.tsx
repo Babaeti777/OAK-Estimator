@@ -6,6 +6,8 @@ import { LoginScreen } from "@/components/auth/LoginScreen"
 import { LoadingScreen } from "@/components/auth/LoadingScreen"
 import { EstimatorApp } from "@/components/EstimatorApp"
 import { Toaster } from "@/components/ui/toaster"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
+import { ConfirmDialogProvider } from "@/components/ui/confirm-dialog"
 
 function AppContent() {
   const { user, isLoading } = useAuth()
@@ -30,10 +32,14 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-        <Toaster />
-      </AuthProvider>
+      <ErrorBoundary>
+        <ConfirmDialogProvider>
+          <AuthProvider>
+            <AppContent />
+            <Toaster />
+          </AuthProvider>
+        </ConfirmDialogProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   )
 }

@@ -1,5 +1,6 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { storage } from './firebase'
+import { getErrorMessage, hasErrorCode } from '@/lib/utils'
 
 /**
  * Upload a company logo to Firebase Storage
@@ -38,9 +39,9 @@ export async function uploadCompanyLogo(
     const downloadURL = await getDownloadURL(storageRef)
 
     return downloadURL
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading logo:', error)
-    throw new Error(error.message || 'Failed to upload logo')
+    throw new Error(getErrorMessage(error) || 'Failed to upload logo')
   }
 }
 
@@ -60,11 +61,11 @@ export async function deleteCompanyLogo(logoUrl: string): Promise<void> {
     const storageRef = ref(storage, path)
 
     await deleteObject(storageRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting logo:', error)
     // Don't throw error if file doesn't exist
-    if (error.code !== 'storage/object-not-found') {
-      throw new Error(error.message || 'Failed to delete logo')
+    if (hasErrorCode(error) && error.code !== 'storage/object-not-found') {
+      throw new Error(getErrorMessage(error) || 'Failed to delete logo')
     }
   }
 }

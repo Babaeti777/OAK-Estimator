@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { LineItemTemplate } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const TEMPLATES_COLLECTION = 'lineItemTemplates'
 
@@ -30,9 +31,9 @@ export async function getUserTemplates(userId: string): Promise<LineItemTemplate
       id: doc.id,
       ...doc.data(),
     } as LineItemTemplate))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting templates:', error)
-    throw new Error(error.message || 'Failed to load templates')
+    throw new Error(getErrorMessage(error) || 'Failed to load templates')
   }
 }
 
@@ -53,9 +54,9 @@ export async function createTemplate(
     })
 
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating template:', error)
-    throw new Error(error.message || 'Failed to create template')
+    throw new Error(getErrorMessage(error) || 'Failed to create template')
   }
 }
 
@@ -72,9 +73,9 @@ export async function updateTemplate(
       ...updates,
       updatedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating template:', error)
-    throw new Error(error.message || 'Failed to update template')
+    throw new Error(getErrorMessage(error) || 'Failed to update template')
   }
 }
 
@@ -85,8 +86,8 @@ export async function deleteTemplate(templateId: string): Promise<void> {
   try {
     const docRef = doc(db, TEMPLATES_COLLECTION, templateId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting template:', error)
-    throw new Error(error.message || 'Failed to delete template')
+    throw new Error(getErrorMessage(error) || 'Failed to delete template')
   }
 }

@@ -13,8 +13,9 @@ import type { LineItemTemplate, Assembly, AssemblyCategory } from "@/types"
 import { ASSEMBLY_CATEGORIES } from "@/data/default-assemblies"
 import { LayoutTemplate, Plus, Trash2, FileText, Download, Package, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, getErrorMessage } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
+import { useConfirmDialog } from "@/components/ui/confirm-dialog"
 
 interface TemplatesManagerProps {
   trigger?: React.ReactNode
@@ -27,6 +28,7 @@ type SaveMode = 'template' | 'assembly'
 export function TemplatesManager({ trigger, onOpenLibrary }: TemplatesManagerProps) {
   const { currentProject, addLineItem } = useProject()
   const { user } = useAuth()
+  const confirm = useConfirmDialog()
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<ActiveTab>('templates')
   const [templates, setTemplates] = useState<LineItemTemplate[]>([])
@@ -55,11 +57,11 @@ export function TemplatesManager({ trigger, onOpenLibrary }: TemplatesManagerPro
       ])
       setTemplates(templateData)
       setAssemblies(assemblyData)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to load data",
-        description: error.message,
+        description: getErrorMessage(error),
       })
     } finally {
       setIsLoading(false)
@@ -138,11 +140,11 @@ export function TemplatesManager({ trigger, onOpenLibrary }: TemplatesManagerPro
       setSelectedItems([])
       setShowCreateForm(false)
       await loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to save",
-        description: error.message,
+        description: getErrorMessage(error),
       })
     } finally {
       setIsLoading(false)
@@ -160,8 +162,8 @@ export function TemplatesManager({ trigger, onOpenLibrary }: TemplatesManagerPro
         description: `Added ${template.items.length} items from "${template.name}"`,
       })
       setOpen(false)
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Failed to apply template", description: error.message })
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "Failed to apply template", description: getErrorMessage(error) })
     }
   }
 
@@ -185,30 +187,42 @@ export function TemplatesManager({ trigger, onOpenLibrary }: TemplatesManagerPro
         description: `Added ${assembly.items.length} items from "${assembly.name}"`,
       })
       setOpen(false)
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Failed to apply assembly", description: error.message })
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "Failed to apply assembly", description: getErrorMessage(error) })
     }
   }
 
   const handleDeleteTemplate = async (templateId: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
+    const confirmed = await confirm({
+      title: "Delete Template",
+      description: `Delete "${name}"? This cannot be undone.`,
+      confirmText: "Delete",
+      variant: "destructive",
+    })
+    if (!confirmed) return
     try {
       await deleteTemplate(templateId)
       toast({ title: "Template deleted" })
       await loadData()
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Failed to delete", description: error.message })
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "Failed to delete", description: getErrorMessage(error) })
     }
   }
 
   const handleDeleteAssembly = async (assemblyId: string, name: string) => {
-    if (!confirm(`Delete assembly "${name}"? This cannot be undone.`)) return
+    const confirmed = await confirm({
+      title: "Delete Assembly",
+      description: `Delete assembly "${name}"? This cannot be undone.`,
+      confirmText: "Delete",
+      variant: "destructive",
+    })
+    if (!confirmed) return
     try {
       await deleteAssembly(assemblyId)
       toast({ title: "Assembly deleted" })
       await loadData()
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Failed to delete", description: error.message })
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: "Failed to delete", description: getErrorMessage(error) })
     }
   }
 
