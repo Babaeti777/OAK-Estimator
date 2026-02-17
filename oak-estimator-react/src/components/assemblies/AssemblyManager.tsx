@@ -25,6 +25,8 @@ import type { Assembly, AssemblyItem, LineItem } from '@/types'
 import { DIVISIONS_ALL } from '@/data/divisions'
 import { Package, Plus, Trash2, Layers, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
 import { AssemblyEditor } from './AssemblyEditor'
+import { ItemSearchInput } from './ItemSearchInput'
+import type { SearchableItem } from '@/data/item-search'
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -314,10 +316,20 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
                       </Select>
                     </div>
                     <div className="col-span-3">
-                      <Input
+                      <ItemSearchInput
                         value={item.description}
-                        onChange={(e) => updateNewItem(index, { description: e.target.value })}
-                        placeholder="Description"
+                        onChange={(desc) => updateNewItem(index, { description: desc })}
+                        onSelectItem={(match: SearchableItem) => {
+                          updateNewItem(index, {
+                            description: match.description,
+                            division: match.division,
+                            type: match.type as LineItem['type'],
+                            unit: match.unit,
+                            unitCost: match.unitCost,
+                            notes: match.notes,
+                          })
+                        }}
+                        placeholder="Search or type..."
                       />
                     </div>
                     <div className="col-span-2">
