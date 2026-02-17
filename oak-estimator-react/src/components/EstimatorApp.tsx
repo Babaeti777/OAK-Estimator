@@ -46,6 +46,8 @@ import {
   Database,
   PanelLeft,
   CalendarDays,
+  Undo2,
+  Redo2,
 } from "lucide-react"
 
 interface AppState {
@@ -136,11 +138,19 @@ function DesktopToolbar({
   dispatch,
   currentProject,
   duplicateProject,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }: {
   state: AppState
   dispatch: React.Dispatch<AppAction>
   currentProject: any
   duplicateProject: (id: string) => void
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
 }) {
   return (
     <div className="hidden lg:flex justify-between items-center mb-4">
@@ -154,6 +164,26 @@ function DesktopToolbar({
           aria-label="Dashboard"
         >
           <LayoutDashboard className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Undo (Ctrl+Z)"
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label="Undo"
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Redo (Ctrl+Y)"
+          onClick={onRedo}
+          disabled={!canRedo}
+          aria-label="Redo"
+        >
+          <Redo2 className="h-4 w-4" />
         </Button>
         <Button
           variant={state.showDivisionPanel ? "default" : "outline"}
@@ -364,13 +394,15 @@ function OverlaySidePanel({
 }
 
 export function EstimatorApp() {
-  const { currentProject, projects, createProject, duplicateProject, isLoading } = useProject()
+  const { currentProject, projects, createProject, duplicateProject, isLoading, undo, redo, canUndo, canRedo } = useProject()
   const [state, dispatch] = useReducer(appReducer, initialState)
 
   useKeyboardShortcuts([
     { action: 'go_home', handler: () => dispatch({ type: 'SET_DASHBOARD', payload: true }) },
     { action: 'go_projects', handler: () => dispatch({ type: 'SET_DASHBOARD', payload: false }) },
     { action: 'new_project', handler: () => createProject() },
+    { action: 'undo', handler: () => { if (canUndo) undo() } },
+    { action: 'redo', handler: () => { if (canRedo) redo() } },
   ])
 
   const closeMobileMenu = useCallback(() => {
@@ -438,6 +470,10 @@ export function EstimatorApp() {
               dispatch={dispatch}
               currentProject={currentProject}
               duplicateProject={duplicateProject}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undo}
+              onRedo={redo}
             />
 
             {/* Mobile Quick Actions Bar */}

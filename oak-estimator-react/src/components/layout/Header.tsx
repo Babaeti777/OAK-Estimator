@@ -106,7 +106,7 @@ export function Header() {
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-80" align="end" sideOffset={8}>
+              <DropdownMenuContent className="w-80 bg-card border border-border shadow-xl" align="end" sideOffset={8}>
                 <DropdownMenuLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {showTrash ? `Trash (${trashedProjects.length})` : `Your Projects (${projects.length})`}
                 </DropdownMenuLabel>
@@ -252,7 +252,7 @@ export function Header() {
                   />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-60" align="end" sideOffset={8}>
+              <DropdownMenuContent className="w-60 bg-card border border-border shadow-xl" align="end" sideOffset={8}>
                 <div className="px-3 py-3 border-b border-border/50">
                   <p className="text-sm font-medium text-foreground">
                     {user.displayName || "User"}

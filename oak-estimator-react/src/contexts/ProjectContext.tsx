@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import type { Project, LineItem, CompanySettings, ProjectSettings, Summary } from '@/types'
 import {
   getUserProjects,
@@ -20,6 +20,10 @@ interface ProjectContextType {
   trashedProjects: Project[]
   summary: Summary
   isLoading: boolean
+  canUndo: boolean
+  canRedo: boolean
+  undo: () => Promise<void>
+  redo: () => Promise<void>
   createProject: () => Promise<void>
   duplicateProject: (projectId: string) => Promise<void>
   loadProject: (projectId: string) => Promise<void>
@@ -35,6 +39,8 @@ interface ProjectContextType {
   loadTrashedProjects: () => Promise<void>
 }
 
+const MAX_UNDO_HISTORY = 50
+
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined)
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -43,6 +49,80 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [trashedProjects, setTrashedProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  // Undo/Redo history stack (stores line item snapshots)
+  const undoStack = useRef<LineItem[][]>([])
+  const redoStack = useRef<LineItem[][]>([])
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+  const isUndoRedoAction = useRef(false)
+
+  // Push current line items to undo stack before a change
+  const pushUndoSnapshot = useCallback(() => {
+    if (!currentProject || isUndoRedoAction.current) return
+    undoStack.current.push([...currentProject.lineItems])
+    if (undoStack.current.length > MAX_UNDO_HISTORY) {
+      undoStack.current.shift()
+    }
+    redoStack.current = [] // Clear redo on new action
+    setCanUndo(true)
+    setCanRedo(false)
+  }, [currentProject])
+
+  const undo = useCallback(async () => {
+    if (!currentProject || undoStack.current.length === 0) return
+
+    const previousItems = undoStack.current.pop()!
+    redoStack.current.push([...currentProject.lineItems])
+
+    isUndoRedoAction.current = true
+    try {
+      await updateFirestoreProject(currentProject.id, {
+        lineItems: previousItems,
+      })
+      toast({ title: 'Undo', description: 'Reverted last change' })
+    } catch (error: any) {
+      // Restore undo stack on failure
+      undoStack.current.push(previousItems)
+      redoStack.current.pop()
+      toast({ variant: 'destructive', title: 'Undo failed', description: error.message })
+    } finally {
+      isUndoRedoAction.current = false
+      setCanUndo(undoStack.current.length > 0)
+      setCanRedo(redoStack.current.length > 0)
+    }
+  }, [currentProject])
+
+  const redo = useCallback(async () => {
+    if (!currentProject || redoStack.current.length === 0) return
+
+    const nextItems = redoStack.current.pop()!
+    undoStack.current.push([...currentProject.lineItems])
+
+    isUndoRedoAction.current = true
+    try {
+      await updateFirestoreProject(currentProject.id, {
+        lineItems: nextItems,
+      })
+      toast({ title: 'Redo', description: 'Reapplied change' })
+    } catch (error: any) {
+      redoStack.current.push(nextItems)
+      undoStack.current.pop()
+      toast({ variant: 'destructive', title: 'Redo failed', description: error.message })
+    } finally {
+      isUndoRedoAction.current = false
+      setCanUndo(undoStack.current.length > 0)
+      setCanRedo(redoStack.current.length > 0)
+    }
+  }, [currentProject])
+
+  // Clear undo/redo when switching projects
+  const clearHistory = useCallback(() => {
+    undoStack.current = []
+    redoStack.current = []
+    setCanUndo(false)
+    setCanRedo(false)
+  }, [])
 
   // Calculate summary from line items with configurable rates
   const summary: Summary = React.useMemo(() => {
@@ -246,6 +326,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const loadProject = useCallback(async (projectId: string) => {
     try {
       setIsLoading(true)
+      clearHistory()
       const project = projects.find(p => p.id === projectId)
       if (project) {
         setCurrentProject(project)
@@ -260,7 +341,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [projects])
+  }, [projects, clearHistory])
 
   const updateCompanySettings = useCallback(async (settings: CompanySettings) => {
     if (!currentProject) {
@@ -307,6 +388,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No project selected')
     }
 
+    pushUndoSnapshot()
     try {
       const now = Date.now()
       const newItem: LineItem = {
@@ -328,13 +410,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })
       throw error
     }
-  }, [currentProject])
+  }, [currentProject, pushUndoSnapshot])
 
   const updateLineItem = useCallback(async (itemId: string, updates: Partial<LineItem>) => {
     if (!currentProject) {
       throw new Error('No project selected')
     }
 
+    pushUndoSnapshot()
     try {
       const updatedItems = currentProject.lineItems.map(item =>
         item.id === itemId
@@ -353,13 +436,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })
       throw error
     }
-  }, [currentProject])
+  }, [currentProject, pushUndoSnapshot])
 
   const deleteLineItem = useCallback(async (itemId: string) => {
     if (!currentProject) {
       throw new Error('No project selected')
     }
 
+    pushUndoSnapshot()
     try {
       const updatedItems = currentProject.lineItems.filter(item => item.id !== itemId)
 
@@ -379,13 +463,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })
       throw error
     }
-  }, [currentProject])
+  }, [currentProject, pushUndoSnapshot])
 
   const deleteLineItems = useCallback(async (itemIds: string[]) => {
     if (!currentProject) {
       throw new Error('No project selected')
     }
 
+    pushUndoSnapshot()
     try {
       const idsSet = new Set(itemIds)
       const updatedItems = currentProject.lineItems.filter(item => !idsSet.has(item.id))
@@ -406,7 +491,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })
       throw error
     }
-  }, [currentProject])
+  }, [currentProject, pushUndoSnapshot])
 
   const trashProject = useCallback(async (projectId: string) => {
     try {
@@ -506,6 +591,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         trashedProjects,
         summary,
         isLoading,
+        canUndo,
+        canRedo,
+        undo,
+        redo,
         createProject,
         duplicateProject,
         loadProject,
