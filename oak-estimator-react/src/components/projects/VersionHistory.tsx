@@ -11,6 +11,8 @@ import type { ProjectVersion } from "@/types"
 import { History, Plus, Trash2, FileText, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "@/hooks/use-toast"
+import { getErrorMessage } from "@/lib/utils"
+import { useConfirmDialog } from "@/components/ui/confirm-dialog"
 
 interface VersionHistoryProps {
   trigger?: React.ReactNode
@@ -19,6 +21,7 @@ interface VersionHistoryProps {
 export function VersionHistory({ trigger }: VersionHistoryProps) {
   const { currentProject } = useProject()
   const { user } = useAuth()
+  const confirm = useConfirmDialog()
   const [open, setOpen] = useState(false)
   const [versions, setVersions] = useState<ProjectVersion[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -39,11 +42,11 @@ export function VersionHistory({ trigger }: VersionHistoryProps) {
       setIsLoading(true)
       const data = await getProjectVersions(currentProject.id)
       setVersions(data)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to load versions",
-        description: error.message,
+        description: getErrorMessage(error),
       })
     } finally {
       setIsLoading(false)
@@ -71,11 +74,11 @@ export function VersionHistory({ trigger }: VersionHistoryProps) {
       setNewVersionNotes("")
       setShowCreateForm(false)
       await loadVersions()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to create version",
-        description: error.message,
+        description: getErrorMessage(error),
       })
     } finally {
       setIsLoading(false)
@@ -83,7 +86,13 @@ export function VersionHistory({ trigger }: VersionHistoryProps) {
   }
 
   const handleDeleteVersion = async (versionId: string, versionName: string) => {
-    if (!confirm(`Delete version "${versionName}"? This cannot be undone.`)) return
+    const confirmed = await confirm({
+      title: "Delete Version",
+      description: `Delete version "${versionName}"? This cannot be undone.`,
+      confirmText: "Delete",
+      variant: "destructive",
+    })
+    if (!confirmed) return
 
     try {
       await deleteVersion(versionId)
@@ -92,11 +101,11 @@ export function VersionHistory({ trigger }: VersionHistoryProps) {
         description: "The version has been deleted",
       })
       await loadVersions()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to delete version",
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }

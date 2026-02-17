@@ -6,6 +6,7 @@ import {
 } from 'firebase/auth'
 import { auth, googleProvider } from './firebase'
 import type { User } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 /**
  * Sign in with Google
@@ -14,9 +15,9 @@ export async function signInWithGoogle(): Promise<User> {
   try {
     const result = await signInWithPopup(auth, googleProvider)
     return mapFirebaseUser(result.user)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error signing in with Google:', error)
-    throw new Error(error.message || 'Failed to sign in with Google')
+    throw new Error(getErrorMessage(error) || 'Failed to sign in with Google')
   }
 }
 
@@ -26,9 +27,9 @@ export async function signInWithGoogle(): Promise<User> {
 export async function signOut(): Promise<void> {
   try {
     await firebaseSignOut(auth)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error signing out:', error)
-    throw new Error(error.message || 'Failed to sign out')
+    throw new Error(getErrorMessage(error) || 'Failed to sign out')
   }
 }
 

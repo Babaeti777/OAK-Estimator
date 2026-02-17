@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { ChangeOrder } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const CHANGE_ORDERS_COLLECTION = 'changeOrders'
 
@@ -31,9 +32,9 @@ export async function getProjectChangeOrders(projectId: string): Promise<ChangeO
       id: doc.id,
       ...doc.data(),
     } as ChangeOrder))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting change orders:', error)
-    throw new Error(error.message || 'Failed to load change orders')
+    throw new Error(getErrorMessage(error) || 'Failed to load change orders')
   }
 }
 
@@ -69,9 +70,9 @@ export async function createChangeOrder(
     })
 
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating change order:', error)
-    throw new Error(error.message || 'Failed to create change order')
+    throw new Error(getErrorMessage(error) || 'Failed to create change order')
   }
 }
 
@@ -88,9 +89,9 @@ export async function updateChangeOrder(
       ...updates,
       updatedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating change order:', error)
-    throw new Error(error.message || 'Failed to update change order')
+    throw new Error(getErrorMessage(error) || 'Failed to update change order')
   }
 }
 
@@ -109,9 +110,9 @@ export async function approveChangeOrder(
       approvedAt: Date.now(),
       updatedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error approving change order:', error)
-    throw new Error(error.message || 'Failed to approve change order')
+    throw new Error(getErrorMessage(error) || 'Failed to approve change order')
   }
 }
 
@@ -125,9 +126,9 @@ export async function rejectChangeOrder(changeOrderId: string): Promise<void> {
       status: 'rejected',
       updatedAt: Date.now(),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error rejecting change order:', error)
-    throw new Error(error.message || 'Failed to reject change order')
+    throw new Error(getErrorMessage(error) || 'Failed to reject change order')
   }
 }
 
@@ -138,9 +139,9 @@ export async function deleteChangeOrder(changeOrderId: string): Promise<void> {
   try {
     const docRef = doc(db, CHANGE_ORDERS_COLLECTION, changeOrderId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting change order:', error)
-    throw new Error(error.message || 'Failed to delete change order')
+    throw new Error(getErrorMessage(error) || 'Failed to delete change order')
   }
 }
 
@@ -153,8 +154,8 @@ export async function getChangeOrder(changeOrderId: string): Promise<ChangeOrder
     const snapshot = await getDoc(docRef)
     if (!snapshot.exists()) return null
     return { id: snapshot.id, ...snapshot.data() } as ChangeOrder
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting change order:', error)
-    throw new Error(error.message || 'Failed to get change order')
+    throw new Error(getErrorMessage(error) || 'Failed to get change order')
   }
 }

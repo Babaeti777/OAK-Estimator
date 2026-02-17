@@ -16,12 +16,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { CompanySettingsForm } from "@/components/projects/CompanySettingsForm"
 import { SettingsDialog } from "@/components/settings/SettingsDialog"
 import { ProjectDetailsDialog } from "@/components/projects/ProjectDetailsDialog"
+import { useConfirmDialog } from "@/components/ui/confirm-dialog"
 
 export function Header() {
   const { user, signOut } = useAuth()
   const { currentProject, projects, trashedProjects, loadProject, createProject, trashProject, restoreProject, deleteProjectPermanently } = useProject()
   const [showTrash, setShowTrash] = useState(false)
   const [companySettingsOpen, setCompanySettingsOpen] = useState(false)
+  const confirm = useConfirmDialog()
 
   const defaultAvatar = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23f97316"/></svg>'
 
@@ -149,9 +151,15 @@ export function Header() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 hover:bg-destructive/10"
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation()
-                                  if (confirm('Permanently delete this project? This cannot be undone.')) {
+                                  const confirmed = await confirm({
+                                    title: "Delete Project Permanently",
+                                    description: "Permanently delete this project? This cannot be undone.",
+                                    confirmText: "Delete Forever",
+                                    variant: "destructive",
+                                  })
+                                  if (confirmed) {
                                     deleteProjectPermanently(project.id)
                                   }
                                 }}

@@ -11,10 +11,11 @@ import { QuickAddRow } from "@/components/line-items/QuickAddRow"
 import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import type { LineItem } from "@/types"
 import { Trash2, Table, Search, CheckSquare, Square, X, Calculator } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, getErrorMessage } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { getDivisionLabel } from "@/data/divisions"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import { useConfirmDialog } from "@/components/ui/confirm-dialog"
 
 const ROW_HEIGHT = 40
 
@@ -29,6 +30,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const showQuickAdd = true
   const tableContainerRef = useRef<HTMLDivElement>(null)
+  const confirm = useConfirmDialog()
 
   // Debounce timers for each item's fields
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -68,12 +70,12 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 
           await updateLineItem(itemId, { ...updates, totalCost })
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to update line item:', error)
         toast({
           variant: "destructive",
           title: "Failed to update line item",
-          description: error.message || "An error occurred while saving changes",
+          description: getErrorMessage(error) || "An error occurred while saving changes",
         })
       }
     }, 500)
@@ -116,12 +118,12 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
         next.delete(itemId)
         return next
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete line item:', error)
       toast({
         variant: "destructive",
         title: "Failed to delete line item",
-        description: error.message || "An error occurred while deleting the item",
+        description: getErrorMessage(error) || "An error occurred while deleting the item",
       })
     }
   }
@@ -150,7 +152,14 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return
 
-    if (!confirm(`Delete ${selectedIds.size} selected item(s)? This cannot be undone.`)) return
+    const confirmed = await confirm({
+      title: "Delete Items",
+      description: `Delete ${selectedIds.size} selected item(s)? This cannot be undone.`,
+      confirmText: "Delete",
+      variant: "destructive",
+    })
+
+    if (!confirmed) return
 
     try {
       for (const itemId of selectedIds) {
@@ -161,11 +170,11 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
         title: "Items deleted",
         description: `${selectedIds.size} items have been deleted`,
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to delete items",
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }

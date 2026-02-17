@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFolders } from "@/contexts/FolderContext"
 import { Folder, FolderPlus, Trash2, Edit2, Check, X } from "lucide-react"
+import { useConfirmDialog } from "@/components/ui/confirm-dialog"
 
 const FOLDER_COLORS = [
   '#ef4444', // red
@@ -23,6 +24,7 @@ interface FolderManagerProps {
 
 export function FolderManager({ trigger }: FolderManagerProps) {
   const { folders, createFolder, updateFolder, deleteFolder, selectFolder, selectedFolderId } = useFolders()
+  const confirm = useConfirmDialog()
   const [open, setOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0])
@@ -56,7 +58,13 @@ export function FolderManager({ trigger }: FolderManagerProps) {
   }
 
   const handleDeleteFolder = async (folderId: string) => {
-    if (confirm('Delete this folder? Projects in this folder will not be deleted.')) {
+    const confirmed = await confirm({
+      title: "Delete Folder",
+      description: "Delete this folder? Projects in this folder will not be deleted.",
+      confirmText: "Delete",
+      variant: "destructive",
+    })
+    if (confirmed) {
       await deleteFolder(folderId)
     }
   }

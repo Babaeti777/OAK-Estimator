@@ -16,6 +16,7 @@ import {
 } from 'firebase/storage'
 import { db, storage } from './firebase'
 import type { Attachment } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const ATTACHMENTS_COLLECTION = 'attachments'
 
@@ -66,9 +67,9 @@ export async function uploadAttachment(
     await setDoc(docRef, attachment)
 
     return { id: docRef.id, ...attachment }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading attachment:', error)
-    throw new Error(error.message || 'Failed to upload attachment')
+    throw new Error(getErrorMessage(error) || 'Failed to upload attachment')
   }
 }
 
@@ -88,9 +89,9 @@ export async function getProjectAttachments(projectId: string): Promise<Attachme
       id: doc.id,
       ...doc.data(),
     } as Attachment))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting attachments:', error)
-    throw new Error(error.message || 'Failed to load attachments')
+    throw new Error(getErrorMessage(error) || 'Failed to load attachments')
   }
 }
 
@@ -113,9 +114,9 @@ export async function getLineItemAttachments(
       id: doc.id,
       ...doc.data(),
     } as Attachment))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting line item attachments:', error)
-    throw new Error(error.message || 'Failed to load attachments')
+    throw new Error(getErrorMessage(error) || 'Failed to load attachments')
   }
 }
 
@@ -138,9 +139,9 @@ export async function deleteAttachment(attachment: Attachment): Promise<void> {
     // Delete Firestore record
     const docRef = doc(db, ATTACHMENTS_COLLECTION, attachment.id)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting attachment:', error)
-    throw new Error(error.message || 'Failed to delete attachment')
+    throw new Error(getErrorMessage(error) || 'Failed to delete attachment')
   }
 }
 

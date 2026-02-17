@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Project, ProjectVersion } from '@/types'
+import { getErrorMessage } from '@/lib/utils'
 
 const VERSIONS_COLLECTION = 'projectVersions'
 
@@ -31,9 +32,9 @@ export async function getProjectVersions(projectId: string): Promise<ProjectVers
       id: doc.id,
       ...doc.data(),
     } as ProjectVersion))
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting project versions:', error)
-    throw new Error(error.message || 'Failed to load versions')
+    throw new Error(getErrorMessage(error) || 'Failed to load versions')
   }
 }
 
@@ -69,9 +70,9 @@ export async function createVersion(
     })
 
     return docRef.id
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating version:', error)
-    throw new Error(error.message || 'Failed to create version')
+    throw new Error(getErrorMessage(error) || 'Failed to create version')
   }
 }
 
@@ -82,9 +83,9 @@ export async function deleteVersion(versionId: string): Promise<void> {
   try {
     const docRef = doc(db, VERSIONS_COLLECTION, versionId)
     await deleteDoc(docRef)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting version:', error)
-    throw new Error(error.message || 'Failed to delete version')
+    throw new Error(getErrorMessage(error) || 'Failed to delete version')
   }
 }
 

@@ -25,7 +25,7 @@ import {
   acknowledgeCatalogUpdate,
   getCurrentCatalogVersion,
 } from '@/services/materials-catalog.service'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, getErrorMessage } from '@/lib/utils'
 import type { CustomMaterial, PriceOverride } from '@/types'
 import { DIVISIONS_ALL } from '@/data/divisions'
 import {
@@ -43,6 +43,7 @@ import {
   Search,
   Tag,
 } from 'lucide-react'
+import { useConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface MaterialsCatalogManagerProps {
   trigger?: React.ReactNode
@@ -50,6 +51,7 @@ interface MaterialsCatalogManagerProps {
 
 export function MaterialsCatalogManager({ trigger }: MaterialsCatalogManagerProps) {
   const { user } = useAuth()
+  const confirm = useConfirmDialog()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'custom' | 'overrides' | 'catalog'>('catalog')
   const [customMaterials, setCustomMaterials] = useState<CustomMaterial[]>([])
@@ -95,11 +97,11 @@ export function MaterialsCatalogManager({ trigger }: MaterialsCatalogManagerProp
       ])
       setCustomMaterials(materials)
       setPriceOverrides(overrides)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error loading data',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     } finally {
       setLoading(false)
@@ -124,11 +126,11 @@ export function MaterialsCatalogManager({ trigger }: MaterialsCatalogManagerProp
           description: `Your catalog is running the latest version (${result.currentVersion})`,
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error checking updates',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     } finally {
       setCheckingUpdates(false)
@@ -144,11 +146,11 @@ export function MaterialsCatalogManager({ trigger }: MaterialsCatalogManagerProp
         title: 'Catalog Updated',
         description: 'Your catalog has been marked as up to date',
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }
@@ -192,11 +194,11 @@ export function MaterialsCatalogManager({ trigger }: MaterialsCatalogManagerProp
       toast({ title: 'Material added to your catalog' })
       resetForm()
       loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error creating material',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }
@@ -221,41 +223,53 @@ export function MaterialsCatalogManager({ trigger }: MaterialsCatalogManagerProp
       toast({ title: 'Material updated' })
       resetForm()
       loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error updating material',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }
 
   const handleDeleteMaterial = async (id: string) => {
-    if (!confirm('Delete this custom material?')) return
+    const confirmed = await confirm({
+      title: "Delete Material",
+      description: "Delete this custom material?",
+      confirmText: "Delete",
+      variant: "destructive",
+    })
+    if (!confirmed) return
     try {
       await deleteCustomMaterial(id)
       toast({ title: 'Material deleted' })
       loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error deleting material',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }
 
   const handleDeleteOverride = async (id: string) => {
-    if (!confirm('Remove this price override? Original prices will be restored.')) return
+    const confirmed = await confirm({
+      title: "Remove Price Override",
+      description: "Remove this price override? Original prices will be restored.",
+      confirmText: "Remove",
+      variant: "destructive",
+    })
+    if (!confirmed) return
     try {
       await deletePriceOverride(id)
       toast({ title: 'Price override removed' })
       loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error removing override',
-        description: error.message,
+        description: getErrorMessage(error),
       })
     }
   }
