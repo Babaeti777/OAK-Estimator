@@ -1,19 +1,90 @@
 rules_version = '2';
 
-// Firebase Storage Security Rules for OAK Estimator
+/**
+ * Firebase Storage Security Rules for OAK Estimator
+ * Version: 2.0.0 - Security Audit Update
+ *
+ * DEPLOYMENT INSTRUCTIONS:
+ *   firebase deploy --only storage
+ *
+ * SECURITY AUDIT FIXES (v2.0.0):
+ * - Added attachments storage path with proper access controls
+ * - Added file size limits and content type validation
+ * - Improved documentation
+ */
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Company logos - users can only read/write their own logos
-    match /company-logos/{userId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId
-                   && request.resource.size < 2 * 1024 * 1024  // Max 2MB
-                   && request.resource.contentType.matches('image/.*');  // Only images
-      allow delete: if request.auth != null && request.auth.uid == userId;
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Deny all other access
+    // Check if the user owns this path
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if file is an allowed image type
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Check if file is an allowed document type
+    function isAllowedDocumentType() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType == 'application/pdf' ||
+             request.resource.contentType == 'application/msword' ||
+             request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+             request.resource.contentType == 'application/vnd.ms-excel' ||
+             request.resource.contentType == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+             request.resource.contentType == 'text/plain' ||
+             request.resource.contentType == 'text/csv';
+    }
+
+    // ============================================
+    // COMPANY LOGOS
+    // Path: /company-logos/{userId}/{filename}
+    // Max size: 2MB, Images only
+    // ============================================
+    match /company-logos/{userId}/{allPaths=**} {
+      // Any authenticated user can view logos (for shared project views)
+      allow read: if isAuthenticated();
+
+      // Only owner can upload - with size and type restrictions
+      allow write: if isOwner(userId) &&
+                      request.resource.size < 2 * 1024 * 1024 &&  // Max 2MB
+                      isImage();
+
+      // Only owner can delete
+      allow delete: if isOwner(userId);
+    }
+
+    // ============================================
+    // PROJECT ATTACHMENTS
+    // Path: /attachments/{userId}/{projectId}/{filename}
+    // Max size: 10MB, Documents and images
+    // ============================================
+    match /attachments/{userId}/{projectId}/{filename} {
+      // Only owner can read their attachments
+      allow read: if isOwner(userId);
+
+      // Only owner can upload - with size and type restrictions
+      allow write: if isOwner(userId) &&
+                      request.resource.size < 10 * 1024 * 1024 &&  // Max 10MB
+                      isAllowedDocumentType();
+
+      // Only owner can delete
+      allow delete: if isOwner(userId);
+    }
+
+    // ============================================
+    // DENY ALL OTHER PATHS BY DEFAULT
+    // ============================================
     match /{allPaths=**} {
       allow read, write: if false;
     }
