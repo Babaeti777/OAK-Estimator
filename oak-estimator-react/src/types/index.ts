@@ -215,19 +215,68 @@ export interface ActivityItem {
 // FEATURE 2: Assembly/Kit Items Types
 // ============================================
 
+export type AssemblyCategory =
+  | 'demolition'
+  | 'sitework'
+  | 'concrete'
+  | 'framing'
+  | 'roofing'
+  | 'plumbing'
+  | 'electrical'
+  | 'hvac'
+  | 'insulation'
+  | 'drywall'
+  | 'flooring'
+  | 'painting'
+  | 'cabinets'
+  | 'fixtures'
+  | 'exterior'
+  | 'landscaping'
+  | 'cleanup'
+  | 'custom'
+
+export type ProjectPhase =
+  | 'pre-construction'
+  | 'rough-in'
+  | 'mechanical'
+  | 'insulation-drywall'
+  | 'finishes'
+  | 'fixtures'
+  | 'final'
+
 export interface Assembly {
   id: string
   userId: string
+
+  // Basic info
   name: string
   description?: string
-  category?: string
+  category: AssemblyCategory
+  tags?: string[]
+
+  // Items
   items: AssemblyItem[]
   totalCost: number
+
+  // Scheduling
+  estimatedDuration: number        // Duration in calendar days
+  durationUnit: 'hours' | 'days' | 'weeks'
+  dependencies?: string[]          // Array of category names that must complete first
+  phase?: ProjectPhase             // Which phase this belongs to
+
+  // Metadata
+  isDefault?: boolean              // System-provided vs user-created
+  isShared?: boolean               // Shared with team
+  usageCount?: number              // Track popularity
+  lastUsedAt?: number              // For "recent" sorting
+  forkedFrom?: string              // ID of assembly this was forked from
+
   createdAt: number
   updatedAt: number
 }
 
 export interface AssemblyItem {
+  id: string                       // ID for editing
   description: string
   division: string
   type: LineItem['type']
@@ -235,6 +284,55 @@ export interface AssemblyItem {
   unit: string
   unitCost: number
   notes?: string
+  laborHours?: number              // Optional labor tracking
+}
+
+// ============================================
+// FEATURE 2b: Project Schedule Types
+// ============================================
+
+export interface ProjectSchedule {
+  projectId: string
+  startDate: number                // Project start date timestamp
+  assemblies: ScheduledAssembly[]
+  totalDuration: number            // Calculated total calendar days
+  createdAt: number
+  updatedAt: number
+}
+
+export interface ScheduledAssembly {
+  id: string
+  assemblyId: string
+  assemblyName: string
+  category: AssemblyCategory
+  startDay: number                 // Relative to project start (day 1, 2, etc.)
+  duration: number                 // Duration in days
+  dependencies: string[]           // Assembly IDs that must complete first
+  status: 'pending' | 'in-progress' | 'completed'
+  actualStartDate?: number
+  actualEndDate?: number
+  notes?: string
+}
+
+// Assembly category metadata for UI
+export interface AssemblyCategoryInfo {
+  id: AssemblyCategory
+  name: string
+  icon: string                     // Lucide icon name
+  description: string
+  defaultPhase: ProjectPhase
+  suggestedDependencies: AssemblyCategory[]
+}
+
+// Dependency warning for soft enforcement
+export interface DependencyWarning {
+  assemblyId: string
+  assemblyName: string
+  missingDependencies: {
+    category: AssemblyCategory
+    categoryName: string
+  }[]
+  message: string
 }
 
 // ============================================

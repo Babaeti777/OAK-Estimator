@@ -120,8 +120,14 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
         userId: user.uid,
         name: newName.trim(),
         description: newDescription.trim(),
-        items: newItems,
+        category: 'custom',
+        items: newItems.map(item => ({
+          ...item,
+          id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        })),
         totalCost: newItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0),
+        estimatedDuration: 1,
+        durationUnit: 'days',
       })
 
       toast({
@@ -161,6 +167,7 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
     setNewItems([
       ...newItems,
       {
+        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: '',
         division: '03',
         type: 'material',
@@ -193,6 +200,7 @@ export function AssemblyManager({ trigger }: AssemblyManagerProps) {
 
     setNewItems(
       currentProject.lineItems.map((item) => ({
+        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: item.description,
         division: item.division,
         type: item.type,
