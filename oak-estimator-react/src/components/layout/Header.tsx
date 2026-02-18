@@ -26,7 +26,7 @@ export function Header() {
   const defaultAvatar = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23f97316"/></svg>'
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-card/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-card">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         {/* Logo and Brand */}
         <div className="flex items-center gap-3">
@@ -66,7 +66,7 @@ export function Header() {
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 border-border/50 bg-background/50 hover:bg-accent"
+            className="h-9 w-9 border-border bg-background hover:bg-accent"
             title="Settings"
             aria-label="Settings"
             onClick={() => setSettingsOpen(true)}
@@ -78,7 +78,7 @@ export function Header() {
           {(projects.length > 0 || trashedProjects.length > 0) && (
             <DropdownMenu onOpenChange={(open) => { if (!open) setShowTrash(false) }}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 h-9 px-3 border-border/50 bg-background/50 hover:bg-accent">
+                <Button variant="outline" size="sm" className="gap-2 h-9 px-3 border-border bg-background hover:bg-accent">
                   <FolderOpen className="w-4 h-4 text-muted-foreground" />
                   <span className="hidden sm:inline text-foreground">Projects</span>
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
