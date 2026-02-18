@@ -1,4 +1,4 @@
-import { useReducer, useCallback } from "react"
+import { useReducer } from "react"
 import { Header } from "./layout/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
@@ -629,10 +629,6 @@ export function EstimatorApp() {
     { action: 'undo', handler: () => { if (canUndo) undo() } },
     { action: 'redo', handler: () => { if (canRedo) redo() } },
   ])
-
-  const closeMobileMenu = useCallback(() => {
-    dispatch({ type: 'SET_MOBILE_MENU', payload: false })
-  }, [])
 
   // Dashboard view
   if (state.showDashboard) {
