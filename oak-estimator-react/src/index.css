@@ -297,8 +297,7 @@
   /* Dialog/Modal overrides */
   [data-radix-dialog-overlay],
   [data-radix-alert-dialog-overlay] {
-    background-color: rgba(0, 0, 0, 0.75) !important;
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.9) !important;
   }
 
   /* Popper z-index fix */
@@ -335,8 +334,7 @@
 
   /* Glass effect */
   .glass {
-    background-color: hsl(var(--background) / 0.9);
-    backdrop-filter: blur(12px);
+    background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
   }
 
