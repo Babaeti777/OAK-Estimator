@@ -154,7 +154,7 @@ function MiniSummaryBar({
   if (!currentProject) return null
 
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-2 mb-4 bg-card/80 backdrop-blur-sm border border-border/50 rounded-lg">
+    <div className="flex items-center justify-between gap-4 px-4 py-2 mb-4 bg-card border border-border rounded-lg">
       <div className="flex items-center gap-6 overflow-x-auto text-sm">
         <div className="flex items-center gap-2 whitespace-nowrap">
           <span className="text-muted-foreground">Subtotal:</span>
