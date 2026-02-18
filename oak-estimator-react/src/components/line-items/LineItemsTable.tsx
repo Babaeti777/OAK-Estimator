@@ -27,6 +27,14 @@ const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'misc', label: 'Misc' },
 ]
 
+const TYPE_DOT_COLORS: Record<LineItem['type'], string> = {
+  material: 'bg-blue-500',
+  labor: 'bg-amber-500',
+  equipment: 'bg-emerald-500',
+  subcontractor: 'bg-purple-500',
+  misc: 'bg-slate-500',
+}
+
 const ROW_HEIGHT = 40
 
 interface LineItemsTableProps {
@@ -297,13 +305,16 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                         )}
                       </button>
                     </th>
+                    <th className="px-1 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-8">
+                      #
+                    </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Division
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Description
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
                       Type
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -326,7 +337,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                 <tbody className="bg-background divide-y divide-border">
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
                         No line items yet. Click &quot;Add Item&quot; to get started.
                       </td>
                     </tr>
@@ -335,7 +346,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                     <>
                       {rowVirtualizer.getVirtualItems().length > 0 && (
                         <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }}>
-                          <td colSpan={9} />
+                          <td colSpan={10} />
                         </tr>
                       )}
                       {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -344,6 +355,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                           <LineItemRow
                             key={item.id}
                             item={item}
+                            rowIndex={virtualRow.index + 1}
                             isSelected={selectedIds.has(item.id)}
                             onToggleSelect={toggleSelectItem}
                             onUpdate={handleUpdateItem}
@@ -356,16 +368,17 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                           height: `${rowVirtualizer.getTotalSize() -
                             (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end)}px`
                         }}>
-                          <td colSpan={9} />
+                          <td colSpan={10} />
                         </tr>
                       )}
                     </>
                   ) : (
                     /* Fix #8: Regular rows without Framer Motion animation */
-                    filteredItems.map((item) => (
+                    filteredItems.map((item, index) => (
                       <LineItemRow
                         key={item.id}
                         item={item}
+                        rowIndex={index + 1}
                         isSelected={selectedIds.has(item.id)}
                         onToggleSelect={toggleSelectItem}
                         onUpdate={handleUpdateItem}
@@ -484,12 +497,14 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 // Fix #8: Extracted row component without Framer Motion, using CSS transitions
 function LineItemRow({
   item,
+  rowIndex,
   isSelected,
   onToggleSelect,
   onUpdate,
   onDelete,
 }: {
   item: LineItem
+  rowIndex: number
   isSelected: boolean
   onToggleSelect: (id: string) => void
   onUpdate: (id: string, updates: Partial<LineItem>) => void
@@ -522,18 +537,23 @@ function LineItemRow({
         </button>
       </td>
 
-      {/* Division - editable dropdown */}
+      {/* Row number */}
+      <td className="px-1 py-1.5 text-center text-xs text-muted-foreground tabular-nums w-8">
+        {rowIndex}
+      </td>
+
+      {/* Division - editable dropdown, shows code only with full name as tooltip */}
       <td className="px-3 py-1.5">
         <Select
           value={item.division}
           onChange={(e) => onUpdate(item.id, { division: e.target.value })}
-          className="h-7 text-sm w-24"
+          className="h-7 text-sm w-16"
           title={getDivisionLabel(item.division)}
           aria-label="Division"
         >
           {DIVISIONS_ALL.map((div) => (
             <option key={div.code} value={div.code}>
-              {div.code} - {div.name}
+              {div.code}
             </option>
           ))}
         </Select>
@@ -551,20 +571,20 @@ function LineItemRow({
         />
       </td>
 
-      {/* Type - editable dropdown, auto-filled from description */}
-      <td className="px-3 py-1.5">
-        <Select
-          value={item.type}
-          onChange={(e) => onUpdate(item.id, { type: e.target.value as LineItem['type'] })}
-          className="h-7 text-sm w-28"
-          aria-label="Type"
+      {/* Type - color-coded dot with tooltip, click to cycle type */}
+      <td className="px-3 py-1.5 text-center">
+        <button
+          onClick={() => {
+            const currentIndex = ITEM_TYPES.findIndex(t => t.value === item.type)
+            const nextIndex = (currentIndex + 1) % ITEM_TYPES.length
+            onUpdate(item.id, { type: ITEM_TYPES[nextIndex].value })
+          }}
+          title={ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}
+          aria-label={`Type: ${ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}. Click to change.`}
+          className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-muted transition-colors"
         >
-          {ITEM_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </Select>
+          <span className={`inline-block w-3 h-3 rounded-full ${TYPE_DOT_COLORS[item.type] ?? 'bg-slate-500'}`} />
+        </button>
       </td>
 
       {/* Quantity */}
@@ -599,7 +619,7 @@ function LineItemRow({
       </td>
 
       {/* Total */}
-      <td className="px-3 py-1.5 text-right font-medium text-sm leading-relaxed">
+      <td className="px-3 py-1.5 text-right font-semibold text-primary text-sm leading-relaxed">
         {formatCurrency(item.totalCost)}
       </td>
 

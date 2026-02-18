@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { CalculatorInput } from "@/components/ui/calculator-input"
 import { DescriptionSearchInput } from "@/components/line-items/DescriptionSearchInput"
 import { useProject } from "@/contexts/ProjectContext"
-import { Plus, Zap } from "lucide-react"
+import { Plus, ChevronUp, ChevronDown } from "lucide-react"
 import type { LineItem } from "@/types"
 import { toast } from "@/hooks/use-toast"
 import { DIVISIONS_ALL } from "@/data/divisions"
@@ -25,7 +25,8 @@ interface QuickAddRowProps {
 
 export function QuickAddRow({ onAdd }: QuickAddRowProps) {
   const { addLineItem } = useProject()
-  const [isAdding, setIsAdding] = useState(false)
+  // Always visible by default (P1 #5)
+  const [isExpanded, setIsExpanded] = useState(true)
   const [formData, setFormData] = useState({
     division: '01',
     description: '',
@@ -47,12 +48,12 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
     }))
   }, [])
 
-  // Focus description when adding starts
+  // Auto-focus description field on initial mount since we start expanded
   useEffect(() => {
-    if (isAdding && descriptionRef.current) {
+    if (isExpanded && descriptionRef.current) {
       descriptionRef.current.focus()
     }
-  }, [isAdding])
+  }, [isExpanded])
 
   const resetForm = () => {
     setFormData({
@@ -94,10 +95,12 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
       resetForm()
       onAdd?.()
 
-      // Keep focus on description for rapid entry
-      if (descriptionRef.current) {
-        descriptionRef.current.focus()
-      }
+      // Auto-focus description field for rapid sequential entry
+      requestAnimationFrame(() => {
+        if (descriptionRef.current) {
+          descriptionRef.current.focus()
+        }
+      })
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -113,23 +116,29 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
       handleSubmit()
     }
     if (e.key === 'Escape') {
-      setIsAdding(false)
       resetForm()
+      // Re-focus description after clearing so user can start fresh
+      requestAnimationFrame(() => {
+        if (descriptionRef.current) {
+          descriptionRef.current.focus()
+        }
+      })
     }
   }
 
-  if (!isAdding) {
+  // Collapsed state: show a toggle button to re-expand the form
+  if (!isExpanded) {
     return (
       <tr className="border-t border-dashed border-muted">
-        <td colSpan={9} className="px-4 py-2">
+        <td colSpan={10} className="px-4 py-1">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsAdding(true)}
+            onClick={() => setIsExpanded(true)}
             className="w-full justify-center text-muted-foreground hover:text-foreground"
           >
-            <Zap className="w-4 h-4 mr-2" />
-            Quick Add Row (Press Enter to add, Escape to cancel)
+            <ChevronDown className="w-4 h-4 mr-2" />
+            Show Quick Add Row
           </Button>
         </td>
       </tr>
@@ -137,98 +146,121 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
   }
 
   return (
-    <tr className="bg-primary/5 border-t-2 border-primary" onKeyDown={handleKeyDown}>
-      {/* Empty cell for checkbox column */}
-      <td className="px-2 py-2"></td>
+    <>
+      <tr
+        className="bg-primary/5 border-t-2 border-primary shadow-[inset_0_1px_4px_0_rgba(0,0,0,0.04)]"
+        onKeyDown={handleKeyDown}
+      >
+        {/* Empty cell for checkbox column */}
+        <td className="px-2 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(false)}
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+            title="Collapse Quick Add Row"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </Button>
+        </td>
 
-      {/* Division */}
-      <td className="px-4 py-2">
-        <Select
-          value={formData.division}
-          onChange={(e) => setFormData({ ...formData, division: e.target.value })}
-          className="h-8 text-sm"
-        >
-          {DIVISIONS_ALL.map(div => (
-            <option key={div.code} value={div.code}>
-              {div.code} - {div.name}
-            </option>
-          ))}
-        </Select>
-      </td>
+        {/* Empty cell for row number column */}
+        <td className="px-1 py-2 w-8" />
 
-      {/* Description - search dropdown linked to division */}
-      <td className="px-4 py-2">
-        <DescriptionSearchInput
-          value={formData.description}
-          division={formData.division}
-          onChange={(value) => setFormData({ ...formData, description: value })}
-          onSelectItem={handleDescriptionSelect}
-          className="h-8 text-sm"
-          placeholder="Search or type description..."
-        />
-      </td>
+        {/* Division */}
+        <td className="px-4 py-2">
+          <Select
+            value={formData.division}
+            onChange={(e) => setFormData({ ...formData, division: e.target.value })}
+            className="h-8 text-sm"
+          >
+            {DIVISIONS_ALL.map(div => (
+              <option key={div.code} value={div.code}>
+                {div.code} - {div.name}
+              </option>
+            ))}
+          </Select>
+        </td>
 
-      {/* Type */}
-      <td className="px-4 py-2">
-        <Select
-          value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value as LineItem['type'] })}
-          className="h-8 text-sm"
-        >
-          {ITEM_TYPES.map(type => (
-            <option key={type.value} value={type.value}>
-              {type.label}
-            </option>
-          ))}
-        </Select>
-      </td>
+        {/* Description - search dropdown linked to division */}
+        <td className="px-4 py-2">
+          <DescriptionSearchInput
+            value={formData.description}
+            division={formData.division}
+            onChange={(value) => setFormData({ ...formData, description: value })}
+            onSelectItem={handleDescriptionSelect}
+            className="h-8 text-sm"
+            placeholder="Search or type description..."
+          />
+        </td>
 
-      {/* Quantity - supports calculator expressions */}
-      <td className="px-4 py-2">
-        <CalculatorInput
-          value={formData.quantity}
-          onChange={(value) => setFormData({ ...formData, quantity: value })}
-          className="h-8 text-sm text-right w-28"
-          placeholder="e.g. 2+3"
-        />
-      </td>
+        {/* Type */}
+        <td className="px-4 py-2">
+          <Select
+            value={formData.type}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value as LineItem['type'] })}
+            className="h-8 text-sm"
+          >
+            {ITEM_TYPES.map(type => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </Select>
+        </td>
 
-      {/* Unit */}
-      <td className="px-4 py-2">
-        <Input
-          value={formData.unit}
-          onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-          className="h-8 text-sm w-20"
-          placeholder="EA"
-        />
-      </td>
+        {/* Quantity - supports calculator expressions */}
+        <td className="px-4 py-2">
+          <CalculatorInput
+            value={formData.quantity}
+            onChange={(value) => setFormData({ ...formData, quantity: value })}
+            className="h-8 text-sm text-right w-28"
+            placeholder="e.g. 2+3"
+          />
+        </td>
 
-      {/* Unit Cost - supports calculator expressions */}
-      <td className="px-4 py-2">
-        <CalculatorInput
-          value={formData.unitCost}
-          onChange={(value) => setFormData({ ...formData, unitCost: value })}
-          className="h-8 text-sm text-right w-28"
-          placeholder="e.g. 100*1.1"
-        />
-      </td>
+        {/* Unit */}
+        <td className="px-4 py-2">
+          <Input
+            value={formData.unit}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            className="h-8 text-sm w-20"
+            placeholder="EA"
+          />
+        </td>
 
-      {/* Total (calculated) */}
-      <td className="px-4 py-2 text-right text-sm font-medium">
-        ${(formData.quantity * formData.unitCost).toFixed(2)}
-      </td>
+        {/* Unit Cost - supports calculator expressions */}
+        <td className="px-4 py-2">
+          <CalculatorInput
+            value={formData.unitCost}
+            onChange={(value) => setFormData({ ...formData, unitCost: value })}
+            className="h-8 text-sm text-right w-28"
+            placeholder="e.g. 100*1.1"
+          />
+        </td>
 
-      {/* Actions */}
-      <td className="px-4 py-2">
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          className="h-8"
-        >
-          <Plus className="w-3 h-3 mr-1" />
-          Add
-        </Button>
-      </td>
-    </tr>
+        {/* Total (calculated) */}
+        <td className="px-4 py-2 text-right text-sm font-medium">
+          ${(formData.quantity * formData.unitCost).toFixed(2)}
+        </td>
+
+        {/* Actions */}
+        <td className="px-4 py-2">
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              className="h-8"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add
+            </Button>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+              Enter to add, Esc to clear
+            </span>
+          </div>
+        </td>
+      </tr>
+    </>
   )
 }

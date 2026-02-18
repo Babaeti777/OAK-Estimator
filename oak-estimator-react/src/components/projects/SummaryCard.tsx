@@ -4,21 +4,45 @@ import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { useProject } from "@/contexts/ProjectContext"
 import { formatCurrency } from "@/lib/utils"
-import { DollarSign, TrendingUp, Calculator, Percent, Edit2 } from "lucide-react"
+import {
+  DollarSign,
+  TrendingUp,
+  Calculator,
+  Percent,
+  Package,
+  HardHat,
+  Truck,
+  Handshake,
+  ClipboardList,
+} from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+
+// Category color palette for the proportion bar
+const CATEGORY_COLORS = [
+  "bg-blue-500",      // Materials
+  "bg-amber-500",     // Labor
+  "bg-emerald-500",   // Equipment
+  "bg-purple-500",    // Subcontractor
+  "bg-slate-400",     // Miscellaneous
+] as const
 
 // Fix #11: Move summary item config to module scope
-const SUMMARY_LABELS = [
-  { key: "materialsCost", label: "Materials", icon: "\u{1F4E6}" },
-  { key: "laborCost", label: "Labor", icon: "\u{1F477}" },
-  { key: "equipmentCost", label: "Equipment", icon: "\u{1F69C}" },
-  { key: "subcontractorCost", label: "Subcontractor", icon: "\u{1F91D}" },
-  { key: "miscCost", label: "Miscellaneous", icon: "\u{1F4CB}" },
+const SUMMARY_LABELS: readonly {
+  key: "materialsCost" | "laborCost" | "equipmentCost" | "subcontractorCost" | "miscCost"
+  label: string
+  Icon: LucideIcon
+  color: string
+  barColor: string
+}[] = [
+  { key: "materialsCost", label: "Materials", Icon: Package, color: "text-blue-500", barColor: CATEGORY_COLORS[0] },
+  { key: "laborCost", label: "Labor", Icon: HardHat, color: "text-amber-500", barColor: CATEGORY_COLORS[1] },
+  { key: "equipmentCost", label: "Equipment", Icon: Truck, color: "text-emerald-500", barColor: CATEGORY_COLORS[2] },
+  { key: "subcontractorCost", label: "Subcontractor", Icon: Handshake, color: "text-purple-500", barColor: CATEGORY_COLORS[3] },
+  { key: "miscCost", label: "Miscellaneous", Icon: ClipboardList, color: "text-slate-400", barColor: CATEGORY_COLORS[4] },
 ] as const
 
 export function SummaryCard() {
   const { summary, currentProject, updateProjectSettings } = useProject()
-  const [editingMarkup, setEditingMarkup] = useState(false)
-  const [editingTax, setEditingTax] = useState(false)
   const [markupValue, setMarkupValue] = useState(summary.markupPercentage.toString())
   const [taxValue, setTaxValue] = useState(summary.taxPercentage.toString())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -32,18 +56,14 @@ export function SummaryCard() {
     }
   }, [])
 
-  // Fix #5: Sync local state with summary only when not editing
+  // Fix #5: Sync local state with summary when external changes occur
   useEffect(() => {
-    if (!editingMarkup) {
-      setMarkupValue(summary.markupPercentage.toString())
-    }
-  }, [summary.markupPercentage, editingMarkup])
+    setMarkupValue(summary.markupPercentage.toString())
+  }, [summary.markupPercentage])
 
   useEffect(() => {
-    if (!editingTax) {
-      setTaxValue(summary.taxPercentage.toString())
-    }
-  }, [summary.taxPercentage, editingTax])
+    setTaxValue(summary.taxPercentage.toString())
+  }, [summary.taxPercentage])
 
   // Debounced save function
   const debouncedSave = useCallback((field: 'markup' | 'tax', value: number) => {
@@ -73,13 +93,22 @@ export function SummaryCard() {
 
   // Fix #5: Memoize summary items to avoid creating new arrays each render
   const summaryItems = useMemo(() =>
-    SUMMARY_LABELS.map(({ key, label, icon }) => ({
+    SUMMARY_LABELS.map(({ key, label, Icon, color, barColor }) => ({
       label,
-      icon,
+      Icon,
+      color,
+      barColor,
       value: summary[key],
     })),
     [summary]
   )
+
+  // Calculate proportion percentages for the cost bar
+  const proportions = useMemo(() => {
+    const total = summary.subtotal
+    if (total === 0) return summaryItems.map(() => 0)
+    return summaryItems.map((item) => (item.value / total) * 100)
+  }, [summary.subtotal, summaryItems])
 
   if (!currentProject) {
     return null
@@ -97,22 +126,55 @@ export function SummaryCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Cost Proportion Bar */}
+        {summary.subtotal > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex h-3 w-full rounded-full overflow-hidden bg-muted">
+              {proportions.map((pct, idx) => {
+                if (pct === 0) return null
+                return (
+                  <div
+                    key={summaryItems[idx].label}
+                    className={`${summaryItems[idx].barColor} transition-all duration-500`}
+                    style={{ width: `${pct}%` }}
+                    title={`${summaryItems[idx].label}: ${pct.toFixed(1)}%`}
+                  />
+                )
+              })}
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {summaryItems.map((item, idx) => {
+                if (proportions[idx] === 0) return null
+                return (
+                  <div key={item.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <span className={`inline-block w-2 h-2 rounded-full ${item.barColor}`} />
+                    <span>{item.label} {proportions[idx].toFixed(0)}%</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Cost Breakdown */}
         <div className="space-y-3">
-          {summaryItems.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between"
-            >
-              <span className="text-sm text-muted-foreground flex items-center gap-2">
-                <span>{item.icon}</span>
-                {item.label}
-              </span>
-              <span className="text-sm font-medium">
-                {formatCurrency(item.value)}
-              </span>
-            </div>
-          ))}
+          {summaryItems.map((item) => {
+            const IconComponent = item.Icon
+            return (
+              <div
+                key={item.label}
+                className="flex items-center justify-between"
+              >
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <IconComponent className={`w-4 h-4 ${item.color}`} />
+                  {item.label}
+                </span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(item.value)}
+                </span>
+              </div>
+            )
+          })}
         </div>
 
         <Separator />
@@ -125,73 +187,48 @@ export function SummaryCard() {
           </span>
         </div>
 
-        {/* Markup */}
+        {/* Markup - always-visible input */}
         <div className="flex items-center justify-between text-sm">
           <div className="text-muted-foreground flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             <span>Markup</span>
-            {editingMarkup ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  value={markupValue}
-                  onChange={(e) => handleMarkupChange(e.target.value)}
-                  onBlur={() => setEditingMarkup(false)}
-                  autoFocus
-                  className="w-16 h-6 text-xs text-center"
-                  step="0.5"
-                  min="0"
-                  max="100"
-                  aria-label="Markup percentage"
-                />
-                <Percent className="w-3 h-3" />
-              </div>
-            ) : (
-              <button
-                onClick={() => setEditingMarkup(true)}
-                className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors min-h-[44px]"
-                aria-label="Edit markup percentage"
-              >
-                <span>({summary.markupPercentage}%)</span>
-                <Edit2 className="w-3 h-3 opacity-50" />
-              </button>
-            )}
+            <div className="relative flex items-center">
+              <Input
+                type="number"
+                value={markupValue}
+                onChange={(e) => handleMarkupChange(e.target.value)}
+                className="w-20 h-7 text-xs pr-6 text-right"
+                step="0.5"
+                min="0"
+                max="100"
+                aria-label="Markup percentage"
+              />
+              <span className="absolute right-2 text-xs text-muted-foreground pointer-events-none">%</span>
+            </div>
           </div>
           <span className="font-medium text-green-500">
             +{formatCurrency(summary.markup)}
           </span>
         </div>
 
-        {/* Tax */}
+        {/* Tax - always-visible input */}
         <div className="flex items-center justify-between text-sm">
           <div className="text-muted-foreground flex items-center gap-2">
+            <Percent className="w-4 h-4" />
             <span>Tax</span>
-            {editingTax ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  value={taxValue}
-                  onChange={(e) => handleTaxChange(e.target.value)}
-                  onBlur={() => setEditingTax(false)}
-                  autoFocus
-                  className="w-16 h-6 text-xs text-center"
-                  step="0.5"
-                  min="0"
-                  max="100"
-                  aria-label="Tax percentage"
-                />
-                <Percent className="w-3 h-3" />
-              </div>
-            ) : (
-              <button
-                onClick={() => setEditingTax(true)}
-                className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted transition-colors min-h-[44px]"
-                aria-label="Edit tax percentage"
-              >
-                <span>({summary.taxPercentage}%)</span>
-                <Edit2 className="w-3 h-3 opacity-50" />
-              </button>
-            )}
+            <div className="relative flex items-center">
+              <Input
+                type="number"
+                value={taxValue}
+                onChange={(e) => handleTaxChange(e.target.value)}
+                className="w-20 h-7 text-xs pr-6 text-right"
+                step="0.5"
+                min="0"
+                max="100"
+                aria-label="Tax percentage"
+              />
+              <span className="absolute right-2 text-xs text-muted-foreground pointer-events-none">%</span>
+            </div>
           </div>
           <span className="font-medium">
             {formatCurrency(summary.tax)}

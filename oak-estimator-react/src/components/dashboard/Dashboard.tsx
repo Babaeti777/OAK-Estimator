@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useProject } from '@/contexts/ProjectContext'
 import { calculateDashboardStats } from '@/lib/dashboard-utils'
 import { formatCurrency } from '@/lib/utils'
@@ -32,10 +33,75 @@ const statusColors: Record<string, string> = {
   completed: 'bg-blue-500',
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+      </div>
+
+      {/* Skeleton Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-20 mb-1" />
+              <Skeleton className="h-3 w-16" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Skeleton Bottom Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-5 w-40 mb-1" />
+              <Skeleton className="h-4 w-56" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <div key={j} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-3 h-3 rounded-full" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="w-24 h-2 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function Dashboard() {
   const { projects } = useProject()
 
-  const stats = useMemo(() => calculateDashboardStats(projects), [projects])
+  const stats = useMemo(
+    () => (projects ? calculateDashboardStats(projects) : null),
+    [projects]
+  )
+
+  if (!projects || !stats) {
+    return <DashboardSkeleton />
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
