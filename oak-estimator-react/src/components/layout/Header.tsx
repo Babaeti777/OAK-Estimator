@@ -9,11 +9,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
 import { useProject } from "@/contexts/ProjectContext"
-import { Building2, LogOut, FolderOpen, Plus, Check, Trash2, RotateCcw, ChevronDown, Settings, Pencil } from "lucide-react"
+import { Building2, LogOut, FolderOpen, Plus, Check, Trash2, RotateCcw, ChevronDown, SlidersHorizontal, Pencil, User } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { CompanySettingsForm } from "@/components/projects/CompanySettingsForm"
 import { SettingsDialog } from "@/components/settings/SettingsDialog"
 import { ProjectDetailsDialog } from "@/components/projects/ProjectDetailsDialog"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -22,7 +20,7 @@ export function Header() {
   const { user, signOut } = useAuth()
   const { currentProject, projects, trashedProjects, loadProject, createProject, trashProject, restoreProject, deleteProjectPermanently } = useProject()
   const [showTrash, setShowTrash] = useState(false)
-  const [companySettingsOpen, setCompanySettingsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const confirm = useConfirmDialog()
 
   const defaultAvatar = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="%23f97316"/></svg>'
@@ -41,59 +39,40 @@ export function Header() {
           </div>
         </div>
 
-        {/* Center - Project Name with Edit */}
+        {/* Center - Project Name */}
         {currentProject && (
           <div className="hidden md:flex items-center gap-2 flex-1 justify-center max-w-xl">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 rounded-lg border border-border/50">
-              <span className="text-sm font-medium text-foreground truncate max-w-[300px] lg:max-w-[400px]" title={currentProject.projectSettings.projectName}>
-                {currentProject.projectSettings.projectName}
+            <span className="text-lg font-semibold text-foreground truncate max-w-[300px] lg:max-w-[400px]" title={currentProject.projectSettings.projectName}>
+              {currentProject.projectSettings.projectName}
+            </span>
+            {currentProject.projectSettings.projectNumber && (
+              <span className="text-sm text-muted-foreground font-medium">
+                #{currentProject.projectSettings.projectNumber}
               </span>
-              {currentProject.projectSettings.projectNumber && (
-                <span className="text-xs text-muted-foreground">
-                  #{currentProject.projectSettings.projectNumber}
-                </span>
-              )}
-              <ProjectDetailsDialog
-                trigger={
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10" title="Edit Project Details">
-                    <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                  </Button>
-                }
-              />
-            </div>
+            )}
+            <ProjectDetailsDialog
+              trigger={
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-primary/10" title="Edit Project Details">
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                </Button>
+              }
+            />
           </div>
         )}
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2">
-          {/* Company Settings - Quick Access */}
-          {currentProject && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 border-border/50 bg-background/50 hover:bg-accent"
-              onClick={() => setCompanySettingsOpen(true)}
-              title="Company Settings"
-              aria-label="Company Settings"
-            >
-              <Building2 className="w-4 h-4 text-muted-foreground" />
-            </Button>
-          )}
-
           {/* Settings - Quick Access */}
-          <SettingsDialog
-            trigger={
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 border-border/50 bg-background/50 hover:bg-accent"
-                title="Settings"
-                aria-label="Settings"
-              >
-                <Settings className="w-4 h-4 text-muted-foreground" />
-              </Button>
-            }
-          />
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 border-border/50 bg-background/50 hover:bg-accent"
+            title="Settings"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+          </Button>
 
           {/* Projects Dropdown */}
           {(projects.length > 0 || trashedProjects.length > 0) && (
@@ -102,9 +81,6 @@ export function Header() {
                 <Button variant="outline" size="sm" className="gap-2 h-9 px-3 border-border/50 bg-background/50 hover:bg-accent">
                   <FolderOpen className="w-4 h-4 text-muted-foreground" />
                   <span className="hidden sm:inline text-foreground">Projects</span>
-                  <span className="inline sm:hidden text-foreground">
-                    <FolderOpen className="w-4 h-4" />
-                  </span>
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
@@ -269,6 +245,21 @@ export function Header() {
                     {user.email}
                   </p>
                 </div>
+                <DropdownMenuItem
+                  className="cursor-pointer py-2.5"
+                  onSelect={() => setSettingsOpen(true)}
+                >
+                  <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer py-2.5"
+                  onSelect={() => setSettingsOpen(true)}
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut} className="cursor-pointer py-2.5 text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign out</span>
@@ -279,23 +270,8 @@ export function Header() {
         </div>
       </div>
 
-      {/* Company Settings Dialog */}
-      <Dialog open={companySettingsOpen} onOpenChange={setCompanySettingsOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-                <Building2 className="h-4 w-4 text-primary" />
-              </div>
-              Company Settings
-            </DialogTitle>
-            <DialogDescription>
-              Manage your company information and branding
-            </DialogDescription>
-          </DialogHeader>
-          {currentProject && <CompanySettingsForm />}
-        </DialogContent>
-      </Dialog>
+      {/* Settings Dialog - controlled by settingsOpen state, shared between header button and user dropdown */}
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
   )
 }

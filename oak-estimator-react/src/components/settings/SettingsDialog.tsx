@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Settings, Keyboard, Database, Palette, ChevronDown, ChevronUp, Save, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+import { Settings, Keyboard, Database, Palette, ChevronDown, ChevronUp, Save, Loader2, CheckCircle2, AlertCircle, Sun, Moon, Monitor } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { useTheme } from "@/contexts/ThemeContext"
 import { getUserSettings, saveUserSettings, type UserSettings } from "@/services/userSettings.service"
 import { toast } from "@/hooks/use-toast"
 
@@ -33,6 +34,8 @@ const ACCENT_COLORS = [
 
 interface SettingsDialogProps {
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 function SettingsSection({
@@ -81,9 +84,18 @@ function SettingsSection({
   )
 }
 
-export function SettingsDialog({ trigger }: SettingsDialogProps) {
+const THEME_OPTIONS = [
+  { value: 'dark' as const, label: 'Dark', icon: Moon },
+  { value: 'light' as const, label: 'Light', icon: Sun },
+  { value: 'system' as const, label: 'System', icon: Monitor },
+]
+
+export function SettingsDialog({ trigger, open: controlledOpen, onOpenChange: controlledOnOpenChange }: SettingsDialogProps) {
   const { user } = useAuth()
-  const [open, setOpen] = useState(false)
+  const { theme: currentTheme, setTheme: setAppTheme } = useTheme()
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = controlledOnOpenChange || setInternalOpen
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState<UserSettings>({
@@ -145,13 +157,15 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="icon" title="Settings" aria-label="Settings">
-            <Settings className="h-4 w-4" />
-          </Button>
-        )}
-      </DialogTrigger>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button variant="outline" size="icon" title="Settings" aria-label="Settings">
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -333,15 +347,19 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       <p className="text-xs text-muted-foreground">Choose your preferred theme</p>
                     </div>
                     <div className="flex gap-1">
-                      {(['dark', 'light', 'system'] as const).map((theme) => (
+                      {THEME_OPTIONS.map((opt) => (
                         <Button
-                          key={theme}
-                          variant={settings.theme === theme ? "default" : "outline"}
+                          key={opt.value}
+                          variant={currentTheme === opt.value ? "default" : "outline"}
                           size="sm"
-                          onClick={() => updateSetting('theme', theme)}
-                          className="capitalize"
+                          onClick={() => {
+                            setAppTheme(opt.value)
+                            updateSetting('theme', opt.value)
+                          }}
+                          className="gap-1.5"
                         >
-                          {theme}
+                          <opt.icon className="h-3.5 w-3.5" />
+                          {opt.label}
                         </Button>
                       ))}
                     </div>
@@ -363,7 +381,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Select your preferred accent color (theme changes coming soon)
+                      Select your preferred accent color
                     </p>
                   </div>
                 </div>

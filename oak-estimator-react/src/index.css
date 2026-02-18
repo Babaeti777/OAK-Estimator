@@ -1,21 +1,67 @@
 @import "tailwindcss";
 
 /* ============================================
-   OAK ESTIMATOR - DARK THEME UI
+   OAK ESTIMATOR - THEME UI
    Professional Construction Estimating
+   Light theme by default, dark via .dark class
    ============================================ */
 
 @layer base {
-  /* Dark Theme Variables (single dark-only theme) */
+  /* Light Theme Variables (default) */
   :root {
+    color-scheme: light;
+
+    /* Background colors */
+    --background: 0 0% 100%;
+    --foreground: 220 15% 10%;
+
+    /* Card/Surface colors */
+    --card: 0 0% 98%;
+    --card-foreground: 220 15% 10%;
+
+    /* Popover/Dropdown colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 10%;
+
+    /* Primary - Orange accent */
+    --primary: 30 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 220 15% 93%;
+    --secondary-foreground: 220 15% 10%;
+
+    /* Muted */
+    --muted: 220 15% 93%;
+    --muted-foreground: 220 10% 40%;
+
+    /* Accent */
+    --accent: 220 15% 93%;
+    --accent-foreground: 220 15% 10%;
+
+    /* Destructive */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border & Input */
+    --border: 220 15% 85%;
+    --input: 0 0% 96%;
+    --ring: 30 100% 50%;
+
+    /* Radius */
+    --radius: 0.5rem;
+  }
+
+  /* Dark Theme Variables (applied via .dark class) */
+  .dark {
     color-scheme: dark;
 
     /* Background colors */
     --background: 220 20% 8%;
     --foreground: 220 15% 95%;
 
-    /* Card/Surface colors */
-    --card: 220 20% 11%;
+    /* Card/Surface colors - bumped from 11% to 13% for contrast */
+    --card: 220 20% 13%;
     --card-foreground: 220 15% 95%;
 
     /* Popover/Dropdown colors */
@@ -42,13 +88,10 @@
     --destructive: 0 70% 50%;
     --destructive-foreground: 220 15% 95%;
 
-    /* Border & Input */
-    --border: 220 15% 20%;
-    --input: 220 20% 14%;
+    /* Border & Input - slightly brighter borders for contrast */
+    --border: 220 15% 24%;
+    --input: 220 20% 16%;
     --ring: 30 100% 50%;
-
-    /* Radius */
-    --radius: 0.5rem;
   }
 
   /* Reset and base styles */
@@ -159,8 +202,8 @@
   }
 
   select option {
-    background-color: hsl(220 20% 13%);
-    color: hsl(220 15% 95%);
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
     padding: 0.5rem;
   }
 
@@ -197,18 +240,18 @@
 
   td {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid hsl(220 15% 18%);
+    border-bottom: 1px solid hsl(var(--border));
     color: hsl(var(--foreground));
     vertical-align: middle;
     background-color: inherit;
   }
 
   tbody {
-    background-color: hsl(220 20% 11%);
+    background-color: hsl(var(--card));
   }
 
   tbody tr:hover {
-    background-color: hsl(220 15% 14%);
+    background-color: hsl(var(--accent));
   }
 
   /* Scrollbar styling */

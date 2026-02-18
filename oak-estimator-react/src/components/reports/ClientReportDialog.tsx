@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useProject } from "@/contexts/ProjectContext"
@@ -47,28 +47,20 @@ export function ClientReportDialog() {
           Client Report
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Client Estimate Report</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+            Client Estimate Report
+          </DialogTitle>
           <DialogDescription>
             Preview your client-facing summary, then print or email.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap gap-2 justify-end">
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-2" />
-            Print
-          </Button>
-          <Button variant="outline" asChild>
-            <a href={mailtoLink}>
-              <Mail className="w-4 h-4 mr-2" />
-              Email
-            </a>
-          </Button>
-        </div>
-
-        <div id="client-report-print" className="space-y-6">
+        <div id="client-report-print" className="space-y-6 overflow-y-auto flex-1 pr-1">
           <div className="space-y-1">
             <h2 className="text-2xl font-semibold">
               {currentProject.projectSettings.projectName}
@@ -87,25 +79,34 @@ export function ClientReportDialog() {
 
           <Separator />
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg border p-4">
-              <p className="text-xs text-muted-foreground">Subtotal</p>
-              <p className="text-lg font-semibold">{formatCurrency(summary.subtotal)}</p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <p className="text-xs text-muted-foreground">Tax</p>
-              <p className="text-lg font-semibold">{formatCurrency(summary.tax)}</p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-lg font-semibold text-primary">
-                {formatCurrency(summary.totalCost)}
-              </p>
+          {/* Summary */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Summary
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <p className="text-xs text-muted-foreground">Subtotal</p>
+                <p className="text-lg font-semibold">{formatCurrency(summary.subtotal)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs text-muted-foreground">Tax</p>
+                <p className="text-lg font-semibold">{formatCurrency(summary.tax)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-lg font-semibold text-primary">
+                  {formatCurrency(summary.totalCost)}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Line Items</h3>
+          {/* Line Items */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Line Items
+            </h3>
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/60">
@@ -132,27 +133,47 @@ export function ClientReportDialog() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <h4 className="font-semibold">Inclusions</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">
-                {currentProject.projectSettings.inclusions || "(none)"}
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold">Exclusions</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">
-                {currentProject.projectSettings.exclusions || "(none)"}
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold">Terms & Conditions</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">
-                {currentProject.projectSettings.terms || "(none)"}
-              </p>
+          {/* Scope & Terms */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Scope & Terms
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <h4 className="font-semibold">Inclusions</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">
+                  {currentProject.projectSettings.inclusions || "(none)"}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold">Exclusions</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">
+                  {currentProject.projectSettings.exclusions || "(none)"}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold">Terms & Conditions</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">
+                  {currentProject.projectSettings.terms || "(none)"}
+                </p>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Footer with action buttons */}
+        <DialogFooter className="flex flex-wrap gap-2 justify-end pt-4 border-t">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-2" />
+            Print
+          </Button>
+          <Button variant="outline" asChild>
+            <a href={mailtoLink}>
+              <Mail className="w-4 h-4 mr-2" />
+              Email
+            </a>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
