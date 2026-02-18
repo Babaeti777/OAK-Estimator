@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { CalculatorInput } from "@/components/ui/calculator-input"
+import { DescriptionSearchInput } from "@/components/line-items/DescriptionSearchInput"
 import { useProject } from "@/contexts/ProjectContext"
 import { Plus, Zap } from "lucide-react"
 import type { LineItem } from "@/types"
 import { toast } from "@/hooks/use-toast"
 import { DIVISIONS_ALL } from "@/data/divisions"
+import type { DivisionItem } from "@/data/division-items"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -33,6 +35,17 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
     unitCost: 0,
   })
   const descriptionRef = useRef<HTMLInputElement>(null)
+
+  // When a description item is selected from the dropdown, auto-fill type, unit, and unitCost
+  const handleDescriptionSelect = useCallback((selectedItem: DivisionItem) => {
+    setFormData((prev) => ({
+      ...prev,
+      description: selectedItem.description,
+      type: selectedItem.type,
+      unit: selectedItem.unit,
+      unitCost: selectedItem.unitCost,
+    }))
+  }, [])
 
   // Focus description when adding starts
   useEffect(() => {
@@ -143,14 +156,15 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
         </Select>
       </td>
 
-      {/* Description */}
+      {/* Description - search dropdown linked to division */}
       <td className="px-4 py-2">
-        <Input
-          ref={descriptionRef}
+        <DescriptionSearchInput
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Enter description..."
+          division={formData.division}
+          onChange={(value) => setFormData({ ...formData, description: value })}
+          onSelectItem={handleDescriptionSelect}
           className="h-8 text-sm"
+          placeholder="Search or type description..."
         />
       </td>
 

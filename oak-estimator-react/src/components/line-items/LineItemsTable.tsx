@@ -2,20 +2,30 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-// Select removed - Type and Division are now auto-detected
+import { Select } from "@/components/ui/select"
 import { CalculatorInput } from "@/components/ui/calculator-input"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
 import { QuickAddRow } from "@/components/line-items/QuickAddRow"
 import { TemplatesManager } from "@/components/line-items/TemplatesManager"
+import { DescriptionSearchInput } from "@/components/line-items/DescriptionSearchInput"
 import type { LineItem } from "@/types"
 import { Trash2, Table, Search, CheckSquare, Square, X, Calculator } from "lucide-react"
 import { formatCurrency, getErrorMessage } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
-import { getDivisionLabel } from "@/data/divisions"
+import { getDivisionLabel, DIVISIONS_ALL } from "@/data/divisions"
+import type { DivisionItem } from "@/data/division-items"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog"
+
+const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
+  { value: 'material', label: 'Material' },
+  { value: 'labor', label: 'Labor' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'subcontractor', label: 'Subcontractor' },
+  { value: 'misc', label: 'Misc' },
+]
 
 const ROW_HEIGHT = 40
 
@@ -485,6 +495,16 @@ function LineItemRow({
   onUpdate: (id: string, updates: Partial<LineItem>) => void
   onDelete: (id: string) => void
 }) {
+  // When a description item is selected from the dropdown, auto-fill type, unit, and unitCost
+  const handleDescriptionSelect = useCallback((selectedItem: DivisionItem) => {
+    onUpdate(item.id, {
+      description: selectedItem.description,
+      type: selectedItem.type,
+      unit: selectedItem.unit,
+      unitCost: selectedItem.unitCost,
+    })
+  }, [item.id, onUpdate])
+
   return (
     <tr className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
       {/* Selection */}
@@ -501,29 +521,50 @@ function LineItemRow({
           )}
         </button>
       </td>
-      {/* Division - auto-detected, display only */}
+
+      {/* Division - editable dropdown */}
       <td className="px-3 py-1.5">
-        <span className="text-sm leading-relaxed text-muted-foreground" title={getDivisionLabel(item.division)}>
-          {item.division}
-        </span>
+        <Select
+          value={item.division}
+          onChange={(e) => onUpdate(item.id, { division: e.target.value })}
+          className="h-7 text-sm w-24"
+          title={getDivisionLabel(item.division)}
+          aria-label="Division"
+        >
+          {DIVISIONS_ALL.map((div) => (
+            <option key={div.code} value={div.code}>
+              {div.code} - {div.name}
+            </option>
+          ))}
+        </Select>
       </td>
 
-      {/* Description */}
+      {/* Description - search dropdown linked to division */}
       <td className="px-3 py-1.5">
-        <Input
+        <DescriptionSearchInput
           value={item.description}
-          onChange={(e) => onUpdate(item.id, { description: e.target.value })}
+          division={item.division}
+          onChange={(value) => onUpdate(item.id, { description: value })}
+          onSelectItem={handleDescriptionSelect}
           className="h-7 text-sm"
-          placeholder="Item description"
-          aria-label="Description"
+          placeholder="Search description..."
         />
       </td>
 
-      {/* Type - auto-detected, display only */}
+      {/* Type - editable dropdown, auto-filled from description */}
       <td className="px-3 py-1.5">
-        <span className="text-sm leading-relaxed capitalize text-muted-foreground">
-          {item.type}
-        </span>
+        <Select
+          value={item.type}
+          onChange={(e) => onUpdate(item.id, { type: e.target.value as LineItem['type'] })}
+          className="h-7 text-sm w-28"
+          aria-label="Type"
+        >
+          {ITEM_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </Select>
       </td>
 
       {/* Quantity */}
