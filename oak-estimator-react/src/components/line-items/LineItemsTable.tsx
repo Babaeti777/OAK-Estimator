@@ -35,7 +35,7 @@ const TYPE_DOT_COLORS: Record<LineItem['type'], string> = {
   misc: 'bg-slate-500',
 }
 
-const ROW_HEIGHT = 40
+const ROW_HEIGHT = 48
 
 interface LineItemsTableProps {
   selectedDivision: string
@@ -523,7 +523,7 @@ function LineItemRow({
   return (
     <tr className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
       {/* Selection */}
-      <td className="px-2 py-1.5">
+      <td className="px-2 py-2">
         <button
           onClick={() => onToggleSelect(item.id)}
           className="p-1 hover:bg-muted rounded min-w-[32px] min-h-[32px] flex items-center justify-center"
@@ -538,16 +538,16 @@ function LineItemRow({
       </td>
 
       {/* Row number */}
-      <td className="px-1 py-1.5 text-center text-xs text-muted-foreground tabular-nums w-8">
+      <td className="px-1 py-2 text-center text-xs text-muted-foreground tabular-nums w-8">
         {rowIndex}
       </td>
 
       {/* Division - editable dropdown, shows code only with full name as tooltip */}
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-2">
         <Select
           value={item.division}
           onChange={(e) => onUpdate(item.id, { division: e.target.value })}
-          className="h-7 text-sm w-16"
+          className="h-8 text-sm w-16"
           title={getDivisionLabel(item.division)}
           aria-label="Division"
         >
@@ -560,19 +560,19 @@ function LineItemRow({
       </td>
 
       {/* Description - search dropdown linked to division */}
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-2">
         <DescriptionSearchInput
           value={item.description}
           division={item.division}
           onChange={(value) => onUpdate(item.id, { description: value })}
           onSelectItem={handleDescriptionSelect}
-          className="h-7 text-sm"
+          className="h-8 text-sm"
           placeholder="Search description..."
         />
       </td>
 
       {/* Type - color-coded dot with tooltip, click to cycle type */}
-      <td className="px-3 py-1.5 text-center">
+      <td className="px-3 py-2 text-center">
         <button
           onClick={() => {
             const currentIndex = ITEM_TYPES.findIndex(t => t.value === item.type)
@@ -581,50 +581,50 @@ function LineItemRow({
           }}
           title={ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}
           aria-label={`Type: ${ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}. Click to change.`}
-          className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-muted transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-muted transition-colors"
         >
           <span className={`inline-block w-3 h-3 rounded-full ${TYPE_DOT_COLORS[item.type] ?? 'bg-slate-500'}`} />
         </button>
       </td>
 
       {/* Quantity */}
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-2">
         <CalculatorInput
           value={item.quantity}
           onChange={(value) => onUpdate(item.id, { quantity: value })}
-          className="h-7 text-sm text-right w-24"
+          className="h-8 text-sm text-right w-24"
           placeholder="e.g. 2+3"
         />
       </td>
 
       {/* Unit */}
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-2">
         <Input
           value={item.unit}
           onChange={(e) => onUpdate(item.id, { unit: e.target.value })}
-          className="h-7 text-sm w-16"
+          className="h-8 text-sm w-16"
           placeholder="EA"
           aria-label="Unit"
         />
       </td>
 
       {/* Unit Cost */}
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-2">
         <CalculatorInput
           value={item.unitCost}
           onChange={(value) => onUpdate(item.id, { unitCost: value })}
-          className="h-7 text-sm text-right w-24"
+          className="h-8 text-sm text-right w-24"
           placeholder="e.g. 100*1.1"
         />
       </td>
 
       {/* Total */}
-      <td className="px-3 py-1.5 text-right font-semibold text-primary text-sm leading-relaxed">
+      <td className="px-3 py-2 text-right font-semibold text-primary text-sm leading-relaxed">
         {formatCurrency(item.totalCost)}
       </td>
 
       {/* Actions */}
-      <td className="px-3 py-1.5">
+      <td className="px-3 py-2">
         <Button
           variant="ghost"
           size="icon"
