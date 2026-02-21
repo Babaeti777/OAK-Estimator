@@ -32,7 +32,6 @@ import {
 import type { AIEstimateItem, AIEstimateResult } from '@/services/ai-estimator.service'
 import {
   Sparkles,
-  Upload,
   ImageIcon,
   Loader2,
   CheckCircle2,
