@@ -20,6 +20,7 @@ import { AttachmentsPanel } from "./attachments/AttachmentsPanel"
 import { LaborRatesManager } from "./labor/LaborRatesManager"
 import { ProfitMarginChart } from "./analysis/ProfitMarginChart"
 import { MaterialsCatalogManager } from "./materials/MaterialsCatalogManager"
+import { AIEstimatorDialog } from "./ai-estimator/AIEstimatorDialog"
 import { DivisionSidebar } from "./navigation/DivisionSidebar"
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
 import { formatCurrency } from "@/lib/utils"
@@ -65,6 +66,8 @@ import {
   FileSpreadsheet,
   ListChecks,
   Lightbulb,
+  Sparkles,
+  ImageIcon,
 } from "lucide-react"
 
 interface AppState {
@@ -386,8 +389,20 @@ function DesktopToolbar({
               </DropdownMenuItem>
             }
           />
+          <DropdownMenuSeparator />
+          <AIEstimatorDialog
+            trigger={
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <ImageIcon className="h-4 w-4 mr-2" />
+                AI Drawing Estimator
+              </DropdownMenuItem>
+            }
+          />
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* AI Estimator - Standalone button for visibility */}
+      <AIEstimatorDialog />
 
       {/* Data Menu - Replaces 4 individual buttons */}
       <DropdownMenu>
@@ -504,6 +519,13 @@ function MobileToolsPanel({
           <Button variant="outline" size="sm" className="justify-start gap-2 h-11" onClick={() => dispatch({ type: 'SHOW_ATTACHMENTS_MOBILE' })}>
             <Paperclip className="w-4 h-4" /> Files
           </Button>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">AI</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <AIEstimatorDialog trigger={<Button variant="outline" size="sm" className="justify-start gap-2 h-11 w-full"><Sparkles className="w-4 h-4" /> AI Estimate</Button>} />
         </div>
       </div>
 
@@ -680,7 +702,14 @@ export function EstimatorApp() {
                 </div>
 
                 {/* Feature highlights */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                    <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">AI Drawing Estimator</p>
+                      <p className="text-xs text-muted-foreground">Upload blueprints, get instant estimates</p>
+                    </div>
+                  </div>
                   <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                     <BarChart3 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <div>
