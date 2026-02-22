@@ -30,6 +30,14 @@ interface ProjectContextType {
   updateCompanySettings: (settings: CompanySettings) => Promise<void>
   updateProjectSettings: (settings: ProjectSettings) => Promise<void>
   addLineItem: (item: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => Promise<void>
+  addAssemblyToProject: (assembly: {
+    name: string
+    category?: string
+    items: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'parentId'>[]
+    multiplier?: number
+    estimatedDuration?: number
+    schedule?: string
+  }) => Promise<string | undefined>
   updateLineItem: (itemId: string, updates: Partial<LineItem>) => Promise<void>
   deleteLineItem: (itemId: string) => Promise<void>
   deleteLineItems: (itemIds: string[]) => Promise<void>
@@ -142,25 +150,35 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    const materialsCost = currentProject.lineItems
+    // Exclude group header rows from cost calculations (children carry the real costs)
+    const costItems = currentProject.lineItems.filter(item => !item.isGroup)
+
+    // Apply assembly multipliers: if a sub-item has a parent group with a multiplier, scale its cost
+    const getMultiplier = (item: LineItem): number => {
+      if (!item.parentId) return 1
+      const parent = currentProject.lineItems.find(p => p.id === item.parentId)
+      return parent?.assemblyMultiplier ?? 1
+    }
+
+    const materialsCost = costItems
       .filter(item => item.type === 'material')
-      .reduce((sum, item) => sum + item.totalCost, 0)
+      .reduce((sum, item) => sum + item.totalCost * getMultiplier(item), 0)
 
-    const laborCost = currentProject.lineItems
+    const laborCost = costItems
       .filter(item => item.type === 'labor')
-      .reduce((sum, item) => sum + item.totalCost, 0)
+      .reduce((sum, item) => sum + item.totalCost * getMultiplier(item), 0)
 
-    const equipmentCost = currentProject.lineItems
+    const equipmentCost = costItems
       .filter(item => item.type === 'equipment')
-      .reduce((sum, item) => sum + item.totalCost, 0)
+      .reduce((sum, item) => sum + item.totalCost * getMultiplier(item), 0)
 
-    const subcontractorCost = currentProject.lineItems
+    const subcontractorCost = costItems
       .filter(item => item.type === 'subcontractor')
-      .reduce((sum, item) => sum + item.totalCost, 0)
+      .reduce((sum, item) => sum + item.totalCost * getMultiplier(item), 0)
 
-    const miscCost = currentProject.lineItems
+    const miscCost = costItems
       .filter(item => item.type === 'misc')
-      .reduce((sum, item) => sum + item.totalCost, 0)
+      .reduce((sum, item) => sum + item.totalCost * getMultiplier(item), 0)
 
     const subtotal = materialsCost + laborCost + equipmentCost + subcontractorCost + miscCost
 
@@ -412,6 +430,73 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentProject, pushUndoSnapshot])
 
+  /** Add an assembly as a parent group row + child sub-task rows in one batch */
+  const addAssemblyToProject = useCallback(async (assembly: {
+    name: string
+    category?: string
+    items: Omit<LineItem, 'id' | 'createdAt' | 'updatedAt' | 'order' | 'parentId'>[]
+    multiplier?: number
+    estimatedDuration?: number
+    schedule?: string
+  }) => {
+    if (!currentProject) {
+      throw new Error('No project selected')
+    }
+
+    pushUndoSnapshot()
+    try {
+      const now = Date.now()
+      const parentId = `group-${now}`
+      const startOrder = currentProject.lineItems.length
+
+      // Create parent group row
+      const parentItem: LineItem = {
+        id: parentId,
+        division: assembly.items[0]?.division || '01',
+        description: assembly.name,
+        type: 'misc',
+        quantity: 1,
+        unit: 'LS',
+        unitCost: 0,
+        totalCost: 0,
+        schedule: assembly.schedule,
+        notes: assembly.estimatedDuration
+          ? `Est. ${assembly.estimatedDuration} day${assembly.estimatedDuration !== 1 ? 's' : ''}`
+          : undefined,
+        order: startOrder,
+        createdAt: now,
+        updatedAt: now,
+        isGroup: true,
+        assemblyMultiplier: assembly.multiplier ?? 1,
+        assemblyCategory: assembly.category,
+        assemblyDuration: assembly.estimatedDuration,
+      }
+
+      // Create child rows
+      const childItems: LineItem[] = assembly.items.map((item, i) => ({
+        ...item,
+        id: `item-${now}-${i}`,
+        parentId,
+        order: startOrder + 1 + i,
+        createdAt: now,
+        updatedAt: now,
+      }))
+
+      await updateFirestoreProject(currentProject.id, {
+        lineItems: [...currentProject.lineItems, parentItem, ...childItems],
+      })
+
+      return parentId
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to add assembly",
+        description: error.message,
+      })
+      throw error
+    }
+  }, [currentProject, pushUndoSnapshot])
+
   const updateLineItem = useCallback(async (itemId: string, updates: Partial<LineItem>) => {
     if (!currentProject) {
       throw new Error('No project selected')
@@ -601,6 +686,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         updateCompanySettings,
         updateProjectSettings,
         addLineItem,
+        addAssemblyToProject,
         updateLineItem,
         deleteLineItem,
         deleteLineItems,

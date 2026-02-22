@@ -63,6 +63,12 @@ export interface LineItem {
   order: number
   createdAt: number
   updatedAt: number
+  // Assembly grouping
+  parentId?: string              // ID of parent group row (makes this a sub-task)
+  isGroup?: boolean              // True for assembly parent/header rows
+  assemblyMultiplier?: number    // Qty multiplier on group row (e.g. 3 bathrooms)
+  assemblyCategory?: string      // Assembly category for schedule integration
+  assemblyDuration?: number      // Estimated duration in days (on group row)
 }
 
 export interface Material {

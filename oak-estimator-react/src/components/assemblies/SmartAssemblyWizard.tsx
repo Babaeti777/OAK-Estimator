@@ -106,7 +106,7 @@ interface SmartAssemblyWizardProps {
 // ============================================
 
 export function SmartAssemblyWizard({ open, onOpenChange }: SmartAssemblyWizardProps) {
-  const { addLineItem, currentProject } = useProject()
+  const { addAssemblyToProject, currentProject } = useProject()
   const { toast } = useToast()
 
   // Wizard state
@@ -116,6 +116,7 @@ export function SmartAssemblyWizard({ open, onOpenChange }: SmartAssemblyWizardP
   const [assemblyName, setAssemblyName] = useState('')
   const [reviewItems, setReviewItems] = useState<AssemblyItem[]>([])
   const [estimatedDuration, setEstimatedDuration] = useState(1)
+  const [multiplier, setMultiplier] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null)
 
@@ -133,6 +134,7 @@ export function SmartAssemblyWizard({ open, onOpenChange }: SmartAssemblyWizardP
     setAssemblyName('')
     setReviewItems([])
     setEstimatedDuration(1)
+    setMultiplier(1)
     setEditingItemIndex(null)
   }, [])
 
@@ -197,40 +199,44 @@ export function SmartAssemblyWizard({ open, onOpenChange }: SmartAssemblyWizardP
     setEditingItemIndex(null)
   }, [])
 
-  // Add items to project
+  // Add assembly as parent group + child sub-tasks
   const handleAddToProject = useCallback(async () => {
     if (!currentProject || reviewItems.length === 0) return
     setIsAdding(true)
     try {
-      for (const item of reviewItems) {
-        await addLineItem({
+      await addAssemblyToProject({
+        name: assemblyName,
+        category: selectedCategory || undefined,
+        items: reviewItems.map(item => ({
           division: item.division,
-          description: `[${assemblyName}] ${item.description}`,
+          description: item.description,
           type: item.type,
           quantity: item.quantity,
           unit: item.unit,
           unitCost: item.unitCost,
           totalCost: item.quantity * item.unitCost,
           notes: item.notes,
-          schedule: `Duration: ${estimatedDuration} days`,
-        })
-      }
+        })),
+        multiplier,
+        estimatedDuration,
+        schedule: `Duration: ${estimatedDuration} day${estimatedDuration !== 1 ? 's' : ''}`,
+      })
       toast({
         title: 'Assembly added',
-        description: `Added ${reviewItems.length} items from "${assemblyName}" (${formatCurrency(reviewTotals.total)})`,
+        description: `Added "${assemblyName}" with ${reviewItems.length} sub-items${multiplier > 1 ? ` (x${multiplier})` : ''} — ${formatCurrency(reviewTotals.total * multiplier)}`,
       })
       resetWizard()
       onOpenChange(false)
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
-        title: 'Failed to add items',
+        title: 'Failed to add assembly',
         description: error instanceof Error ? error.message : 'Unknown error',
       })
     } finally {
       setIsAdding(false)
     }
-  }, [currentProject, reviewItems, assemblyName, estimatedDuration, addLineItem, toast, onOpenChange, resetWizard, reviewTotals.total])
+  }, [currentProject, reviewItems, assemblyName, selectedCategory, estimatedDuration, multiplier, addAssemblyToProject, toast, onOpenChange, resetWizard, reviewTotals.total])
 
   // Check if a field should be visible
   const isFieldVisible = useCallback((field: FormField): boolean => {
@@ -396,9 +402,27 @@ export function SmartAssemblyWizard({ open, onOpenChange }: SmartAssemblyWizardP
           Review: {assemblyName}
         </DialogTitle>
         <DialogDescription>
-          {reviewItems.length} items &middot; Est. {estimatedDuration} day{estimatedDuration !== 1 ? 's' : ''} &middot; {formatCurrency(reviewTotals.total)}
+          {reviewItems.length} items &middot; Est. {estimatedDuration} day{estimatedDuration !== 1 ? 's' : ''} &middot; {formatCurrency(reviewTotals.total * multiplier)}
         </DialogDescription>
       </DialogHeader>
+
+      {/* Assembly quantity multiplier */}
+      <div className="flex items-center gap-3 p-2 bg-muted/30 rounded-lg">
+        <Label className="text-xs font-medium whitespace-nowrap">Assembly Qty:</Label>
+        <Input
+          type="number"
+          value={multiplier}
+          onChange={e => setMultiplier(Math.max(1, Number(e.target.value) || 1))}
+          className="h-8 w-20 text-sm text-center"
+          min={1}
+          step={1}
+        />
+        {multiplier > 1 && (
+          <span className="text-xs text-muted-foreground">
+            Base {formatCurrency(reviewTotals.total)} x {multiplier} = <strong className="text-foreground">{formatCurrency(reviewTotals.total * multiplier)}</strong>
+          </span>
+        )}
+      </div>
 
       {/* Cost summary bar */}
       <div className="flex flex-wrap gap-3 text-xs">
@@ -534,7 +558,7 @@ export function SmartAssemblyWizard({ open, onOpenChange }: SmartAssemblyWizardP
           {isAdding ? 'Adding...' : (
             <>
               <Plus className="w-4 h-4 mr-1" />
-              Add to Project ({formatCurrency(reviewTotals.total)})
+              Add to Project ({formatCurrency(reviewTotals.total * multiplier)})
             </>
           )}
         </Button>
