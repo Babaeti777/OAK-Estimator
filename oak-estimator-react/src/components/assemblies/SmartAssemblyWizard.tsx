@@ -63,6 +63,8 @@ import {
   Settings,
   Info,
   Pencil,
+  PenTool,
+  Cpu,
 } from 'lucide-react'
 
 // ============================================
@@ -70,6 +72,8 @@ import {
 // ============================================
 
 const CATEGORY_ICONS: Record<AssemblyCategory, React.ComponentType<{ className?: string }>> = {
+  design: PenTool,
+  'mep-engineering': Cpu,
   demolition: Hammer,
   sitework: Shovel,
   concrete: Square,

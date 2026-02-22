@@ -222,6 +222,8 @@ export interface ActivityItem {
 // ============================================
 
 export type AssemblyCategory =
+  | 'design'
+  | 'mep-engineering'
   | 'demolition'
   | 'sitework'
   | 'concrete'

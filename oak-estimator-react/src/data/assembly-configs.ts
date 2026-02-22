@@ -164,6 +164,121 @@ export function generateItemsFromConfig(
 // Category Configurations
 // ============================================
 
+const designConfig: CategoryFormConfig = {
+  category: 'design',
+  title: 'Design',
+  description: 'Architectural design, drawings, and permits',
+  baseDuration: 30,
+  fields: [
+    {
+      id: 'designScope',
+      label: 'Design Scope',
+      type: 'select',
+      options: [
+        { value: 'full', label: 'Full Design Package' },
+        { value: 'kitchen-bath', label: 'Kitchen / Bath Design' },
+        { value: 'addition', label: 'Addition' },
+        { value: 'adu', label: 'ADU / Guest House' },
+        { value: 'commercial-ti', label: 'Commercial TI' },
+      ],
+    },
+    {
+      id: 'sqft',
+      label: 'Project Area',
+      type: 'number',
+      unit: 'SF',
+      defaultValue: 1500,
+      min: 100,
+      max: 20000,
+      step: 100,
+    },
+    {
+      id: 'complexity',
+      label: 'Design Complexity',
+      type: 'select',
+      options: [
+        { value: 'simple', label: 'Simple', costMultiplier: 0.7 },
+        { value: 'moderate', label: 'Moderate', costMultiplier: 1 },
+        { value: 'complex', label: 'Complex', costMultiplier: 1.5 },
+      ],
+      defaultValue: 'moderate',
+    },
+    {
+      id: 'structural',
+      label: 'Structural Engineering Needed',
+      type: 'toggle',
+      defaultValue: true,
+    },
+  ],
+  templates: [
+    { description: 'Schematic design', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 3500, variantField: 'designScope', variantCosts: { 'full': 3500, 'kitchen-bath': 1500, 'addition': 3000, 'adu': 4000, 'commercial-ti': 5000 } },
+    { description: 'Design development', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 4500, variantField: 'designScope', variantCosts: { 'full': 4500, 'kitchen-bath': 2000, 'addition': 4000, 'adu': 5000, 'commercial-ti': 6000 } },
+    { description: 'Construction documents (permit set)', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 5000, variantField: 'designScope', variantCosts: { 'full': 5000, 'kitchen-bath': 2500, 'addition': 4500, 'adu': 6000, 'commercial-ti': 8000 } },
+    { description: 'Structural engineering', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 2500, includeWhen: { field: 'structural', value: true } },
+    { description: 'Permit application fees', division: '01', type: 'misc', baseQuantity: 1, unit: 'LS', baseUnitCost: 1500 },
+    { description: 'Plan check / review fees', division: '01', type: 'misc', baseQuantity: 1, unit: 'LS', baseUnitCost: 750 },
+    { description: 'Site survey', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 1200 },
+  ],
+}
+
+const mepEngineeringConfig: CategoryFormConfig = {
+  category: 'mep-engineering',
+  title: 'MEP Engineering',
+  description: 'Mechanical, electrical, and plumbing engineering',
+  baseDuration: 21,
+  fields: [
+    {
+      id: 'mepScope',
+      label: 'Scope',
+      type: 'select',
+      options: [
+        { value: 'full', label: 'Full MEP Package' },
+        { value: 'hvac-only', label: 'HVAC / Mechanical Only' },
+        { value: 'electrical-only', label: 'Electrical Only' },
+        { value: 'plumbing-only', label: 'Plumbing Only' },
+        { value: 'fire-protection', label: 'Fire Protection' },
+      ],
+    },
+    {
+      id: 'buildingType',
+      label: 'Building Type',
+      type: 'select',
+      options: [
+        { value: 'residential', label: 'Residential', costMultiplier: 1 },
+        { value: 'commercial', label: 'Commercial', costMultiplier: 1.5 },
+        { value: 'mixed-use', label: 'Mixed-Use', costMultiplier: 1.8 },
+      ],
+      defaultValue: 'residential',
+    },
+    {
+      id: 'sqft',
+      label: 'Project Area',
+      type: 'number',
+      unit: 'SF',
+      defaultValue: 2000,
+      min: 200,
+      max: 50000,
+      step: 100,
+    },
+    {
+      id: 'energyCompliance',
+      label: 'Energy Compliance Required',
+      type: 'toggle',
+      defaultValue: true,
+      helpText: 'Title 24 / IECC energy modeling and docs',
+    },
+  ],
+  templates: [
+    { description: 'Mechanical engineering (HVAC design)', division: '23', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 3500, variantField: 'mepScope', variantCosts: { 'full': 3500, 'hvac-only': 3500, 'electrical-only': 0, 'plumbing-only': 0, 'fire-protection': 0 } },
+    { description: 'Electrical engineering', division: '26', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 3000, variantField: 'mepScope', variantCosts: { 'full': 3000, 'hvac-only': 0, 'electrical-only': 3000, 'plumbing-only': 0, 'fire-protection': 0 } },
+    { description: 'Plumbing engineering', division: '22', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 2500, variantField: 'mepScope', variantCosts: { 'full': 2500, 'hvac-only': 0, 'electrical-only': 0, 'plumbing-only': 2500, 'fire-protection': 0 } },
+    { description: 'Fire protection engineering', division: '21', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 3500, variantField: 'mepScope', variantCosts: { 'full': 0, 'hvac-only': 0, 'electrical-only': 0, 'plumbing-only': 0, 'fire-protection': 3500 } },
+    { description: 'Energy compliance (Title 24 / code)', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 1500, includeWhen: { field: 'energyCompliance', value: true } },
+    { description: 'MEP coordination drawings', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 2000 },
+    { description: 'Equipment schedules and specs', division: '01', type: 'subcontractor', baseQuantity: 1, unit: 'LS', baseUnitCost: 1000 },
+  ],
+}
+
 const demolitionConfig: CategoryFormConfig = {
   category: 'demolition',
   title: 'Demolition',
@@ -1040,6 +1155,8 @@ const customConfig: CategoryFormConfig = {
 // ============================================
 
 export const ASSEMBLY_FORM_CONFIGS: Record<AssemblyCategory, CategoryFormConfig> = {
+  design: designConfig,
+  'mep-engineering': mepEngineeringConfig,
   demolition: demolitionConfig,
   sitework: siteworkConfig,
   concrete: concreteConfig,

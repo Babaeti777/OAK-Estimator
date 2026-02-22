@@ -43,6 +43,8 @@ import {
   Sparkles,
   Settings,
   Pencil,
+  PenTool,
+  Cpu,
 } from 'lucide-react'
 import { AssemblyEditor } from './AssemblyEditor'
 import { ItemSearchInput } from './ItemSearchInput'
@@ -61,6 +63,8 @@ import { createAssembly, getUserAssemblies, updateAssembly } from '@/services/as
 
 // Icon mapping for categories
 const CATEGORY_ICONS: Record<AssemblyCategory, React.ComponentType<{ className?: string }>> = {
+  design: PenTool,
+  'mep-engineering': Cpu,
   demolition: Hammer,
   sitework: Shovel,
   concrete: Square,
