@@ -91,7 +91,7 @@ type TabFilter = 'all' | 'default' | 'my' | 'recent'
 
 export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
   const { user } = useAuth()
-  const { currentProject, addLineItem, addAssemblyToProject } = useProject()
+  const { currentProject, addAssemblyToProject } = useProject()
   const { toast } = useToast()
 
   // State
