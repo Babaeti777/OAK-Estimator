@@ -118,7 +118,6 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
     const query = searchTerm.toLowerCase()
 
     // Build ordered list: standalone items, then groups with children underneath
-    const groupIds = new Set(allItems.filter(i => i.isGroup).map(i => i.id))
     const standaloneItems = allItems.filter(i => !i.isGroup && !i.parentId)
     const groups = allItems.filter(i => i.isGroup)
 
