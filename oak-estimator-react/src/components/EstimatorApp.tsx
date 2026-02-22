@@ -11,6 +11,7 @@ import { FolderManager } from "./projects/FolderManager"
 import { Dashboard } from "./dashboard/Dashboard"
 import { AssemblyManager } from "./assemblies/AssemblyManager"
 import { AssemblyLibrary } from "./assemblies/AssemblyLibrary"
+import { SmartAssemblyWizard } from "./assemblies/SmartAssemblyWizard"
 import { ProjectSchedule } from "./assemblies/ProjectSchedule"
 import { ChangeOrderManager } from "./change-orders/ChangeOrderManager"
 import { ImportDialog } from "./import/ImportDialog"
@@ -68,6 +69,7 @@ import {
   Lightbulb,
   Sparkles,
   ImageIcon,
+  Wand2,
 } from "lucide-react"
 
 interface AppState {
@@ -75,6 +77,7 @@ interface AppState {
   showDashboard: boolean
   showAttachments: boolean
   showAssemblyLibrary: boolean
+  showAssemblyWizard: boolean
   showProjectSchedule: boolean
   selectedDivision: string
   showDivisionPanel: boolean
@@ -88,6 +91,7 @@ type AppAction =
   | { type: 'SET_DASHBOARD'; payload: boolean }
   | { type: 'TOGGLE_ATTACHMENTS' }
   | { type: 'SET_ASSEMBLY_LIBRARY'; payload: boolean }
+  | { type: 'SET_ASSEMBLY_WIZARD'; payload: boolean }
   | { type: 'SET_PROJECT_SCHEDULE'; payload: boolean }
   | { type: 'SET_DIVISION'; payload: string }
   | { type: 'CLEAR_DIVISION' }
@@ -102,6 +106,7 @@ const initialState: AppState = {
   showDashboard: false,
   showAttachments: false,
   showAssemblyLibrary: false,
+  showAssemblyWizard: false,
   showProjectSchedule: false,
   selectedDivision: "",
   showDivisionPanel: false,
@@ -120,6 +125,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, showAttachments: !state.showAttachments }
     case 'SET_ASSEMBLY_LIBRARY':
       return { ...state, showAssemblyLibrary: action.payload }
+    case 'SET_ASSEMBLY_WIZARD':
+      return { ...state, showAssemblyWizard: action.payload }
     case 'SET_PROJECT_SCHEDULE':
       return { ...state, showProjectSchedule: action.payload }
     case 'SET_DIVISION':
@@ -351,6 +358,10 @@ function DesktopToolbar({
             <Package className="h-4 w-4 mr-2" />
             Assembly Library
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => dispatch({ type: 'SET_ASSEMBLY_WIZARD', payload: true })}>
+            <Wand2 className="h-4 w-4 mr-2" />
+            Assembly Wizard
+          </DropdownMenuItem>
           <AssemblyManager
             trigger={
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -535,6 +546,9 @@ function MobileToolsPanel({
           <MaterialsCatalogManager trigger={<Button variant="outline" size="sm" className="justify-start gap-2 h-11 w-full"><Database className="w-4 h-4" /> Catalog</Button>} />
           <Button variant="outline" size="sm" className="justify-start gap-2 h-11" onClick={() => dispatch({ type: 'SET_ASSEMBLY_LIBRARY', payload: true })}>
             <Package className="w-4 h-4" /> Library
+          </Button>
+          <Button variant="outline" size="sm" className="justify-start gap-2 h-11" onClick={() => dispatch({ type: 'SET_ASSEMBLY_WIZARD', payload: true })}>
+            <Wand2 className="w-4 h-4" /> Wizard
           </Button>
           <AssemblyManager trigger={<Button variant="outline" size="sm" className="justify-start gap-2 h-11 w-full"><ListChecks className="w-4 h-4" /> My Kits</Button>} />
           <LaborRatesManager trigger={<Button variant="outline" size="sm" className="justify-start gap-2 h-11 w-full"><Users className="w-4 h-4" /> Labor</Button>} />
@@ -838,6 +852,12 @@ export function EstimatorApp() {
             <AssemblyLibrary
               open={state.showAssemblyLibrary}
               onOpenChange={(open) => dispatch({ type: 'SET_ASSEMBLY_LIBRARY', payload: open })}
+            />
+
+            {/* Smart Assembly Wizard */}
+            <SmartAssemblyWizard
+              open={state.showAssemblyWizard}
+              onOpenChange={(open) => dispatch({ type: 'SET_ASSEMBLY_WIZARD', payload: open })}
             />
 
             {/* Project Schedule Dialog */}
