@@ -387,7 +387,7 @@ const framingConfig: CategoryFormConfig = {
     { description: 'Studs', division: '06', type: 'material', baseQuantity: 1, unit: 'LF', baseUnitCost: 4.50, scaleBy: 'length' },
     { description: 'Top/bottom plates', division: '06', type: 'material', baseQuantity: 2, unit: 'LF', baseUnitCost: 1.25, scaleBy: 'length' },
     { description: 'Fasteners & hardware', division: '06', type: 'material', baseQuantity: 1, unit: 'LF', baseUnitCost: 0.50, scaleBy: 'length' },
-    { description: 'Framing labor', division: '06', type: 'labor', baseQuantity: 0.25, unit: 'HR', baseUnitCost: 65, scaleBy: 'length', laborHours: 0.25 },
+    { description: 'Framing labor', division: '06', type: 'labor', baseQuantity: 0.25, unit: 'HR', baseUnitCost: 65, scaleBy: 'length' },
   ],
 }
 
