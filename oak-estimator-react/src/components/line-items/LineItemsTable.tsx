@@ -11,7 +11,7 @@ import { QuickAddRow } from "@/components/line-items/QuickAddRow"
 import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import { DescriptionSearchInput } from "@/components/line-items/DescriptionSearchInput"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search, CheckSquare, Square, X, Calculator } from "lucide-react"
+import { Trash2, Table, Search, CheckSquare, Square, X, Calculator, ChevronDown, ChevronRight, Layers } from "lucide-react"
 import { formatCurrency, getErrorMessage } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { getDivisionLabel, DIVISIONS_ALL } from "@/data/divisions"
@@ -43,12 +43,22 @@ interface LineItemsTableProps {
 }
 
 export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsTableProps) {
-  const { currentProject, updateLineItem, deleteLineItem } = useProject()
+  const { currentProject, updateLineItem, deleteLineItem, deleteLineItems } = useProject()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const showQuickAdd = true
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const confirm = useConfirmDialog()
+
+  const toggleGroupCollapse = useCallback((groupId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(groupId)) next.delete(groupId)
+      else next.add(groupId)
+      return next
+    })
+  }, [])
 
   // Debounce timers for each item's fields
   const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -103,14 +113,68 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 
   const filteredItems = useMemo(() => {
     if (!currentProject) return []
-    return currentProject.lineItems.filter(item => {
-      const matchesSearch =
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.division.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesDivision = !selectedDivision || item.division === selectedDivision
-      return matchesSearch && matchesDivision
-    })
-  }, [currentProject, searchTerm, selectedDivision])
+
+    const allItems = currentProject.lineItems
+    const query = searchTerm.toLowerCase()
+
+    // Build ordered list: standalone items, then groups with children underneath
+    const groupIds = new Set(allItems.filter(i => i.isGroup).map(i => i.id))
+    const standaloneItems = allItems.filter(i => !i.isGroup && !i.parentId)
+    const groups = allItems.filter(i => i.isGroup)
+
+    const ordered: LineItem[] = []
+
+    // Insert standalone items and groups in order
+    const combined = [...standaloneItems, ...groups].sort((a, b) => a.order - b.order)
+
+    for (const item of combined) {
+      if (item.isGroup) {
+        // Get children for this group
+        const children = allItems
+          .filter(c => c.parentId === item.id)
+          .sort((a, b) => a.order - b.order)
+
+        // Check if group or any child matches filters
+        const groupMatches =
+          item.description.toLowerCase().includes(query) ||
+          item.division.toLowerCase().includes(query)
+        const childMatches = children.some(c =>
+          c.description.toLowerCase().includes(query) ||
+          c.division.toLowerCase().includes(query)
+        )
+        const matchesDivision = !selectedDivision ||
+          item.division === selectedDivision ||
+          children.some(c => c.division === selectedDivision)
+
+        if ((groupMatches || childMatches || !query) && matchesDivision) {
+          ordered.push(item)
+          // Add children if not collapsed
+          if (!collapsedGroups.has(item.id)) {
+            for (const child of children) {
+              const childMatchesSearch = !query ||
+                child.description.toLowerCase().includes(query) ||
+                child.division.toLowerCase().includes(query)
+              const childMatchesDivision = !selectedDivision || child.division === selectedDivision
+              if (childMatchesSearch && childMatchesDivision) {
+                ordered.push(child)
+              }
+            }
+          }
+        }
+      } else {
+        // Standalone item — normal filtering
+        const matchesSearch = !query ||
+          item.description.toLowerCase().includes(query) ||
+          item.division.toLowerCase().includes(query)
+        const matchesDivision = !selectedDivision || item.division === selectedDivision
+        if (matchesSearch && matchesDivision) {
+          ordered.push(item)
+        }
+      }
+    }
+
+    return ordered
+  }, [currentProject, searchTerm, selectedDivision, collapsedGroups])
 
   // Fix #1: Virtual scrolling for large lists
   const rowVirtualizer = useVirtualizer({
@@ -130,7 +194,20 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 
   const handleDeleteItem = async (itemId: string) => {
     try {
-      await deleteLineItem(itemId)
+      // If deleting a group, also delete all children
+      const item = currentProject.lineItems.find(i => i.id === itemId)
+      if (item?.isGroup) {
+        const childIds = currentProject.lineItems
+          .filter(c => c.parentId === itemId)
+          .map(c => c.id)
+        if (childIds.length > 0) {
+          await deleteLineItems([itemId, ...childIds])
+        } else {
+          await deleteLineItem(itemId)
+        }
+      } else {
+        await deleteLineItem(itemId)
+      }
       setSelectedIds(prev => {
         const next = new Set(prev)
         next.delete(itemId)
@@ -351,12 +428,27 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                       )}
                       {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                         const item = filteredItems[virtualRow.index]
+                        if (item.isGroup) {
+                          return (
+                            <GroupHeaderRow
+                              key={item.id}
+                              item={item}
+                              isCollapsed={collapsedGroups.has(item.id)}
+                              onToggleCollapse={toggleGroupCollapse}
+                              childCount={currentProject.lineItems.filter(c => c.parentId === item.id).length}
+                              childTotal={currentProject.lineItems.filter(c => c.parentId === item.id).reduce((s, c) => s + c.totalCost, 0)}
+                              onUpdate={handleUpdateItem}
+                              onDelete={handleDeleteItem}
+                            />
+                          )
+                        }
                         return (
                           <LineItemRow
                             key={item.id}
                             item={item}
                             rowIndex={virtualRow.index + 1}
                             isSelected={selectedIds.has(item.id)}
+                            isChild={!!item.parentId}
                             onToggleSelect={toggleSelectItem}
                             onUpdate={handleUpdateItem}
                             onDelete={handleDeleteItem}
@@ -373,17 +465,31 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                       )}
                     </>
                   ) : (
-                    /* Fix #8: Regular rows without Framer Motion animation */
+                    /* Fix #8: Regular rows — group headers + child items */
                     filteredItems.map((item, index) => (
-                      <LineItemRow
-                        key={item.id}
-                        item={item}
-                        rowIndex={index + 1}
-                        isSelected={selectedIds.has(item.id)}
-                        onToggleSelect={toggleSelectItem}
-                        onUpdate={handleUpdateItem}
-                        onDelete={handleDeleteItem}
-                      />
+                      item.isGroup ? (
+                        <GroupHeaderRow
+                          key={item.id}
+                          item={item}
+                          isCollapsed={collapsedGroups.has(item.id)}
+                          onToggleCollapse={toggleGroupCollapse}
+                          childCount={currentProject.lineItems.filter(c => c.parentId === item.id).length}
+                          childTotal={currentProject.lineItems.filter(c => c.parentId === item.id).reduce((s, c) => s + c.totalCost, 0)}
+                          onUpdate={handleUpdateItem}
+                          onDelete={handleDeleteItem}
+                        />
+                      ) : (
+                        <LineItemRow
+                          key={item.id}
+                          item={item}
+                          rowIndex={index + 1}
+                          isSelected={selectedIds.has(item.id)}
+                          isChild={!!item.parentId}
+                          onToggleSelect={toggleSelectItem}
+                          onUpdate={handleUpdateItem}
+                          onDelete={handleDeleteItem}
+                        />
+                      )
                     ))
                   )}
 
@@ -402,69 +508,82 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               </div>
             ) : (
               filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-3 space-y-2 ${selectedIds.has(item.id) ? 'bg-primary/5' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2 flex-1 min-w-0">
-                      <button
-                        onClick={() => toggleSelectItem(item.id)}
-                        className="p-1.5 hover:bg-muted rounded mt-0.5 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                        aria-label={selectedIds.has(item.id) ? `Deselect ${item.description}` : `Select ${item.description}`}
+                item.isGroup ? (
+                  <MobileGroupCard
+                    key={item.id}
+                    item={item}
+                    isCollapsed={collapsedGroups.has(item.id)}
+                    onToggleCollapse={toggleGroupCollapse}
+                    childCount={currentProject.lineItems.filter(c => c.parentId === item.id).length}
+                    childTotal={currentProject.lineItems.filter(c => c.parentId === item.id).reduce((s, c) => s + c.totalCost, 0)}
+                    onDelete={handleDeleteItem}
+                    onUpdate={handleUpdateItem}
+                  />
+                ) : (
+                  <div
+                    key={item.id}
+                    className={`p-3 space-y-2 ${selectedIds.has(item.id) ? 'bg-primary/5' : ''} ${item.parentId ? 'pl-8 bg-muted/20' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <button
+                          onClick={() => toggleSelectItem(item.id)}
+                          className="p-1.5 hover:bg-muted rounded mt-0.5 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                          aria-label={selectedIds.has(item.id) ? `Deselect ${item.description}` : `Select ${item.description}`}
+                        >
+                          {selectedIds.has(item.id) ? (
+                            <CheckSquare className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Square className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{item.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {getDivisionLabel(item.division)} &middot; {item.type}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        aria-label={`Delete ${item.description}`}
                       >
-                        {selectedIds.has(item.id) ? (
-                          <CheckSquare className="w-4 h-4 text-primary" />
-                        ) : (
-                          <Square className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{item.description}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {getDivisionLabel(item.division)} &middot; {item.type}
-                        </div>
-                      </div>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      aria-label={`Delete ${item.description}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2 pl-12">
-                    <div className="flex-1 grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Qty</span>
-                        <CalculatorInput
-                          value={item.quantity}
-                          onChange={(value) => handleUpdateItem(item.id, { quantity: value })}
-                          className="h-8 text-sm w-full"
-                          placeholder="Qty"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Unit Cost</span>
-                        <CalculatorInput
-                          value={item.unitCost}
-                          onChange={(value) => handleUpdateItem(item.id, { unitCost: value })}
-                          className="h-8 text-sm w-full"
-                          placeholder="Cost"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Total</span>
-                        <div className="h-8 flex items-center font-medium text-sm">
-                          {formatCurrency(item.totalCost)}
+                    <div className="flex items-center gap-2 pl-12">
+                      <div className="flex-1 grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Qty</span>
+                          <CalculatorInput
+                            value={item.quantity}
+                            onChange={(value) => handleUpdateItem(item.id, { quantity: value })}
+                            className="h-8 text-sm w-full"
+                            placeholder="Qty"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Unit Cost</span>
+                          <CalculatorInput
+                            value={item.unitCost}
+                            onChange={(value) => handleUpdateItem(item.id, { unitCost: value })}
+                            className="h-8 text-sm w-full"
+                            placeholder="Cost"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Total</span>
+                          <div className="h-8 flex items-center font-medium text-sm">
+                            {formatCurrency(item.totalCost)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )
               ))
             )}
             {showQuickAdd && (
@@ -499,6 +618,7 @@ function LineItemRow({
   item,
   rowIndex,
   isSelected,
+  isChild,
   onToggleSelect,
   onUpdate,
   onDelete,
@@ -506,6 +626,7 @@ function LineItemRow({
   item: LineItem
   rowIndex: number
   isSelected: boolean
+  isChild?: boolean
   onToggleSelect: (id: string) => void
   onUpdate: (id: string, updates: Partial<LineItem>) => void
   onDelete: (id: string) => void
@@ -521,7 +642,7 @@ function LineItemRow({
   }, [item.id, onUpdate])
 
   return (
-    <tr className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
+    <tr className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''} ${isChild ? 'bg-muted/10' : ''}`}>
       {/* Selection */}
       <td className="px-2 py-2">
         <button
@@ -561,6 +682,7 @@ function LineItemRow({
 
       {/* Description - search dropdown linked to division */}
       <td className="px-3 py-2">
+        {isChild && <span className="inline-block w-4 border-l-2 border-b-2 border-border h-3 mr-1 align-middle mb-1" />}
         <DescriptionSearchInput
           value={item.description}
           division={item.division}
@@ -636,5 +758,189 @@ function LineItemRow({
         </Button>
       </td>
     </tr>
+  )
+}
+
+// Assembly group header row (collapsible)
+function GroupHeaderRow({
+  item,
+  isCollapsed,
+  onToggleCollapse,
+  childCount,
+  childTotal,
+  onUpdate,
+  onDelete,
+}: {
+  item: LineItem
+  isCollapsed: boolean
+  onToggleCollapse: (id: string) => void
+  childCount: number
+  childTotal: number
+  onUpdate: (id: string, updates: Partial<LineItem>) => void
+  onDelete: (id: string) => void
+}) {
+  const multiplier = item.assemblyMultiplier ?? 1
+  const scaledTotal = childTotal * multiplier
+
+  return (
+    <tr className="bg-primary/5 hover:bg-primary/10 transition-colors border-t-2 border-primary/20">
+      {/* Collapse toggle */}
+      <td className="px-2 py-2">
+        <button
+          onClick={() => onToggleCollapse(item.id)}
+          className="p-1 hover:bg-muted rounded min-w-[32px] min-h-[32px] flex items-center justify-center"
+          aria-label={isCollapsed ? 'Expand group' : 'Collapse group'}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-primary" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-primary" />
+          )}
+        </button>
+      </td>
+
+      {/* Icon */}
+      <td className="px-1 py-2 text-center">
+        <Layers className="w-4 h-4 text-primary mx-auto" />
+      </td>
+
+      {/* Blank division for group */}
+      <td className="px-3 py-2" />
+
+      {/* Assembly name */}
+      <td className="px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Input
+            value={item.description}
+            onChange={(e) => onUpdate(item.id, { description: e.target.value })}
+            className="h-8 text-sm font-semibold"
+          />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {childCount} item{childCount !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </td>
+
+      {/* Type - show "Assembly" badge */}
+      <td className="px-3 py-2 text-center">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+          ASM
+        </span>
+      </td>
+
+      {/* Multiplier as quantity */}
+      <td className="px-3 py-2">
+        <CalculatorInput
+          value={multiplier}
+          onChange={(value) => onUpdate(item.id, { assemblyMultiplier: value })}
+          className="h-8 text-sm text-right w-24"
+          placeholder="1"
+        />
+      </td>
+
+      {/* Unit */}
+      <td className="px-3 py-2 text-sm text-muted-foreground">
+        x
+      </td>
+
+      {/* Child total (base) */}
+      <td className="px-3 py-2 text-right text-sm text-muted-foreground">
+        {formatCurrency(childTotal)}
+      </td>
+
+      {/* Scaled total */}
+      <td className="px-3 py-2 text-right font-bold text-primary text-sm">
+        {formatCurrency(scaledTotal)}
+      </td>
+
+      {/* Delete group */}
+      <td className="px-3 py-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onDelete(item.id)}
+          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          aria-label={`Delete assembly ${item.description}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </td>
+    </tr>
+  )
+}
+
+// Mobile assembly group card
+function MobileGroupCard({
+  item,
+  isCollapsed,
+  onToggleCollapse,
+  childCount,
+  childTotal,
+  onDelete,
+  onUpdate,
+}: {
+  item: LineItem
+  isCollapsed: boolean
+  onToggleCollapse: (id: string) => void
+  childCount: number
+  childTotal: number
+  onDelete: (id: string) => void
+  onUpdate: (id: string, updates: Partial<LineItem>) => void
+}) {
+  const multiplier = item.assemblyMultiplier ?? 1
+
+  return (
+    <div className="p-3 bg-primary/5 border-t-2 border-primary/20 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => onToggleCollapse(item.id)}
+          className="flex items-center gap-2 flex-1 min-w-0"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-5 h-5 text-primary flex-shrink-0" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-primary flex-shrink-0" />
+          )}
+          <Layers className="w-4 h-4 text-primary flex-shrink-0" />
+          <div className="flex-1 min-w-0 text-left">
+            <div className="font-semibold text-sm truncate">{item.description}</div>
+            <div className="text-xs text-muted-foreground">
+              {childCount} items &middot; {item.notes || ''}
+            </div>
+          </div>
+        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onDelete(item.id)}
+          className="h-11 w-11 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+          aria-label={`Delete assembly ${item.description}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="flex items-center gap-3 pl-11 text-sm">
+        <div>
+          <span className="text-xs text-muted-foreground block">Qty</span>
+          <CalculatorInput
+            value={multiplier}
+            onChange={(value) => onUpdate(item.id, { assemblyMultiplier: value })}
+            className="h-8 text-sm w-16"
+            placeholder="1"
+          />
+        </div>
+        <div className="text-muted-foreground">x</div>
+        <div>
+          <span className="text-xs text-muted-foreground block">Base</span>
+          <div className="h-8 flex items-center text-sm">{formatCurrency(childTotal)}</div>
+        </div>
+        <div className="ml-auto">
+          <span className="text-xs text-muted-foreground block">Total</span>
+          <div className="h-8 flex items-center font-bold text-primary text-sm">
+            {formatCurrency(childTotal * multiplier)}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

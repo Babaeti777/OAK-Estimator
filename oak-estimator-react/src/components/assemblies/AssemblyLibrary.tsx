@@ -91,7 +91,7 @@ type TabFilter = 'all' | 'default' | 'my' | 'recent'
 
 export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
   const { user } = useAuth()
-  const { currentProject, addLineItem } = useProject()
+  const { currentProject, addLineItem, addAssemblyToProject } = useProject()
   const { toast } = useToast()
 
   // State
@@ -254,40 +254,62 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
     setReviewItems(prev => prev ? prev.filter((_, i) => i !== index) : prev)
   }, [])
 
-  // Add reviewed/edited items to project
+  // Add reviewed/edited items to project as assembly groups
   const handleAddToProject = useCallback(async () => {
     if (!currentProject) return
 
-    const itemsToAdd = reviewItems || selectedAssemblies.flatMap(assembly =>
-      assembly.items.map(item => ({
-        assemblyName: assembly.name,
-        division: item.division,
-        description: `[${assembly.name}] ${item.description}`,
-        type: item.type as string,
-        quantity: item.quantity,
-        unit: item.unit,
-        unitCost: item.unitCost,
-        notes: item.notes,
-        schedule: `Duration: ${assembly.estimatedDuration} ${assembly.durationUnit}`,
-      }))
-    )
-
-    if (itemsToAdd.length === 0) return
-
     setIsLoading(true)
     try {
-      for (const item of itemsToAdd) {
-        await addLineItem({
-          division: item.division,
-          description: item.description,
-          type: item.type as any,
-          quantity: item.quantity,
-          unit: item.unit,
-          unitCost: item.unitCost,
-          totalCost: item.quantity * item.unitCost,
-          notes: item.notes,
-          schedule: item.schedule,
-        })
+      if (reviewItems) {
+        // If user reviewed/edited items, group them by assemblyName
+        const byAssembly = new Map<string, typeof reviewItems>()
+        for (const item of reviewItems) {
+          const key = item.assemblyName || 'Assembly'
+          if (!byAssembly.has(key)) byAssembly.set(key, [])
+          byAssembly.get(key)!.push(item)
+        }
+
+        for (const [name, items] of byAssembly) {
+          const assembly = selectedAssemblies.find(a => a.name === name)
+          await addAssemblyToProject({
+            name,
+            category: assembly?.category,
+            items: items.map(item => ({
+              division: item.division,
+              description: item.description,
+              type: item.type as any,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitCost: item.unitCost,
+              totalCost: item.quantity * item.unitCost,
+              notes: item.notes,
+            })),
+            estimatedDuration: assembly?.estimatedDuration,
+            schedule: assembly
+              ? `Duration: ${assembly.estimatedDuration} ${assembly.durationUnit || 'days'}`
+              : undefined,
+          })
+        }
+      } else {
+        // No review — add each selected assembly as a group
+        for (const assembly of selectedAssemblies) {
+          await addAssemblyToProject({
+            name: assembly.name,
+            category: assembly.category,
+            items: assembly.items.map(item => ({
+              division: item.division,
+              description: item.description,
+              type: item.type,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitCost: item.unitCost,
+              totalCost: item.quantity * item.unitCost,
+              notes: item.notes,
+            })),
+            estimatedDuration: assembly.estimatedDuration,
+            schedule: `Duration: ${assembly.estimatedDuration} ${assembly.durationUnit || 'days'}`,
+          })
+        }
       }
 
       // Update usage count for non-default assemblies
@@ -300,9 +322,10 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
         }
       }
 
+      const totalItems = selectedAssemblies.reduce((s, a) => s + a.items.length, 0)
       toast({
-        title: 'Items added to project',
-        description: `Added ${itemsToAdd.length} items to project`,
+        title: 'Assemblies added to project',
+        description: `Added ${selectedAssemblies.length} assembly group${selectedAssemblies.length !== 1 ? 's' : ''} (${totalItems} items)`,
       })
 
       setSelectedAssemblies([])
@@ -311,13 +334,13 @@ export function AssemblyLibrary({ open, onOpenChange }: AssemblyLibraryProps) {
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
-        title: 'Failed to add items',
+        title: 'Failed to add assemblies',
         description: error instanceof Error ? error.message : 'Unknown error occurred',
       })
     } finally {
       setIsLoading(false)
     }
-  }, [currentProject, selectedAssemblies, addLineItem, user, toast, onOpenChange])
+  }, [currentProject, selectedAssemblies, reviewItems, addAssemblyToProject, user, toast, onOpenChange])
 
   // Edit a user assembly
   const handleEditAssembly = useCallback((assembly: Assembly) => {
