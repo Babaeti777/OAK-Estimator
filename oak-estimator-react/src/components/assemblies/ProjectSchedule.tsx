@@ -525,7 +525,7 @@ export function ProjectSchedule({ open, onOpenChange, assemblies: propAssemblies
                     >
                       {assembly.name}
                       <span className="ml-1 opacity-70">
-                        ({assembly.estimatedDuration}{assembly.durationUnit[0]})
+                        ({assembly.estimatedDuration}{(assembly.durationUnit || 'days')[0]})
                       </span>
                     </button>
                   )
