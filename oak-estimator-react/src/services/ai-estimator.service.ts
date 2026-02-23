@@ -387,8 +387,7 @@ export async function renderPDFPages(
     const canvas = document.createElement('canvas')
     canvas.width = viewport.width
     canvas.height = viewport.height
-    const ctx = canvas.getContext('2d')!
-    await page.render({ canvasContext: ctx, viewport }).promise
+    await page.render({ canvas, viewport }).promise
     const dataUrl = canvas.toDataURL('image/png')
     const base64 = dataUrl.split(',')[1]
 
@@ -397,8 +396,7 @@ export async function renderPDFPages(
     const thumbCanvas = document.createElement('canvas')
     thumbCanvas.width = thumbViewport.width
     thumbCanvas.height = thumbViewport.height
-    const thumbCtx = thumbCanvas.getContext('2d')!
-    await page.render({ canvasContext: thumbCtx, viewport: thumbViewport }).promise
+    await page.render({ canvas: thumbCanvas, viewport: thumbViewport }).promise
 
     const thumbnailUrl = thumbCanvas.toDataURL('image/png')
 
@@ -439,8 +437,7 @@ export async function renderPDFThumbnails(
     const canvas = document.createElement('canvas')
     canvas.width = thumbViewport.width
     canvas.height = thumbViewport.height
-    const ctx = canvas.getContext('2d')!
-    await page.render({ canvasContext: ctx, viewport: thumbViewport }).promise
+    await page.render({ canvas, viewport: thumbViewport }).promise
     results.push({ pageNumber: p, thumbnailUrl: canvas.toDataURL('image/png') })
     page.cleanup()
   }
