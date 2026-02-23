@@ -13,6 +13,22 @@ import type { Assembly, AssemblyCategory, AssemblyCategoryInfo } from '@/types'
 
 export const ASSEMBLY_CATEGORIES: AssemblyCategoryInfo[] = [
   {
+    id: 'design',
+    name: 'Design',
+    icon: 'PenTool',
+    description: 'Architectural design, drafting, and permits',
+    defaultPhase: 'pre-construction',
+    suggestedDependencies: [],
+  },
+  {
+    id: 'mep-engineering',
+    name: 'MEP Engineering',
+    icon: 'Cpu',
+    description: 'Mechanical, electrical, and plumbing engineering',
+    defaultPhase: 'pre-construction',
+    suggestedDependencies: ['design'],
+  },
+  {
     id: 'demolition',
     name: 'Demolition',
     icon: 'Hammer',
@@ -186,6 +202,184 @@ function genAssemblyId(): string {
 const now = Date.now()
 
 export const DEFAULT_ASSEMBLIES: Assembly[] = [
+  // ============================================
+  // DESIGN
+  // ============================================
+  {
+    id: genAssemblyId(),
+    userId: 'system',
+    name: 'Residential Design Package',
+    description: 'Full architectural design, construction drawings, and permit set for residential remodel',
+    category: 'design',
+    tags: ['architecture', 'design', 'residential', 'permit'],
+    items: [
+      { id: genItemId(), description: 'Schematic design', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 3500, notes: 'Concept layouts and sketches', relatedItems: [
+        { description: 'Schematic design (simple addition)', unitCost: 2500, notes: 'Straightforward layout' },
+        { description: 'Schematic design (complex renovation)', unitCost: 5000, notes: 'Multi-room redesign' },
+      ] },
+      { id: genItemId(), description: 'Design development', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 4500, notes: 'Detailed plans and material selections', relatedItems: [
+        { description: 'Design development (small project)', unitCost: 3000 },
+        { description: 'Design development (large project)', unitCost: 7500 },
+      ] },
+      { id: genItemId(), description: 'Construction documents (permit set)', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 5000, notes: 'Full permit-ready drawings', relatedItems: [
+        { description: 'Construction documents (basic)', unitCost: 3500, notes: 'Simple scope' },
+        { description: 'Construction documents (complex)', unitCost: 8000, notes: 'Multi-trade coordination' },
+      ] },
+      { id: genItemId(), description: 'Structural engineering', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 2500, relatedItems: [
+        { description: 'Structural engineering (beam calc only)', unitCost: 800, notes: 'Single beam/header' },
+        { description: 'Structural engineering (full package)', unitCost: 4500, notes: 'Foundation + framing + lateral' },
+      ] },
+      { id: genItemId(), description: 'Permit application fees', division: '01', type: 'misc', quantity: 1, unit: 'LS', unitCost: 1500, relatedItems: [
+        { description: 'Permit fees (minor remodel)', unitCost: 500 },
+        { description: 'Permit fees (major addition)', unitCost: 3000 },
+        { description: 'Permit fees (new construction)', unitCost: 5000 },
+      ] },
+      { id: genItemId(), description: 'Plan check / review fees', division: '01', type: 'misc', quantity: 1, unit: 'LS', unitCost: 750 },
+      { id: genItemId(), description: 'Site survey', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1200, relatedItems: [
+        { description: 'Site survey (boundary only)', unitCost: 600 },
+        { description: 'Site survey (topographic + boundary)', unitCost: 2000 },
+      ] },
+    ],
+    totalCost: 18950,
+    estimatedDuration: 30,
+    durationUnit: 'days',
+    phase: 'pre-construction',
+    isDefault: true,
+    usageCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: genAssemblyId(),
+    userId: 'system',
+    name: 'Kitchen Design Only',
+    description: 'Kitchen-specific design and layout planning',
+    category: 'design',
+    tags: ['kitchen', 'design', 'layout'],
+    items: [
+      { id: genItemId(), description: 'Kitchen design consultation', division: '01', type: 'subcontractor', quantity: 4, unit: 'HR', unitCost: 150, notes: 'Initial meetings and measurements' },
+      { id: genItemId(), description: 'Kitchen layout and 3D rendering', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 2000, relatedItems: [
+        { description: 'Basic layout (2D only)', unitCost: 800 },
+        { description: 'Full 3D rendering package', unitCost: 3500 },
+      ] },
+      { id: genItemId(), description: 'Cabinet shop drawings', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1500 },
+      { id: genItemId(), description: 'Material and finish selections', division: '01', type: 'subcontractor', quantity: 6, unit: 'HR', unitCost: 125, notes: 'Counters, tile, hardware, etc.' },
+    ],
+    totalCost: 4850,
+    estimatedDuration: 14,
+    durationUnit: 'days',
+    phase: 'pre-construction',
+    isDefault: true,
+    usageCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  },
+
+  // ============================================
+  // MEP ENGINEERING
+  // ============================================
+  {
+    id: genAssemblyId(),
+    userId: 'system',
+    name: 'MEP Engineering - Full Residential',
+    description: 'Complete mechanical, electrical, and plumbing engineering for residential project',
+    category: 'mep-engineering',
+    tags: ['mep', 'engineering', 'residential', 'mechanical', 'electrical', 'plumbing'],
+    items: [
+      { id: genItemId(), description: 'Mechanical engineering (HVAC design)', division: '23', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 3500, notes: 'Load calcs, duct layout, equipment sizing', relatedItems: [
+        { description: 'HVAC design (simple system)', unitCost: 2000, notes: 'Single zone, existing ductwork' },
+        { description: 'HVAC design (multi-zone)', unitCost: 5000, notes: 'Zoned system with new ductwork' },
+        { description: 'HVAC design (radiant/hydronic)', unitCost: 6000, notes: 'Radiant floor heating design' },
+      ] },
+      { id: genItemId(), description: 'Electrical engineering', division: '26', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 3000, notes: 'Panel sizing, circuit layout, lighting design', relatedItems: [
+        { description: 'Electrical engineering (panel upgrade only)', unitCost: 1500 },
+        { description: 'Electrical engineering (full house)', unitCost: 4500, notes: 'New service + all circuits' },
+      ] },
+      { id: genItemId(), description: 'Plumbing engineering', division: '22', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 2500, notes: 'Piping layout, fixture schedules, water heater sizing', relatedItems: [
+        { description: 'Plumbing engineering (kitchen/bath only)', unitCost: 1500 },
+        { description: 'Plumbing engineering (whole house repipe)', unitCost: 3500 },
+      ] },
+      { id: genItemId(), description: 'Energy compliance (Title 24 / code)', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1500, notes: 'Energy modeling and compliance docs', relatedItems: [
+        { description: 'Energy compliance (prescriptive)', unitCost: 800, notes: 'Simple prescriptive path' },
+        { description: 'Energy compliance (performance modeling)', unitCost: 2500, notes: 'Computer energy modeling' },
+      ] },
+      { id: genItemId(), description: 'MEP coordination drawings', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 2000, notes: 'Clash detection and coordination' },
+      { id: genItemId(), description: 'Equipment schedules and specs', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1000 },
+    ],
+    totalCost: 13500,
+    estimatedDuration: 21,
+    durationUnit: 'days',
+    phase: 'pre-construction',
+    dependencies: ['design'],
+    isDefault: true,
+    usageCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: genAssemblyId(),
+    userId: 'system',
+    name: 'MEP Engineering - Commercial TI',
+    description: 'MEP engineering for commercial tenant improvement',
+    category: 'mep-engineering',
+    tags: ['mep', 'engineering', 'commercial', 'tenant-improvement'],
+    items: [
+      { id: genItemId(), description: 'Mechanical engineering (HVAC modifications)', division: '23', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 5000, notes: 'VAV boxes, RTU modifications, controls', relatedItems: [
+        { description: 'HVAC engineering (minor TI)', unitCost: 2500 },
+        { description: 'HVAC engineering (full floor buildout)', unitCost: 10000 },
+      ] },
+      { id: genItemId(), description: 'Electrical engineering', division: '26', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 4500, notes: 'Power distribution, lighting, low-voltage', relatedItems: [
+        { description: 'Electrical engineering (lighting only)', unitCost: 2000 },
+        { description: 'Electrical engineering (full distribution)', unitCost: 7500 },
+      ] },
+      { id: genItemId(), description: 'Plumbing engineering', division: '22', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 3000, notes: 'Break room, restrooms, specialty' },
+      { id: genItemId(), description: 'Fire protection engineering', division: '21', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 3500, notes: 'Sprinkler design and calcs', relatedItems: [
+        { description: 'Fire protection (minor relocation)', unitCost: 1500 },
+        { description: 'Fire protection (full redesign)', unitCost: 6000 },
+      ] },
+      { id: genItemId(), description: 'Energy compliance and Title 24', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 2000 },
+      { id: genItemId(), description: 'MEP coordination and BIM', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 3000, notes: 'BIM coordination and clash detection' },
+      { id: genItemId(), description: 'Commissioning plan', division: '01', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 2000, notes: 'Cx plan and functional testing' },
+    ],
+    totalCost: 23000,
+    estimatedDuration: 28,
+    durationUnit: 'days',
+    phase: 'pre-construction',
+    dependencies: ['design'],
+    isDefault: true,
+    usageCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: genAssemblyId(),
+    userId: 'system',
+    name: 'Electrical Engineering Only',
+    description: 'Standalone electrical engineering for panel upgrade or rewire',
+    category: 'mep-engineering',
+    tags: ['electrical', 'engineering', 'panel', 'rewire'],
+    items: [
+      { id: genItemId(), description: 'Electrical load calculation', division: '26', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 800 },
+      { id: genItemId(), description: 'Panel schedule and one-line diagram', division: '26', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1200 },
+      { id: genItemId(), description: 'Circuit layout drawings', division: '26', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1500, relatedItems: [
+        { description: 'Circuit layout (partial - kitchen/bath)', unitCost: 800 },
+        { description: 'Circuit layout (whole house)', unitCost: 2500 },
+      ] },
+      { id: genItemId(), description: 'Lighting plan', division: '26', type: 'subcontractor', quantity: 1, unit: 'LS', unitCost: 1000, relatedItems: [
+        { description: 'Lighting plan (basic)', unitCost: 500 },
+        { description: 'Lighting plan (with photometric calcs)', unitCost: 2000 },
+      ] },
+    ],
+    totalCost: 4500,
+    estimatedDuration: 10,
+    durationUnit: 'days',
+    phase: 'pre-construction',
+    isDefault: true,
+    usageCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  },
+
   // ============================================
   // DEMOLITION
   // ============================================
