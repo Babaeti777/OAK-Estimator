@@ -12,13 +12,14 @@ import { QuickAddRow } from "@/components/line-items/QuickAddRow"
 import { TemplatesManager } from "@/components/line-items/TemplatesManager"
 import { DescriptionSearchInput } from "@/components/line-items/DescriptionSearchInput"
 import type { LineItem } from "@/types"
-import { Trash2, Table, Search, CheckSquare, Square, X, Calculator, ChevronDown, ChevronRight, Layers } from "lucide-react"
+import { Trash2, Table, Search, CheckSquare, Square, X, Calculator, ChevronDown, ChevronRight, Layers, RotateCcw } from "lucide-react"
 import { formatCurrency, getErrorMessage } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { getDivisionLabel, DIVISIONS_ALL } from "@/data/divisions"
 import type { DivisionItem } from "@/data/division-items"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useColumnWidths, type ColumnDef } from "@/hooks/useColumnWidths"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -38,6 +39,19 @@ const TYPE_LABELS: Record<LineItem['type'], { letter: string; color: string }> =
 
 const ROW_HEIGHT = 48
 
+// Resizable column definitions (key → default px width).
+// "select" and "rowNum" are fixed; the rest are user-resizable.
+// "description" is excluded — it takes all remaining space.
+const TABLE_COLUMNS: ColumnDef[] = [
+  { key: 'division',  defaultWidth: 96,  minWidth: 64,  maxWidth: 200 },
+  { key: 'type',      defaultWidth: 56,  minWidth: 40,  maxWidth: 120 },
+  { key: 'quantity',  defaultWidth: 112, minWidth: 72,  maxWidth: 200 },
+  { key: 'unit',      defaultWidth: 80,  minWidth: 56,  maxWidth: 160 },
+  { key: 'unitCost',  defaultWidth: 112, minWidth: 72,  maxWidth: 200 },
+  { key: 'total',     defaultWidth: 112, minWidth: 72,  maxWidth: 200 },
+  { key: 'actions',   defaultWidth: 56,  minWidth: 48,  maxWidth: 100 },
+]
+
 interface LineItemsTableProps {
   selectedDivision: string
   onClearDivision: () => void
@@ -51,6 +65,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const showQuickAdd = true
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const confirm = useConfirmDialog()
+  const { widths: colWidths, startResize, resetWidths } = useColumnWidths('line-items', TABLE_COLUMNS)
 
   const toggleGroupCollapse = useCallback((groupId: string) => {
     setCollapsedGroups(prev => {
@@ -374,9 +389,21 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               style={useVirtual ? { maxHeight: '600px' } : undefined}
             >
               <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: 40 }} />
+                  <col style={{ width: 40 }} />
+                  <col style={{ width: colWidths.division }} />
+                  <col /> {/* description — takes remaining space */}
+                  <col style={{ width: colWidths.type }} />
+                  <col style={{ width: colWidths.quantity }} />
+                  <col style={{ width: colWidths.unit }} />
+                  <col style={{ width: colWidths.unitCost }} />
+                  <col style={{ width: colWidths.total }} />
+                  <col style={{ width: colWidths.actions }} />
+                </colgroup>
                 <thead className="bg-muted/50 sticky top-0 z-10">
                   <tr className="border-b">
-                    <th className="px-2 py-2 w-10">
+                    <th className="px-2 py-2">
                       <button
                         onClick={toggleSelectAll}
                         className="p-1 hover:bg-muted rounded min-w-[36px] min-h-[36px] flex items-center justify-center"
@@ -389,33 +416,15 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                         )}
                       </button>
                     </th>
-                    <th className="px-1 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-10">
-                      #
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">
-                      Division
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-14">
-                      Type
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
-                      Quantity
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
-                      Unit
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
-                      Unit Cost
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
-                      Total
-                    </th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-14">
-                      Actions
-                    </th>
+                    <ResizableTh align="center">#</ResizableTh>
+                    <ResizableTh align="left" colKey="division" onStartResize={startResize}>Division</ResizableTh>
+                    <ResizableTh align="left">Description</ResizableTh>
+                    <ResizableTh align="center" colKey="type" onStartResize={startResize}>Type</ResizableTh>
+                    <ResizableTh align="right" colKey="quantity" onStartResize={startResize}>Quantity</ResizableTh>
+                    <ResizableTh align="left" colKey="unit" onStartResize={startResize}>Unit</ResizableTh>
+                    <ResizableTh align="right" colKey="unitCost" onStartResize={startResize}>Unit Cost</ResizableTh>
+                    <ResizableTh align="right" colKey="total" onStartResize={startResize}>Total</ResizableTh>
+                    <ResizableTh align="center">Actions</ResizableTh>
                   </tr>
                 </thead>
                 <tbody className="bg-background divide-y divide-border">
@@ -613,10 +622,46 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               <Calculator className="w-3 h-3" />
               Quantity supports math: 2+3, 10*5, (4+2)*3
             </span>
+            <button
+              onClick={resetWidths}
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+              title="Reset column widths to defaults"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset columns
+            </button>
           </div>
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// Resizable table header cell with drag handle on right edge.
+function ResizableTh({
+  children,
+  align = 'left',
+  colKey,
+  onStartResize,
+}: {
+  children: React.ReactNode
+  align?: 'left' | 'center' | 'right'
+  colKey?: string
+  onStartResize?: (colKey: string, e: React.MouseEvent) => void
+}) {
+  const textAlign = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
+  return (
+    <th className={`relative px-3 py-2 ${textAlign} text-xs font-medium text-muted-foreground uppercase tracking-wider select-none`}>
+      {children}
+      {colKey && onStartResize && (
+        <span
+          onMouseDown={(e) => onStartResize(colKey, e)}
+          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors"
+          role="separator"
+          aria-orientation="vertical"
+        />
+      )}
+    </th>
   )
 }
 
