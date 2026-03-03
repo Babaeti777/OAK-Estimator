@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { UnitSelect } from "@/components/ui/unit-select"
 import { useProject } from "@/contexts/ProjectContext"
 import { Plus } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
@@ -157,11 +158,16 @@ export function AddLineItemDialog() {
 
             <div className="space-y-2">
               <Label htmlFor="unit">Unit</Label>
-              <Input
+              <UnitSelect
                 id="unit"
-                placeholder="EA, SF, CY, etc."
                 value={unit}
-                onChange={(e) => setUnit(e.target.value)}
+                onChange={setUnit}
+                onConvert={(result) => {
+                  setQuantity(result.newQuantity)
+                  setUnitCost(result.newUnitCost)
+                }}
+                quantity={quantity}
+                unitCost={unitCost}
               />
             </div>
           </div>

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { CalculatorInput } from "@/components/ui/calculator-input"
+import { UnitSelect } from "@/components/ui/unit-select"
 import { DescriptionSearchInput } from "@/components/line-items/DescriptionSearchInput"
 import { useProject } from "@/contexts/ProjectContext"
 import { Plus, ChevronUp, ChevronDown } from "lucide-react"
@@ -222,11 +222,14 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
 
         {/* Unit */}
         <td className="px-3 py-2">
-          <Input
+          <UnitSelect
             value={formData.unit}
-            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            onChange={(unit) => setFormData(prev => ({ ...prev, unit }))}
+            onConvert={(result) => setFormData(prev => ({ ...prev, quantity: result.newQuantity, unitCost: result.newUnitCost }))}
+            quantity={formData.quantity}
+            unitCost={formData.unitCost}
             className="h-8 text-sm w-full"
-            placeholder="EA"
+            aria-label="Unit"
           />
         </td>
 
