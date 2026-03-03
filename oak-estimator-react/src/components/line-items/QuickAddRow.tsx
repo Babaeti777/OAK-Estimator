@@ -8,7 +8,7 @@ import { useProject } from "@/contexts/ProjectContext"
 import { Plus, ChevronUp, ChevronDown } from "lucide-react"
 import type { LineItem } from "@/types"
 import { toast } from "@/hooks/use-toast"
-import { DIVISIONS_ALL } from "@/data/divisions"
+import { DIVISIONS_ALL, getDivisionLabel } from "@/data/divisions"
 import type { DivisionItem } from "@/data/division-items"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
@@ -165,25 +165,26 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
         </td>
 
         {/* Empty cell for row number column */}
-        <td className="px-1 py-2 w-8" />
+        <td className="px-1 py-2" />
 
         {/* Division */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2">
           <Select
             value={formData.division}
             onChange={(e) => setFormData({ ...formData, division: e.target.value })}
-            className="h-8 text-sm"
+            className="h-8 text-sm w-full"
+            title={getDivisionLabel(formData.division)}
           >
             {DIVISIONS_ALL.map(div => (
               <option key={div.code} value={div.code}>
-                {div.code} - {div.name}
+                {div.code}
               </option>
             ))}
           </Select>
         </td>
 
         {/* Description - search dropdown linked to division */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2 min-w-0">
           <DescriptionSearchInput
             value={formData.description}
             division={formData.division}
@@ -195,7 +196,7 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
         </td>
 
         {/* Type */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2">
           <Select
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as LineItem['type'] })}
@@ -210,42 +211,42 @@ export function QuickAddRow({ onAdd }: QuickAddRowProps) {
         </td>
 
         {/* Quantity - supports calculator expressions */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2">
           <CalculatorInput
             value={formData.quantity}
             onChange={(value) => setFormData({ ...formData, quantity: value })}
-            className="h-8 text-sm text-right w-28"
+            className="h-8 text-sm text-right w-full"
             placeholder="e.g. 2+3"
           />
         </td>
 
         {/* Unit */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2">
           <Input
             value={formData.unit}
             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-            className="h-8 text-sm w-20"
+            className="h-8 text-sm w-full"
             placeholder="EA"
           />
         </td>
 
         {/* Unit Cost - supports calculator expressions */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2">
           <CalculatorInput
             value={formData.unitCost}
             onChange={(value) => setFormData({ ...formData, unitCost: value })}
-            className="h-8 text-sm text-right w-28"
+            className="h-8 text-sm text-right w-full"
             placeholder="e.g. 100*1.1"
           />
         </td>
 
         {/* Total (calculated) */}
-        <td className="px-4 py-2 text-right text-sm font-medium">
+        <td className="px-3 py-2 text-right text-sm font-medium">
           ${(formData.quantity * formData.unitCost).toFixed(2)}
         </td>
 
         {/* Actions */}
-        <td className="px-4 py-2">
+        <td className="px-3 py-2">
           <div className="flex flex-col items-start gap-1">
             <Button
               size="sm"

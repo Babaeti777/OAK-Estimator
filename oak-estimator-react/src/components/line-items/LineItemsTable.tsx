@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react"
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,12 +27,12 @@ const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'misc', label: 'Misc' },
 ]
 
-const TYPE_DOT_COLORS: Record<LineItem['type'], string> = {
-  material: 'bg-blue-500',
-  labor: 'bg-amber-500',
-  equipment: 'bg-emerald-500',
-  subcontractor: 'bg-purple-500',
-  misc: 'bg-slate-500',
+const TYPE_LABELS: Record<LineItem['type'], { letter: string; color: string }> = {
+  material:      { letter: 'M', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400' },
+  labor:         { letter: 'L', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' },
+  equipment:     { letter: 'E', color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' },
+  subcontractor: { letter: 'S', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-400' },
+  misc:          { letter: 'X', color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400' },
 }
 
 const ROW_HEIGHT = 48
@@ -256,13 +256,20 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
     if (!confirmed) return
 
     try {
+      const idsToDelete = new Set<string>(selectedIds)
       for (const itemId of selectedIds) {
-        await deleteLineItem(itemId)
+        const item = currentProject.lineItems.find(i => i.id === itemId)
+        if (item?.isGroup) {
+          currentProject.lineItems
+            .filter(c => c.parentId === itemId)
+            .forEach(c => idsToDelete.add(c.id))
+        }
       }
+      await deleteLineItems(Array.from(idsToDelete))
       setSelectedIds(new Set())
       toast({
         title: "Items deleted",
-        description: `${selectedIds.size} items have been deleted`,
+        description: `${idsToDelete.size} items have been deleted`,
       })
     } catch (error: unknown) {
       toast({
@@ -365,7 +372,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               className="overflow-auto"
               style={useVirtual ? { maxHeight: '600px' } : undefined}
             >
-              <table className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-muted/50 sticky top-0 z-10">
                   <tr className="border-b">
                     <th className="px-2 py-2 w-10">
@@ -381,31 +388,31 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                         )}
                       </button>
                     </th>
-                    <th className="px-1 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-8">
+                    <th className="px-1 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-10">
                       #
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">
                       Division
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Description
                     </th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-12">
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-14">
                       Type
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
                       Quantity
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">
                       Unit
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
                       Unit Cost
                     </th>
-                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-28">
                       Total
                     </th>
-                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-16">
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider w-14">
                       Actions
                     </th>
                   </tr>
@@ -613,7 +620,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
 }
 
 // Fix #8: Extracted row component without Framer Motion, using CSS transitions
-function LineItemRow({
+const LineItemRow = memo(function LineItemRow({
   item,
   rowIndex,
   isSelected,
@@ -658,7 +665,7 @@ function LineItemRow({
       </td>
 
       {/* Row number */}
-      <td className="px-1 py-2 text-center text-xs text-muted-foreground tabular-nums w-8">
+      <td className="px-1 py-2 text-center text-xs text-muted-foreground tabular-nums">
         {rowIndex}
       </td>
 
@@ -667,7 +674,7 @@ function LineItemRow({
         <Select
           value={item.division}
           onChange={(e) => onUpdate(item.id, { division: e.target.value })}
-          className="h-8 text-sm w-16"
+          className="h-8 text-sm w-full"
           title={getDivisionLabel(item.division)}
           aria-label="Division"
         >
@@ -680,7 +687,7 @@ function LineItemRow({
       </td>
 
       {/* Description - search dropdown linked to division */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-2 min-w-0">
         {isChild && <span className="inline-block w-4 border-l-2 border-b-2 border-border h-3 mr-1 align-middle mb-1" />}
         <DescriptionSearchInput
           value={item.description}
@@ -704,7 +711,9 @@ function LineItemRow({
           aria-label={`Type: ${ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}. Click to change.`}
           className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-muted transition-colors"
         >
-          <span className={`inline-block w-3 h-3 rounded-full ${TYPE_DOT_COLORS[item.type] ?? 'bg-slate-500'}`} />
+          <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-bold ${TYPE_LABELS[item.type]?.color ?? 'bg-slate-500/15 text-slate-700 dark:text-slate-400'}`}>
+            {TYPE_LABELS[item.type]?.letter ?? '?'}
+          </span>
         </button>
       </td>
 
@@ -713,7 +722,7 @@ function LineItemRow({
         <CalculatorInput
           value={item.quantity}
           onChange={(value) => onUpdate(item.id, { quantity: value })}
-          className="h-8 text-sm text-right w-24"
+          className="h-8 text-sm text-right w-full"
           placeholder="e.g. 2+3"
         />
       </td>
@@ -723,7 +732,7 @@ function LineItemRow({
         <Input
           value={item.unit}
           onChange={(e) => onUpdate(item.id, { unit: e.target.value })}
-          className="h-8 text-sm w-16"
+          className="h-8 text-sm w-full"
           placeholder="EA"
           aria-label="Unit"
         />
@@ -734,7 +743,7 @@ function LineItemRow({
         <CalculatorInput
           value={item.unitCost}
           onChange={(value) => onUpdate(item.id, { unitCost: value })}
-          className="h-8 text-sm text-right w-24"
+          className="h-8 text-sm text-right w-full"
           placeholder="e.g. 100*1.1"
         />
       </td>
@@ -758,10 +767,10 @@ function LineItemRow({
       </td>
     </tr>
   )
-}
+})
 
 // Assembly group header row (collapsible)
-function GroupHeaderRow({
+const GroupHeaderRow = memo(function GroupHeaderRow({
   item,
   isCollapsed,
   onToggleCollapse,
@@ -832,7 +841,7 @@ function GroupHeaderRow({
         <CalculatorInput
           value={multiplier}
           onChange={(value) => onUpdate(item.id, { assemblyMultiplier: value })}
-          className="h-8 text-sm text-right w-24"
+          className="h-8 text-sm text-right w-full"
           placeholder="1"
         />
       </td>
@@ -866,7 +875,7 @@ function GroupHeaderRow({
       </td>
     </tr>
   )
-}
+})
 
 // Mobile assembly group card
 function MobileGroupCard({
