@@ -18,6 +18,7 @@ interface DescriptionSearchInputProps {
   onSelectItem?: (item: DivisionItem) => void
   placeholder?: string
   className?: string
+  style?: React.CSSProperties
 }
 
 export function DescriptionSearchInput({
@@ -27,6 +28,7 @@ export function DescriptionSearchInput({
   onSelectItem,
   placeholder = 'Search description...',
   className,
+  style,
 }: DescriptionSearchInputProps) {
   const [results, setResults] = useState<DivisionItem[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -147,6 +149,7 @@ export function DescriptionSearchInput({
         onFocus={handleFocus}
         placeholder={placeholder}
         className={className}
+        style={style}
         autoComplete="off"
         aria-label="Description"
       />

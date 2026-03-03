@@ -18,6 +18,7 @@ interface UnitSelectProps {
   /** Current unit cost — needed to calculate conversion preview. */
   unitCost?: number
   className?: string
+  style?: React.CSSProperties
   id?: string
   'aria-label'?: string
 }
@@ -29,6 +30,7 @@ export function UnitSelect({
   quantity = 0,
   unitCost = 0,
   className,
+  style,
   id,
   'aria-label': ariaLabel,
 }: UnitSelectProps) {
@@ -91,6 +93,7 @@ export function UnitSelect({
         value={normalised}
         onChange={handleChange}
         className={className}
+        style={style}
         id={id}
         aria-label={ariaLabel}
       >
