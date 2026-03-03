@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { CalculatorInput } from "@/components/ui/calculator-input"
+import { UnitSelect } from "@/components/ui/unit-select"
 import { useProject } from "@/contexts/ProjectContext"
 import { MaterialBrowser } from "@/components/materials/MaterialBrowser"
 import { AddLineItemDialog } from "@/components/line-items/AddLineItemDialog"
@@ -729,11 +730,13 @@ const LineItemRow = memo(function LineItemRow({
 
       {/* Unit */}
       <td className="px-3 py-2">
-        <Input
+        <UnitSelect
           value={item.unit}
-          onChange={(e) => onUpdate(item.id, { unit: e.target.value })}
+          onChange={(unit) => onUpdate(item.id, { unit })}
+          onConvert={(result) => onUpdate(item.id, { quantity: result.newQuantity, unitCost: result.newUnitCost })}
+          quantity={item.quantity}
+          unitCost={item.unitCost}
           className="h-8 text-sm w-full"
-          placeholder="EA"
           aria-label="Unit"
         />
       </td>
