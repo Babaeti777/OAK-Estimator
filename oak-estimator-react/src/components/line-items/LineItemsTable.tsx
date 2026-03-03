@@ -20,6 +20,7 @@ import type { DivisionItem } from "@/data/division-items"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { useConfirmDialog } from "@/components/ui/confirm-dialog"
 import { useColumnWidths, type ColumnDef } from "@/hooks/useColumnWidths"
+import { useRowHeight } from "@/hooks/useRowHeight"
 
 const ITEM_TYPES: Array<{ value: LineItem['type']; label: string }> = [
   { value: 'material', label: 'Material' },
@@ -37,7 +38,8 @@ const TYPE_LABELS: Record<LineItem['type'], { letter: string; color: string }> =
   misc:          { letter: 'X', color: 'bg-slate-500/15 text-slate-700 dark:text-slate-400' },
 }
 
-const ROW_HEIGHT = 48
+const DEFAULT_ROW_HEIGHT = 48
+const ROW_HEIGHT_CONFIG = { defaultHeight: DEFAULT_ROW_HEIGHT, minHeight: 32, maxHeight: 80 }
 
 // Resizable column definitions (key → default px width).
 // "select" and "rowNum" are fixed; the rest are user-resizable.
@@ -65,7 +67,11 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const showQuickAdd = true
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const confirm = useConfirmDialog()
-  const { widths: colWidths, startResize, resetWidths } = useColumnWidths('line-items', TABLE_COLUMNS)
+  const { widths: colWidths, startResize: startColResize, resetWidths: resetColWidths } = useColumnWidths('line-items', TABLE_COLUMNS)
+  const { height: rowHeight, startResize: startRowResize, resetHeight: resetRowHeight } = useRowHeight('line-items', ROW_HEIGHT_CONFIG)
+
+  // Derive inner input height from row height (row height minus vertical padding)
+  const inputHeight = Math.max(24, rowHeight - 16)
 
   const toggleGroupCollapse = useCallback((groupId: string) => {
     setCollapsedGroups(prev => {
@@ -195,7 +201,7 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
   const rowVirtualizer = useVirtualizer({
     count: filteredItems.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: 10,
   })
 
@@ -417,14 +423,30 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                       </button>
                     </th>
                     <ResizableTh align="center">#</ResizableTh>
-                    <ResizableTh align="left" colKey="division" onStartResize={startResize}>Division</ResizableTh>
+                    <ResizableTh align="left" colKey="division" onStartResize={startColResize}>Division</ResizableTh>
                     <ResizableTh align="left">Description</ResizableTh>
-                    <ResizableTh align="center" colKey="type" onStartResize={startResize}>Type</ResizableTh>
-                    <ResizableTh align="right" colKey="quantity" onStartResize={startResize}>Quantity</ResizableTh>
-                    <ResizableTh align="left" colKey="unit" onStartResize={startResize}>Unit</ResizableTh>
-                    <ResizableTh align="right" colKey="unitCost" onStartResize={startResize}>Unit Cost</ResizableTh>
-                    <ResizableTh align="right" colKey="total" onStartResize={startResize}>Total</ResizableTh>
+                    <ResizableTh align="center" colKey="type" onStartResize={startColResize}>Type</ResizableTh>
+                    <ResizableTh align="right" colKey="quantity" onStartResize={startColResize}>Quantity</ResizableTh>
+                    <ResizableTh align="left" colKey="unit" onStartResize={startColResize}>Unit</ResizableTh>
+                    <ResizableTh align="right" colKey="unitCost" onStartResize={startColResize}>Unit Cost</ResizableTh>
+                    <ResizableTh align="right" colKey="total" onStartResize={startColResize}>Total</ResizableTh>
                     <ResizableTh align="center">Actions</ResizableTh>
+                  </tr>
+                  {/* Row-height drag handle — thin bar at bottom of header */}
+                  <tr>
+                    <th
+                      colSpan={10}
+                      className="p-0 h-1 relative group"
+                      style={{ lineHeight: 0 }}
+                    >
+                      <span
+                        onMouseDown={startRowResize}
+                        className="absolute inset-x-0 bottom-0 h-1.5 cursor-row-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-10"
+                        role="separator"
+                        aria-orientation="horizontal"
+                        title="Drag to adjust row height"
+                      />
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-background divide-y divide-border">
@@ -455,6 +477,8 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                               childTotal={currentProject.lineItems.filter(c => c.parentId === item.id).reduce((s, c) => s + c.totalCost, 0)}
                               onUpdate={handleUpdateItem}
                               onDelete={handleDeleteItem}
+                              rowHeight={rowHeight}
+                              inputHeight={inputHeight}
                             />
                           )
                         }
@@ -468,6 +492,8 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                             onToggleSelect={toggleSelectItem}
                             onUpdate={handleUpdateItem}
                             onDelete={handleDeleteItem}
+                            rowHeight={rowHeight}
+                            inputHeight={inputHeight}
                           />
                         )
                       })}
@@ -493,6 +519,8 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                           childTotal={currentProject.lineItems.filter(c => c.parentId === item.id).reduce((s, c) => s + c.totalCost, 0)}
                           onUpdate={handleUpdateItem}
                           onDelete={handleDeleteItem}
+                          rowHeight={rowHeight}
+                          inputHeight={inputHeight}
                         />
                       ) : (
                         <LineItemRow
@@ -504,6 +532,8 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
                           onToggleSelect={toggleSelectItem}
                           onUpdate={handleUpdateItem}
                           onDelete={handleDeleteItem}
+                          rowHeight={rowHeight}
+                          inputHeight={inputHeight}
                         />
                       )
                     ))
@@ -623,12 +653,12 @@ export function LineItemsTable({ selectedDivision, onClearDivision }: LineItemsT
               Quantity supports math: 2+3, 10*5, (4+2)*3
             </span>
             <button
-              onClick={resetWidths}
+              onClick={() => { resetColWidths(); resetRowHeight(); }}
               className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-              title="Reset column widths to defaults"
+              title="Reset column widths and row height to defaults"
             >
               <RotateCcw className="w-3 h-3" />
-              Reset columns
+              Reset layout
             </button>
           </div>
         </div>
@@ -674,6 +704,8 @@ const LineItemRow = memo(function LineItemRow({
   onToggleSelect,
   onUpdate,
   onDelete,
+  rowHeight,
+  inputHeight,
 }: {
   item: LineItem
   rowIndex: number
@@ -682,6 +714,8 @@ const LineItemRow = memo(function LineItemRow({
   onToggleSelect: (id: string) => void
   onUpdate: (id: string, updates: Partial<LineItem>) => void
   onDelete: (id: string) => void
+  rowHeight: number
+  inputHeight: number
 }) {
   // When a description item is selected from the dropdown, auto-fill type, unit, and unitCost
   const handleDescriptionSelect = useCallback((selectedItem: DivisionItem) => {
@@ -694,9 +728,9 @@ const LineItemRow = memo(function LineItemRow({
   }, [item.id, onUpdate])
 
   return (
-    <tr className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''} ${isChild ? 'bg-muted/10' : ''}`}>
+    <tr style={{ height: rowHeight }} className={`hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''} ${isChild ? 'bg-muted/10' : ''}`}>
       {/* Selection */}
-      <td className="px-2 py-2">
+      <td className="px-2 py-1">
         <button
           onClick={() => onToggleSelect(item.id)}
           className="p-1 hover:bg-muted rounded min-w-[32px] min-h-[32px] flex items-center justify-center"
@@ -711,16 +745,17 @@ const LineItemRow = memo(function LineItemRow({
       </td>
 
       {/* Row number */}
-      <td className="px-1 py-2 text-center text-xs text-muted-foreground tabular-nums">
+      <td className="px-1 py-1 text-center text-xs text-muted-foreground tabular-nums">
         {rowIndex}
       </td>
 
       {/* Division - editable dropdown, shows code only with full name as tooltip */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <Select
           value={item.division}
           onChange={(e) => onUpdate(item.id, { division: e.target.value })}
-          className="h-8 text-sm w-full"
+          className="text-sm w-full"
+          style={{ height: inputHeight }}
           title={getDivisionLabel(item.division)}
           aria-label="Division"
         >
@@ -733,20 +768,21 @@ const LineItemRow = memo(function LineItemRow({
       </td>
 
       {/* Description - search dropdown linked to division */}
-      <td className="px-3 py-2 min-w-0">
+      <td className="px-3 py-1 min-w-0">
         {isChild && <span className="inline-block w-4 border-l-2 border-b-2 border-border h-3 mr-1 align-middle mb-1" />}
         <DescriptionSearchInput
           value={item.description}
           division={item.division}
           onChange={(value) => onUpdate(item.id, { description: value })}
           onSelectItem={handleDescriptionSelect}
-          className="h-8 text-sm"
+          className="text-sm"
+          style={{ height: inputHeight }}
           placeholder="Search description..."
         />
       </td>
 
       {/* Type - color-coded dot with tooltip, click to cycle type */}
-      <td className="px-3 py-2 text-center">
+      <td className="px-3 py-1 text-center">
         <button
           onClick={() => {
             const currentIndex = ITEM_TYPES.findIndex(t => t.value === item.type)
@@ -755,7 +791,8 @@ const LineItemRow = memo(function LineItemRow({
           }}
           title={ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}
           aria-label={`Type: ${ITEM_TYPES.find(t => t.value === item.type)?.label ?? item.type}. Click to change.`}
-          className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-muted transition-colors"
+          className="inline-flex items-center justify-center rounded hover:bg-muted transition-colors"
+          style={{ width: inputHeight, height: inputHeight }}
         >
           <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-xs font-bold ${TYPE_LABELS[item.type]?.color ?? 'bg-slate-500/15 text-slate-700 dark:text-slate-400'}`}>
             {TYPE_LABELS[item.type]?.letter ?? '?'}
@@ -764,50 +801,54 @@ const LineItemRow = memo(function LineItemRow({
       </td>
 
       {/* Quantity */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <CalculatorInput
           value={item.quantity}
           onChange={(value) => onUpdate(item.id, { quantity: value })}
-          className="h-8 text-sm text-right w-full"
+          className="text-sm text-right w-full"
+          style={{ height: inputHeight }}
           placeholder="e.g. 2+3"
         />
       </td>
 
       {/* Unit */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <UnitSelect
           value={item.unit}
           onChange={(unit) => onUpdate(item.id, { unit })}
           onConvert={(result) => onUpdate(item.id, { quantity: result.newQuantity, unitCost: result.newUnitCost })}
           quantity={item.quantity}
           unitCost={item.unitCost}
-          className="h-8 text-sm w-full"
+          className="text-sm w-full"
+          style={{ height: inputHeight }}
           aria-label="Unit"
         />
       </td>
 
       {/* Unit Cost */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <CalculatorInput
           value={item.unitCost}
           onChange={(value) => onUpdate(item.id, { unitCost: value })}
-          className="h-8 text-sm text-right w-full"
+          className="text-sm text-right w-full"
+          style={{ height: inputHeight }}
           placeholder="e.g. 100*1.1"
         />
       </td>
 
       {/* Total */}
-      <td className="px-3 py-2 text-right font-semibold text-primary text-sm leading-relaxed">
+      <td className="px-3 py-1 text-right font-semibold text-primary text-sm leading-relaxed">
         {formatCurrency(item.totalCost)}
       </td>
 
       {/* Actions */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onDelete(item.id)}
-          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          style={{ width: inputHeight, height: inputHeight }}
           aria-label={`Delete ${item.description}`}
         >
           <Trash2 className="w-4 h-4" />
@@ -826,6 +867,8 @@ const GroupHeaderRow = memo(function GroupHeaderRow({
   childTotal,
   onUpdate,
   onDelete,
+  rowHeight,
+  inputHeight,
 }: {
   item: LineItem
   isCollapsed: boolean
@@ -834,14 +877,16 @@ const GroupHeaderRow = memo(function GroupHeaderRow({
   childTotal: number
   onUpdate: (id: string, updates: Partial<LineItem>) => void
   onDelete: (id: string) => void
+  rowHeight: number
+  inputHeight: number
 }) {
   const multiplier = item.assemblyMultiplier ?? 1
   const scaledTotal = childTotal * multiplier
 
   return (
-    <tr className="bg-primary/5 hover:bg-primary/10 transition-colors border-t-2 border-primary/20">
+    <tr style={{ height: rowHeight }} className="bg-primary/5 hover:bg-primary/10 transition-colors border-t-2 border-primary/20">
       {/* Collapse toggle */}
-      <td className="px-2 py-2">
+      <td className="px-2 py-1">
         <button
           onClick={() => onToggleCollapse(item.id)}
           className="p-1 hover:bg-muted rounded min-w-[32px] min-h-[32px] flex items-center justify-center"
@@ -856,20 +901,21 @@ const GroupHeaderRow = memo(function GroupHeaderRow({
       </td>
 
       {/* Icon */}
-      <td className="px-1 py-2 text-center">
+      <td className="px-1 py-1 text-center">
         <Layers className="w-4 h-4 text-primary mx-auto" />
       </td>
 
       {/* Blank division for group */}
-      <td className="px-3 py-2" />
+      <td className="px-3 py-1" />
 
       {/* Assembly name */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <div className="flex items-center gap-2">
           <Input
             value={item.description}
             onChange={(e) => onUpdate(item.id, { description: e.target.value })}
-            className="h-8 text-sm font-semibold"
+            className="text-sm font-semibold"
+            style={{ height: inputHeight }}
           />
           <span className="text-xs text-muted-foreground whitespace-nowrap">
             {childCount} item{childCount !== 1 ? 's' : ''}
@@ -878,44 +924,46 @@ const GroupHeaderRow = memo(function GroupHeaderRow({
       </td>
 
       {/* Type - show "Assembly" badge */}
-      <td className="px-3 py-2 text-center">
+      <td className="px-3 py-1 text-center">
         <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
           ASM
         </span>
       </td>
 
       {/* Multiplier as quantity */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <CalculatorInput
           value={multiplier}
           onChange={(value) => onUpdate(item.id, { assemblyMultiplier: value })}
-          className="h-8 text-sm text-right w-full"
+          className="text-sm text-right w-full"
+          style={{ height: inputHeight }}
           placeholder="1"
         />
       </td>
 
       {/* Unit */}
-      <td className="px-3 py-2 text-sm text-muted-foreground">
+      <td className="px-3 py-1 text-sm text-muted-foreground">
         x
       </td>
 
       {/* Child total (base) */}
-      <td className="px-3 py-2 text-right text-sm text-muted-foreground">
+      <td className="px-3 py-1 text-right text-sm text-muted-foreground">
         {formatCurrency(childTotal)}
       </td>
 
       {/* Scaled total */}
-      <td className="px-3 py-2 text-right font-bold text-primary text-sm">
+      <td className="px-3 py-1 text-right font-bold text-primary text-sm">
         {formatCurrency(scaledTotal)}
       </td>
 
       {/* Delete group */}
-      <td className="px-3 py-2">
+      <td className="px-3 py-1">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onDelete(item.id)}
-          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          style={{ width: inputHeight, height: inputHeight }}
           aria-label={`Delete assembly ${item.description}`}
         >
           <Trash2 className="w-4 h-4" />
